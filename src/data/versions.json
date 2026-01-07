@@ -1,0 +1,198 @@
+{
+  "versions": [
+    {
+      "id": "1.0",
+      "name": "Version 1.0",
+      "description": "Initial version",
+      "createdAt": "2025-08-19T18:00:00Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.1",
+      "name": "Version 1.1",
+      "createdAt": "2025-08-19T19:58:15.581Z",
+      "basedOn": "1.0",
+      "isActive": false
+    },
+    {
+      "id": "1.2",
+      "name": "Version 1.2",
+      "createdAt": "2025-08-20T03:11:33.057Z",
+      "basedOn": "1.1",
+      "isActive": false
+    },
+    {
+      "id": "1.3",
+      "name": "Version 1.3",
+      "createdAt": "2025-08-20T03:11:38.029Z",
+      "basedOn": "1.2",
+      "isActive": true
+    },
+    {
+      "id": "1.4",
+      "name": "Version 1.4",
+      "createdAt": "2025-08-20T03:11:44.802Z",
+      "basedOn": "1.1",
+      "isActive": false
+    },
+    {
+      "id": "1.5",
+      "name": "Version 1.5",
+      "createdAt": "2025-08-20T03:11:59.666Z",
+      "basedOn": "1.2",
+      "isActive": false
+    },
+    {
+      "id": "1.6",
+      "name": "Version 1.6",
+      "createdAt": "2025-08-20T03:26:03.307Z",
+      "basedOn": "1.2",
+      "isActive": false
+    },
+    {
+      "id": "1.7",
+      "name": "Version 1.7",
+      "createdAt": "2025-08-20T03:26:10.718Z",
+      "basedOn": "1.6",
+      "isActive": false
+    },
+    {
+      "id": "1.8",
+      "name": "Version 1.8",
+      "createdAt": "2025-08-20T03:49:02.694Z",
+      "basedOn": "1.1",
+      "isActive": false
+    },
+    {
+      "id": "1.9",
+      "name": "Version 1.9",
+      "createdAt": "2025-08-20T03:49:39.180Z",
+      "basedOn": "1.8",
+      "isActive": false
+    },
+    {
+      "id": "1.10",
+      "name": "Version 1.10",
+      "createdAt": "2025-08-20T04:37:29.067Z",
+      "basedOn": "1.9",
+      "isActive": false
+    },
+    {
+      "id": "1.2",
+      "name": "Version 1.2",
+      "createdAt": "2025-08-20T04:37:59.568Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.11",
+      "name": "Version 1.11",
+      "createdAt": "2025-08-20T14:56:18.847Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.1",
+      "name": "Version 1.1",
+      "createdAt": "2025-08-20T15:54:01.730Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.1",
+      "name": "Version 1.1",
+      "createdAt": "2025-08-21T02:02:53.825Z",
+      "basedOn": "1.0",
+      "isActive": false
+    },
+    {
+      "id": "1.2",
+      "name": "Version 1.2",
+      "createdAt": "2025-08-21T02:44:17.892Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.3",
+      "name": "Version 1.3",
+      "createdAt": "2025-08-21T03:13:33.517Z",
+      "basedOn": null,
+      "isActive": true
+    },
+    {
+      "id": "1.4",
+      "name": "Version 1.4",
+      "createdAt": "2025-08-21T03:17:02.669Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.5",
+      "name": "Version 1.5",
+      "createdAt": "2025-08-21T03:18:46.512Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.1",
+      "name": "Version 1.1",
+      "createdAt": "2025-08-22T18:08:51.759Z",
+      "basedOn": "1.0",
+      "isActive": false
+    },
+    {
+      "id": "1.2",
+      "name": "Version 1.2",
+      "createdAt": "2025-08-22T18:16:13.674Z",
+      "basedOn": null,
+      "isActive": false
+    },
+    {
+      "id": "1.1",
+      "name": "Version 1.1",
+      "createdAt": "2025-08-31T22:00:33.859Z",
+      "basedOn": "1.0",
+      "isActive": false
+    },
+    {
+      "id": "1.2",
+      "name": "Version 1.2",
+      "createdAt": "2025-09-02T00:11:52.563Z",
+      "basedOn": "1.0",
+      "isActive": false
+    },
+    {
+      "id": "1.3",
+      "name": "Version 1.3",
+      "createdAt": "2025-09-02T20:57:29.810Z",
+      "basedOn": "1.2",
+      "isActive": true
+    },
+    {
+      "id": "1.1",
+      "name": "Version 1.1",
+      "createdAt": "2025-10-06T22:03:53.248Z",
+      "basedOn": "1.0",
+      "isActive": false
+    },
+    {
+      "id": "1.2",
+      "name": "Version 1.2",
+      "createdAt": "2025-10-07T21:46:04.912Z",
+      "basedOn": "1.1",
+      "isActive": false
+    },
+    {
+      "id": "1.3",
+      "name": "Version 1.3",
+      "createdAt": "2025-10-10T18:08:31.372Z",
+      "basedOn": "1.2",
+      "isActive": true
+    }
+  ],
+  "metadata": {
+    "currentVersion": "1.3",
+    "lastUpdated": "2025-11-15T22:53:15.137Z"
+  }
+}

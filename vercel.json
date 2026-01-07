@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
+  "functions": {
+    "api/health.js": {
+      "maxDuration": 10
+    },
+    "api/documents.js": {
+      "maxDuration": 30
+    },
+    "api/versions.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/versions/active",
+      "destination": "/api/versions.js"
+    },
+    {
+      "source": "/api/versions",
+      "destination": "/api/versions.js"
+    },
+    {
+      "source": "/((?!api/.*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

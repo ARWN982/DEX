@@ -1,0 +1,590 @@
+import { EuiContextMenu, EuiPopover } from "@elastic/eui";
+import { DotsThreeVertical } from "phosphor-react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { ProjectInfoFlyout, ProjectMetadata } from "../components";
+import { useAppStore } from "../store/useAppStore";
+import {
+  getDesignUIColors,
+  createBoxShadow,
+} from "../styles/designToolsColors";
+
+interface Project {
+  name: string;
+  displayName: string;
+  latestVersion: string;
+  path: string;
+  metadata?: ProjectMetadata;
+}
+
+const Homepage: React.FC = () => {
+  const navigate = useNavigate();
+  const { colorMode } = useAppStore();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isProjectInfoFlyoutOpen, setIsProjectInfoFlyoutOpen] = useState(false);
+  const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
+  const [popoverOpenId, setPopoverOpenId] = useState<string | null>(null);
+
+  // For homepage, use main app theme colors
+  const colors = getDesignUIColors(colorMode);
+
+  // Define templates
+  const templates = [
+    { name: "Discover", path: "/discover" },
+    { name: "Dashboards", path: "/dashboards" }, // TODO: Add this route
+    { name: "Stack Management", path: "/stack-management" }, // TODO: Add this route
+    { name: "Hosts", path: "/hosts" }, // TODO: Add this route
+  ];
+  
+  useEffect(() => {
+    // Dynamically load all projects from the API
+    const loadProjects = async () => {
+      try {
+        console.log('[Homepage] Fetching projects from /api/projects...');
+        // Fetch projects from the API
+        const response = await fetch('/api/projects');
+        console.log('[Homepage] Response status:', response.status, response.ok);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+        
+        const data = await response.json();
+        console.log('[Homepage] API response:', data);
+        
+        if (!data.success || !data.projects) {
+          throw new Error('Invalid API response');
+        }
+        
+        console.log('[Homepage] Found', data.projects.length, 'projects');
+        
+        // Load metadata and latest version for each project
+        const projectsWithMetadata = await Promise.all(
+          data.projects.map(async (project: any) => {
+            const metadata = await loadProjectMetadata(project.name);
+            // Use the highest version from the versions array
+            const latestVersion = project.versions.length > 0 
+              ? `v${project.versions[project.versions.length - 1]}`
+              : 'v1.0';
+            
+            return {
+              name: project.name,
+              displayName: project.displayName,
+              path: `/${project.name}`,
+              latestVersion,
+              metadata: metadata || undefined,
+            };
+          })
+        );
+
+        console.log('[Homepage] Projects with metadata:', projectsWithMetadata);
+        setProjects(projectsWithMetadata);
+        setLoading(false);
+      } catch (error) {
+        console.error("[Homepage] Failed to load projects:", error);
+        setLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
+  const handleProjectClick = (project: Project) => {
+    navigate(project.path);
+  };
+
+  const handleTemplateClick = (template: { name: string; path: string }) => {
+    navigate(template.path);
+  };
+
+  const handleCreateProject = () => {
+    // TODO: Implement create project functionality
+    console.log("Create project clicked");
+  };
+
+  const loadProjectMetadata = async (
+    projectName: string
+  ): Promise<ProjectMetadata | null> => {
+    try {
+      const response = await fetch(`/api/project-metadata/${projectName}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error(`Failed to load metadata for ${projectName}:`, error);
+    }
+    return null;
+  };
+
+  const getLatestVersion = async (projectName: string): Promise<string> => {
+    try {
+      const response = await fetch(`/api/versions?page=${projectName}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.versions && data.versions.length > 0) {
+          // Sort versions and get the highest one
+          const sortedVersions = data.versions.sort((a: any, b: any) => {
+            const aNum = parseFloat(a.id.replace("v", ""));
+            const bNum = parseFloat(b.id.replace("v", ""));
+            return bNum - aNum; // Descending order
+          });
+          return sortedVersions[0].id;
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to load versions for ${projectName}:`, error);
+    }
+    return "v1.0"; // Fallback
+  };
+
+  const saveProjectMetadata = async (
+    projectName: string,
+    metadata: ProjectMetadata
+  ): Promise<void> => {
+    try {
+      const response = await fetch(`/api/project-metadata/${projectName}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(metadata),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to save project metadata");
+      }
+    } catch (error) {
+      console.error(`Failed to save metadata for ${projectName}:`, error);
+    }
+  };
+
+  const handleEditProjectInfo = (project: Project) => {
+    setSelectedProject(project);
+    setIsProjectInfoFlyoutOpen(true);
+    setPopoverOpenId(null);
+  };
+
+  const handleUpdateThumbnail = async (project: Project) => {
+    setPopoverOpenId(null);
+
+    try {
+      const response = await fetch(`/api/screenshots/${project.name}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Thumbnail updated successfully:", result);
+
+        // Refresh the projects list to show the new thumbnail
+        const refreshedProjects = await Promise.all(
+          projects.map(async (p) => {
+            if (p.name === project.name) {
+              const metadata = await loadProjectMetadata(p.name);
+              return { ...p, metadata: metadata || undefined };
+            }
+            return p;
+          })
+        );
+        setProjects(refreshedProjects);
+      } else {
+        const error = await response.json();
+        console.error("Failed to update thumbnail:", error);
+      }
+    } catch (error) {
+      console.error("Error updating thumbnail:", error);
+    }
+  };
+
+  const handleSaveProjectMetadata = async (metadata: ProjectMetadata) => {
+    if (selectedProject) {
+      await saveProjectMetadata(selectedProject.name, metadata);
+      // Update the project in the local state
+      setProjects((prev) =>
+        prev.map((p) =>
+          p.name === selectedProject.name ? { ...p, metadata } : p
+        )
+      );
+    }
+  };
+
+  const cardStyle = {
+    backgroundColor: colors.primary,
+    border: `1px solid ${colors.border}`,
+    borderRadius: "16px",
+    padding: "0px", // Remove padding for thumbnail layout
+    width: "344px", // Updated width
+    height: "256px", // Updated height (200px thumbnail + 56px info)
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "flex-start",
+    boxShadow: createBoxShadow(colors, "light"),
+    overflow: "hidden", // Hide overflow for rounded corners
+  };
+
+  const cardHoverStyle = {
+    ...cardStyle,
+    transform: "translateY(-2px)",
+    boxShadow: `0 4px 16px ${colors.shadowLight}`,
+  };
+
+  const titleStyle = {
+    fontSize: "24px",
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginBottom: "32px",
+  };
+
+  const cardTitleStyle = {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginBottom: "2px",
+  };
+
+  const cardSubtitleStyle = {
+    fontSize: "12px",
+    color: colors.textSecondary,
+  };
+
+  const emptyStateStyle = {
+    textAlign: "center" as const,
+    padding: "64px 0",
+  };
+
+  const emptyTextStyle = {
+    fontSize: "16px",
+    color: colors.textSecondary,
+    marginBottom: "24px",
+  };
+
+  const createButtonStyle = {
+    backgroundColor: colors.primaryButton,
+    color: colors.primaryButtonText,
+    border: "none",
+    borderRadius: "24px",
+    padding: "12px 24px",
+    fontSize: "14px",
+    fontWeight: "500",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+  };
+
+  const containerStyle = {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "96px 24px 48px 24px", // 48px extra top padding + 48px existing = 96px top
+    minHeight: "100vh", // Full viewport height since no header
+  };
+
+  const sectionStyle = {
+    marginBottom: "64px",
+  };
+
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, 344px)", // Fixed width cards
+    gap: "24px",
+    marginTop: "24px",
+    justifyContent: "start", // Align cards to the left
+  };
+
+  console.log('[Homepage Render] State:', { loading, projectsCount: projects.length, projects });
+
+  return (
+    <div style={containerStyle}>
+      {/* Your projects section */}
+      <div style={sectionStyle}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "24px",
+          }}
+        >
+          <h1 style={{ ...titleStyle, marginBottom: 0 }}>Your projects</h1>
+          {!loading && projects.length > 0 && (
+            <button
+              style={createButtonStyle}
+              onClick={handleCreateProject}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              Create project
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <div style={emptyStateStyle}>
+            <div style={emptyTextStyle}>Loading projects...</div>
+          </div>
+        ) : projects.length > 0 ? (
+          <div style={{ ...gridStyle, marginTop: 0 }}>
+            {projects.map((project) => {
+              const isHovered = hoveredProjectId === project.name;
+              const isPopoverOpen = popoverOpenId === project.name;
+
+              return (
+                <div
+                  key={project.name}
+                  style={{
+                    ...cardStyle,
+                    position: "relative",
+                    ...(isHovered || isPopoverOpen ? cardHoverStyle : {}),
+                  }}
+                  onClick={() => handleProjectClick(project)}
+                  onMouseEnter={() => setHoveredProjectId(project.name)}
+                  onMouseLeave={() => setHoveredProjectId(null)}
+                >
+                  {/* Thumbnail Section */}
+                  <div
+                    style={{
+                      height: "200px",
+                      backgroundColor: colors.secondary,
+                      borderRadius: "16px 16px 0 0",
+                      overflow: "hidden",
+                      position: "relative",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {project.metadata?.thumbnail ? (
+                      <img
+                        src={project.metadata.thumbnail.url}
+                        alt={`${project.displayName} thumbnail`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          color: colors.textMuted,
+                          fontSize: "14px",
+                          textAlign: "center",
+                          padding: "20px",
+                        }}
+                      >
+                        No thumbnail available
+                        <br />
+                        <small>Click "Update thumbnail" to generate one</small>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Project Info Section */}
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      height: "56px",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <div style={cardTitleStyle}>{project.displayName}</div>
+                      <div style={cardSubtitleStyle}>
+                        Latest version {project.latestVersion}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Three dots menu - only visible on hover */}
+                  {(isHovered || isPopoverOpen) && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        zIndex: 10,
+                        backgroundColor: "rgba(0, 0, 0, 0.6)",
+                        borderRadius: "6px",
+                        backdropFilter: "blur(8px)",
+                      }}
+                    >
+                      <EuiPopover
+                        isOpen={isPopoverOpen}
+                        panelPaddingSize="none"
+                        closePopover={() => setPopoverOpenId(null)}
+                        button={
+                          <button
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "6px",
+                              borderRadius: "4px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#ffffff", // White for better contrast
+                              opacity: 0.9,
+                              transition: "opacity 0.2s ease",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPopoverOpenId(
+                                isPopoverOpen ? null : project.name
+                              );
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.opacity = "1";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.opacity = "0.7";
+                            }}
+                          >
+                            <DotsThreeVertical size={24} weight="bold" />
+                          </button>
+                        }
+                      >
+                        <EuiContextMenu
+                          initialPanelId={0}
+                          panels={[
+                            {
+                              id: 0,
+                              items: [
+                                {
+                                  name: "Edit info",
+                                  icon: "pencil",
+                                  onClick: (e) => {
+                                    e.stopPropagation();
+                                    handleEditProjectInfo(project);
+                                  },
+                                },
+                                {
+                                  name: "Update thumbnail",
+                                  icon: "image",
+                                  onClick: (e) => {
+                                    e.stopPropagation();
+                                    handleUpdateThumbnail(project);
+                                  },
+                                },
+                              ],
+                            },
+                          ]}
+                        />
+                      </EuiPopover>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={emptyStateStyle}>
+            <div style={emptyTextStyle}>
+              You haven't created any projects yet
+            </div>
+            <button
+              style={createButtonStyle}
+              onClick={handleCreateProject}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+              }}
+            >
+              Create a project
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Templates section */}
+      <div style={sectionStyle}>
+        <h2 style={titleStyle}>Templates</h2>
+        <div style={gridStyle}>
+          {templates.map((template) => {
+            const [isHovered, setIsHovered] = React.useState(false);
+
+            return (
+              <div
+                key={template.name}
+                style={{
+                  ...cardStyle,
+                  position: "relative",
+                  ...(isHovered ? cardHoverStyle : {}),
+                }}
+                onClick={() => handleTemplateClick(template)}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              >
+                {/* Thumbnail Section - placeholder for future screenshots */}
+                <div
+                  style={{
+                    height: "200px",
+                    backgroundColor: colors.secondary,
+                    borderRadius: "16px 16px 0 0",
+                    overflow: "hidden",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: colors.textMuted,
+                      fontSize: "14px",
+                      textAlign: "center",
+                      padding: "20px",
+                    }}
+                  >
+                    Template screenshot
+                    <br />
+                    <small>Coming soon</small>
+                  </div>
+                </div>
+
+                {/* Template Info Section */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    height: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                  }}
+                >
+                  <div style={cardTitleStyle}>{template.name}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Project Info Flyout */}
+      <ProjectInfoFlyout
+        isOpen={isProjectInfoFlyoutOpen}
+        onClose={() => {
+          setIsProjectInfoFlyoutOpen(false);
+          setSelectedProject(null);
+        }}
+        projectPath={selectedProject?.path || ""}
+        projectMetadata={selectedProject?.metadata || null}
+        onSave={handleSaveProjectMetadata}
+      />
+    </div>
+  );
+};
+
+export { Homepage };

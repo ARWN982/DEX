@@ -1,0 +1,1 @@
+{"version":3,"file":"jobStories.d.ts","sourceRoot":"","sources":["../../../src/server/routes/jobStories.ts"],"names":[],"mappings":"AAIA,QAAA,MAAM,MAAM,4CAAW,CAAC;AAWxB,MAAM,WAAW,QAAQ;IACvB,EAAE,EAAE,MAAM,CAAC;IACX,QAAQ,EAAE,MAAM,CAAC;IACjB,kBAAkB,EAAE,MAAM,CAAC;IAC3B,cAAc,EAAE,SAAS,GAAG,MAAM,CAAC;IACnC,SAAS,CAAC,EAAE,MAAM,CAAC;CACpB;AAqFD,eAAe,MAAM,CAAC"}
