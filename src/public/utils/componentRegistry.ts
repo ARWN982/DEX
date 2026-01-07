@@ -30,25 +30,44 @@ function createComponentRegistry(): Record<string, Record<string, React.Componen
     const componentContext = require.context('../pages', true, /^\.\/[^/]+\/v[\d.]+\/index\.tsx$/);
     
     componentContext.keys().forEach((componentPath) => {
+      // Skip simple-esql files (they've been deleted)
+      if (componentPath.includes('simple-esql')) {
+        return;
+      }
+      
       // Parse the path: ./esql-simple-mode/v1.0/index.tsx
       const match = componentPath.match(/^\.\/([^/]+)\/v([\d.]+)\/index\.tsx$/);
       
       if (match) {
         const [, pageName, version] = match;
         
-        // Load the component
-        const componentModule = componentContext(componentPath);
-        const component = componentModule.default || componentModule;
-        
-        // Initialize page registry if needed
-        if (!registry[pageName]) {
-          registry[pageName] = {};
+        // Skip simple-esql page
+        if (pageName === 'simple-esql') {
+          return;
         }
         
-        // Register the component
-        registry[pageName][version] = component;
-        
-        console.log(`Registered component: ${pageName}/v${version}`);
+        try {
+          // Load the component
+          const componentModule = componentContext(componentPath);
+          const component = componentModule.default || componentModule;
+          
+          if (!component) {
+            console.warn(`No component found at ${componentPath}`);
+            return;
+          }
+          
+          // Initialize page registry if needed
+          if (!registry[pageName]) {
+            registry[pageName] = {};
+          }
+          
+          // Register the component
+          registry[pageName][version] = component;
+          
+          console.log(`Registered component: ${pageName}/v${version}`);
+        } catch (error) {
+          console.warn(`Failed to load component at ${componentPath}:`, error);
+        }
       }
     });
   } catch (error) {

@@ -165,4 +165,130 @@ router.post('/screenshots/:projectName', async (req, res) => {
   }
 });
 
+/**
+ * API endpoint to take screenshots of template pages
+ * POST /api/screenshots/templates/:templateName
+ * 
+ * Takes a screenshot of the template page and saves it as a thumbnail
+ */
+router.post('/screenshots/templates/:templateName', async (req, res) => {
+  try {
+    const { templateName } = req.params;
+
+    if (!templateName) {
+      return res.status(400).json({ error: 'Template name is required' });
+    }
+
+    await ensureThumbnailsDirectory();
+
+    console.log(`Taking screenshot of template ${templateName}`);
+
+    // Launch Playwright browser
+    const browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+    });
+
+    try {
+      const page = await browser.newPage();
+      
+      // Set viewport to match the thumbnail aspect ratio
+      await page.setViewportSize({ 
+        width: 1440, 
+        height: 864
+      });
+
+      // Navigate to the template page
+      // Use the frontend port (3002) for templates since they're served by webpack dev server
+      const frontendPort = process.env.FRONTEND_PORT || '3002';
+      const baseUrl = `http://localhost:${frontendPort}`;
+      
+      // Templates are accessed via /discover, /template/discover, etc.
+      // Map template names to their routes
+      const templateRoutes: Record<string, string> = {
+        'discover': '/discover',
+        'dashboards': '/dashboards',
+        'stack-management': '/stack-management',
+        'hosts': '/hosts',
+      };
+      
+      const templateRoute = templateRoutes[templateName] || `/template/${templateName}`;
+      const templateUrl = `${baseUrl}${templateRoute}`;
+      console.log(`Navigating to ${templateUrl}`);
+      
+      await page.goto(templateUrl, { 
+        waitUntil: 'networkidle',
+        timeout: 30000 
+      });
+
+      // Wait a bit for any animations or dynamic content to load
+      await page.waitForTimeout(3000);
+
+      // Define the thumbnail filename
+      const thumbnailFilename = `template-${templateName}.png`;
+      const thumbnailPath = path.join(SCREENSHOTS_DIR, thumbnailFilename);
+
+      // Take screenshot
+      await page.screenshot({
+        path: thumbnailPath,
+        type: 'png',
+        fullPage: false,
+        clip: {
+          x: 0,
+          y: 0,
+          width: 1440,
+          height: 864
+        }
+      });
+
+      console.log(`Screenshot saved to ${thumbnailPath}`);
+
+      // Update template metadata to include thumbnail info
+      const metadataPath = path.join(process.cwd(), 'src', 'public', 'templates', templateName, 'metadata.json');
+      let metadata: any = {};
+      try {
+        const existingMetadata = await fs.readFile(metadataPath, 'utf-8');
+        metadata = JSON.parse(existingMetadata);
+      } catch (error) {
+        // File doesn't exist or is invalid, start with default metadata
+        console.log(`Creating new metadata file for template ${templateName}`);
+        metadata = {
+          templateName: templateName,
+        };
+      }
+
+      // Update thumbnail info
+      metadata.thumbnail = {
+        filename: thumbnailFilename,
+        createdAt: new Date().toISOString(),
+        url: `/thumbnails/${thumbnailFilename}`
+      };
+
+      // Ensure template directory exists
+      const templateDir = path.dirname(metadataPath);
+      await fs.mkdir(templateDir, { recursive: true });
+
+      // Save updated metadata
+      await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+
+      res.json({
+        success: true,
+        message: `Screenshot taken for template ${templateName}`,
+        thumbnail: metadata.thumbnail
+      });
+
+    } finally {
+      await browser.close();
+    }
+
+  } catch (error) {
+    console.error('Error taking template screenshot:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ 
+      error: 'Failed to take template screenshot',
+      details: errorMessage 
+    });
+  }
+});
+
 export default router;

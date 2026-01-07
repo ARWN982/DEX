@@ -13,22 +13,17 @@ export const getCurrentPage = (): string => {
   // Remove leading slash and get the first segment
   const segments = path.split('/').filter(segment => segment.length > 0);
   
-  // If no segments (root path '/'), default to 'simple-esql'
+  // If no segments (root path '/'), return empty string
+  // This indicates we're on the homepage, not a project page
   if (segments.length === 0) {
-    return 'simple-esql';
+    return '';
   }
-  
-  // Special cases for routes that map to specific pages
-  const routeToPageMap: Record<string, string> = {
-    'discover': 'simple-esql',
-    // Add more route mappings here as needed
-  };
   
   const firstSegment = segments[0];
   
-  // Check if there's a specific mapping for this route
-  if (routeToPageMap[firstSegment]) {
-    return routeToPageMap[firstSegment];
+  // Skip template routes - they don't have project pages
+  if (firstSegment === 'template' || firstSegment === 'discover') {
+    return '';
   }
   
   // Otherwise, use the first segment as the page name
@@ -42,8 +37,8 @@ export const getCurrentPage = (): string => {
  */
 export const getKnownPages = (): string[] => {
   // This could be expanded to dynamically scan available projects
-  // For now, return the known projects
-  return ['simple-esql'];
+  // For now, return empty array - projects are discovered dynamically via API
+  return [];
 };
 
 /**

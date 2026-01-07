@@ -33,7 +33,7 @@ interface JobStoriesData {
 router.get('/', async (req: Request, res: Response) => {
   try {
     const versionId = req.query.version as string || '1.0';
-    const pageId = req.query.page as string || 'simple-esql';
+    const pageId = req.query.page as string || '';
     const jobStoriesPath = getJobStoriesPath(pageId, versionId);
     
     console.log('Reading job stories for page', pageId, 'version', versionId, 'from:', jobStoriesPath);
@@ -67,7 +67,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
   try {
     const versionId = req.query.version as string || '1.0';
-    const pageId = req.query.page as string || 'simple-esql';
+    const pageId = req.query.page as string || '';
     const stories: JobStory[] = req.body;
     const jobStoriesPath = getJobStoriesPath(pageId, versionId);
     

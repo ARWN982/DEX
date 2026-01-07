@@ -16,6 +16,7 @@ import jobStoriesRoutes from "./routes/jobStories";
 import projectMetadataRoutes from "./routes/projectMetadata";
 import projectsRoutes from "./routes/projects";
 import screenshotsRoutes from "./routes/screenshots";
+import templateMetadataRoutes from "./routes/templateMetadata";
 import versionsRoutes from "./routes/versions";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api", fieldsRoutes);
 app.use("/api", esqlQueryRoutes);
 app.use("/api/job-stories", jobStoriesRoutes);
 app.use("/api/project-metadata", projectMetadataRoutes);
+app.use("/api/template-metadata", templateMetadataRoutes);
 app.use("/api/projects", projectsRoutes);
 app.use("/api", screenshotsRoutes);
 app.use("/api/versions", versionsRoutes);

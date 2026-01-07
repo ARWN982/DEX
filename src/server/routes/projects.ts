@@ -108,5 +108,150 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/projects
+ * Creates a new project with initial version 1.0
+ * Body: { name: string, description?: string }
+ */
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const { name, description } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Project name is required' 
+      });
+    }
+
+    // Validate project name format (lowercase, alphanumeric, hyphens, underscores)
+    const nameRegex = /^[a-z0-9-_]+$/;
+    const normalizedName = name.trim().toLowerCase();
+    
+    if (!nameRegex.test(normalizedName)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Project name can only contain lowercase letters, numbers, hyphens, and underscores' 
+      });
+    }
+
+    // Determine pages directory
+    let pagesDir = path.join(__dirname, '../../../src/public/pages');
+    try {
+      await fs.access(pagesDir);
+    } catch {
+      pagesDir = path.join(__dirname, '../../public/pages');
+    }
+
+    const projectDir = path.join(pagesDir, normalizedName);
+    const versionDir = path.join(projectDir, 'v1.0');
+    const indexPath = path.join(versionDir, 'index.tsx');
+    const aboutPath = path.join(projectDir, 'about.json');
+
+    // Check if project already exists
+    try {
+      await fs.access(projectDir);
+      return res.status(409).json({ 
+        success: false,
+        error: `Project "${normalizedName}" already exists` 
+      });
+    } catch {
+      // Project doesn't exist, proceed with creation
+    }
+
+    // Create project directory structure
+    await fs.mkdir(versionDir, { recursive: true });
+
+    // Generate component name from project name (kebab-case to PascalCase)
+    const componentName = normalizedName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+
+    // Create initial index.tsx file
+    const indexContent = `import React from 'react';
+import { EuiPage, EuiPageBody, EuiPageSection, EuiTitle, EuiText } from '@elastic/eui';
+
+const ${componentName}: React.FC = () => {
+  return (
+    <EuiPage>
+      <EuiPageBody>
+        <EuiPageSection>
+          <EuiTitle size="l">
+            <h1>${normalizedName.split('-').map((word: string) => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ')}</h1>
+          </EuiTitle>
+          <EuiText>
+            <p>${description || 'Welcome to your new project!'}</p>
+          </EuiText>
+        </EuiPageSection>
+      </EuiPageBody>
+    </EuiPage>
+  );
+};
+
+export default ${componentName};
+`;
+
+    await fs.writeFile(indexPath, indexContent, 'utf-8');
+
+    // Create about.json metadata file
+    const aboutData = {
+      projectName: normalizedName,
+      designer: '',
+      pm: '',
+      briefDescription: description || '',
+      prdLink: '',
+      githubIssueLink: '',
+      breadcrumb: '',
+    };
+
+    await fs.writeFile(aboutPath, JSON.stringify(aboutData, null, 2), 'utf-8');
+
+    // Create initial comments.json and jobStories.json files
+    const commentsPath = path.join(versionDir, 'comments.json');
+    const jobStoriesPath = path.join(versionDir, 'jobStories.json');
+
+    const commentsData = {
+      comments: [],
+      metadata: {
+        pageId: normalizedName,
+        versionId: '1.0',
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+
+    const jobStoriesData = {
+      stories: [],
+      metadata: {
+        versionId: '1.0',
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+
+    await fs.writeFile(commentsPath, JSON.stringify(commentsData, null, 2), 'utf-8');
+    await fs.writeFile(jobStoriesPath, JSON.stringify(jobStoriesData, null, 2), 'utf-8');
+
+    console.log(`Created new project: ${normalizedName}`);
+
+    res.json({ 
+      success: true, 
+      message: `Project "${normalizedName}" created successfully`,
+      project: {
+        name: normalizedName,
+        path: `/${normalizedName}`,
+      }
+    });
+  } catch (error: any) {
+    console.error('Error creating project:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to create project',
+      message: error.message 
+    });
+  }
+});
+
 export default router;
 

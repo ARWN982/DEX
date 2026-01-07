@@ -2,7 +2,7 @@ import { EuiContextMenu, EuiPopover } from "@elastic/eui";
 import { DotsThreeVertical } from "phosphor-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ProjectInfoFlyout, ProjectMetadata } from "../components";
+import { ProjectInfoFlyout, ProjectMetadata, CreateProjectModal } from "../components";
 import { useAppStore } from "../store/useAppStore";
 import {
   getDesignUIColors,
@@ -17,6 +17,20 @@ interface Project {
   metadata?: ProjectMetadata;
 }
 
+interface Template {
+  name: string;
+  path: string;
+  key: string;
+  metadata?: {
+    templateName: string;
+    thumbnail?: {
+      filename: string;
+      createdAt: string;
+      url: string;
+    };
+  };
+}
+
 const Homepage: React.FC = () => {
   const navigate = useNavigate();
   const { colorMode } = useAppStore();
@@ -26,16 +40,19 @@ const Homepage: React.FC = () => {
   const [isProjectInfoFlyoutOpen, setIsProjectInfoFlyoutOpen] = useState(false);
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
   const [popoverOpenId, setPopoverOpenId] = useState<string | null>(null);
+  const [templatePopoverOpenId, setTemplatePopoverOpenId] = useState<string | null>(null);
+  const [templatesWithMetadata, setTemplatesWithMetadata] = useState<Template[]>([]);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
 
   // For homepage, use main app theme colors
   const colors = getDesignUIColors(colorMode);
 
   // Define templates
   const templates = [
-    { name: "Discover", path: "/discover" },
-    { name: "Dashboards", path: "/dashboards" }, // TODO: Add this route
-    { name: "Stack Management", path: "/stack-management" }, // TODO: Add this route
-    { name: "Hosts", path: "/hosts" }, // TODO: Add this route
+    { name: "Discover", path: "/discover", key: "discover" },
+    { name: "Dashboards", path: "/dashboards", key: "dashboards" }, // TODO: Add this route
+    { name: "Stack Management", path: "/stack-management", key: "stack-management" }, // TODO: Add this route
+    { name: "Hosts", path: "/hosts", key: "hosts" }, // TODO: Add this route
   ];
   
   useEffect(() => {
@@ -91,17 +108,112 @@ const Homepage: React.FC = () => {
     loadProjects();
   }, []);
 
+  // Load template metadata
+  useEffect(() => {
+    const loadTemplateMetadata = async () => {
+      try {
+        const templatesWithMeta = await Promise.all(
+          templates.map(async (template) => {
+            try {
+              const response = await fetch(`/api/template-metadata/${template.key}`);
+              if (response.ok) {
+                const metadata = await response.json();
+                return { ...template, metadata };
+              }
+            } catch (error) {
+              console.error(`Failed to load metadata for template ${template.key}:`, error);
+            }
+            return { ...template };
+          })
+        );
+        setTemplatesWithMetadata(templatesWithMeta);
+      } catch (error) {
+        console.error("Failed to load template metadata:", error);
+        setTemplatesWithMetadata(templates);
+      }
+    };
+
+    loadTemplateMetadata();
+  }, []);
+
   const handleProjectClick = (project: Project) => {
     navigate(project.path);
   };
 
-  const handleTemplateClick = (template: { name: string; path: string }) => {
+  const handleTemplateClick = (template: Template) => {
     navigate(template.path);
   };
 
+  const handleUpdateTemplateThumbnail = async (template: Template) => {
+    setTemplatePopoverOpenId(null);
+
+    try {
+      const response = await fetch(`/api/screenshots/templates/${template.key}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Template thumbnail updated successfully:", result);
+
+        // Refresh the templates list to show the new thumbnail
+        const refreshedTemplates = await Promise.all(
+          templatesWithMetadata.map(async (t) => {
+            if (t.key === template.key) {
+              try {
+                const metadataResponse = await fetch(`/api/template-metadata/${t.key}`);
+                if (metadataResponse.ok) {
+                  const metadata = await metadataResponse.json();
+                  return { ...t, metadata };
+                }
+              } catch (error) {
+                console.error(`Failed to reload metadata for template ${t.key}:`, error);
+              }
+            }
+            return t;
+          })
+        );
+        setTemplatesWithMetadata(refreshedTemplates);
+      } else {
+        const error = await response.json();
+        console.error("Failed to update template thumbnail:", error);
+      }
+    } catch (error) {
+      console.error("Error updating template thumbnail:", error);
+    }
+  };
+
   const handleCreateProject = () => {
-    // TODO: Implement create project functionality
-    console.log("Create project clicked");
+    setIsCreateProjectModalOpen(true);
+  };
+
+  const handleProjectCreated = async () => {
+    // Reload projects list
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        const projectsWithMetadata = await Promise.all(
+          data.projects.map(async (project: any) => {
+            const latestVersion = await getLatestVersion(project.name);
+            const metadata = await loadProjectMetadata(project.name);
+            return {
+              name: project.name,
+              displayName: project.displayName,
+              latestVersion,
+              path: `/${project.name}`,
+              metadata: metadata || undefined,
+            };
+          })
+        );
+        setProjects(projectsWithMetadata);
+      }
+    } catch (error) {
+      console.error("Failed to reload projects:", error);
+    }
   };
 
   const loadProjectMetadata = async (
@@ -512,8 +624,9 @@ const Homepage: React.FC = () => {
       <div style={sectionStyle}>
         <h2 style={titleStyle}>Templates</h2>
         <div style={gridStyle}>
-          {templates.map((template) => {
-            const [isHovered, setIsHovered] = React.useState(false);
+          {templatesWithMetadata.length > 0 ? templatesWithMetadata.map((template) => {
+            const isHovered = templatePopoverOpenId === template.key;
+            const isPopoverOpen = templatePopoverOpenId === template.key;
 
             return (
               <div
@@ -521,13 +634,155 @@ const Homepage: React.FC = () => {
                 style={{
                   ...cardStyle,
                   position: "relative",
-                  ...(isHovered ? cardHoverStyle : {}),
+                  ...(isHovered || isPopoverOpen ? cardHoverStyle : {}),
                 }}
                 onClick={() => handleTemplateClick(template)}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
+                onMouseEnter={() => setTemplatePopoverOpenId(template.key)}
+                onMouseLeave={() => setTemplatePopoverOpenId(null)}
               >
-                {/* Thumbnail Section - placeholder for future screenshots */}
+                {/* Thumbnail Section */}
+                <div
+                  style={{
+                    height: "200px",
+                    backgroundColor: colors.secondary,
+                    borderRadius: "16px 16px 0 0",
+                    overflow: "hidden",
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {template.metadata?.thumbnail ? (
+                    <img
+                      src={template.metadata.thumbnail.url}
+                      alt={`${template.name} thumbnail`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        color: colors.textMuted,
+                        fontSize: "14px",
+                        textAlign: "center",
+                        padding: "20px",
+                      }}
+                    >
+                      No thumbnail available
+                      <br />
+                      <small>Click "Update thumbnail" to generate one</small>
+                    </div>
+                  )}
+                </div>
+
+                {/* Template Info Section */}
+                <div
+                  style={{
+                    padding: "12px 16px",
+                    height: "56px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <div>
+                    <div style={cardTitleStyle}>{template.name}</div>
+                  </div>
+                </div>
+
+                {/* Three dots menu - only visible on hover */}
+                {(isHovered || isPopoverOpen) && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "8px",
+                      right: "8px",
+                      zIndex: 10,
+                      backgroundColor: "rgba(0, 0, 0, 0.6)",
+                      borderRadius: "6px",
+                      backdropFilter: "blur(8px)",
+                    }}
+                  >
+                    <EuiPopover
+                      isOpen={isPopoverOpen}
+                      panelPaddingSize="none"
+                      closePopover={() => setTemplatePopoverOpenId(null)}
+                      button={
+                        <button
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "6px",
+                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#ffffff",
+                            opacity: 0.9,
+                            transition: "opacity 0.2s ease",
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTemplatePopoverOpenId(
+                              isPopoverOpen ? null : template.key
+                            );
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = "1";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = "0.7";
+                          }}
+                        >
+                          <DotsThreeVertical size={24} weight="bold" />
+                        </button>
+                      }
+                    >
+                      <EuiContextMenu
+                        initialPanelId={0}
+                        panels={[
+                          {
+                            id: 0,
+                            items: [
+                              {
+                                name: "Update thumbnail",
+                                icon: "image",
+                                onClick: (e) => {
+                                  e.stopPropagation();
+                                  handleUpdateTemplateThumbnail(template);
+                                },
+                              },
+                            ],
+                          },
+                        ]}
+                      />
+                    </EuiPopover>
+                  </div>
+                )}
+              </div>
+            );
+          }) : templates.map((template) => {
+            const isHovered = templatePopoverOpenId === template.key;
+            const isPopoverOpen = templatePopoverOpenId === template.key;
+
+            return (
+              <div
+                key={template.name}
+                style={{
+                  ...cardStyle,
+                  position: "relative",
+                  ...(isHovered || isPopoverOpen ? cardHoverStyle : {}),
+                }}
+                onClick={() => handleTemplateClick(template as Template)}
+                onMouseEnter={() => setTemplatePopoverOpenId(template.key)}
+                onMouseLeave={() => setTemplatePopoverOpenId(null)}
+              >
+                {/* Thumbnail Section - placeholder */}
                 <div
                   style={{
                     height: "200px",
@@ -582,6 +837,13 @@ const Homepage: React.FC = () => {
         projectPath={selectedProject?.path || ""}
         projectMetadata={selectedProject?.metadata || null}
         onSave={handleSaveProjectMetadata}
+      />
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={isCreateProjectModalOpen}
+        onClose={() => setIsCreateProjectModalOpen(false)}
+        onSuccess={handleProjectCreated}
       />
     </div>
   );

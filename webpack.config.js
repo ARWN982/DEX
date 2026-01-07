@@ -22,8 +22,17 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: "ts-loader",
-        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            transpileOnly: false,
+          },
+        },
+        exclude: [
+          /node_modules/,
+          /simple-esql/,
+          /src\/public\/pages\/simple-esql/,
+        ],
       },
       {
         test: /\.css$/,

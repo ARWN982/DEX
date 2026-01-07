@@ -1,0 +1,22 @@
+"use strict";
+/*
+ * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+(self["webpackChunkvibe_kibana"] = self["webpackChunkvibe_kibana"] || []).push([["icon.logo_couchbase"],{
+
+/***/ "./node_modules/@elastic/eui/es/components/icon/assets/logo_couchbase.js"
+/*!*******************************************************************************!*\
+  !*** ./node_modules/@elastic/eui/es/components/icon/assets/logo_couchbase.js ***!
+  \*******************************************************************************/
+(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+
+eval("{__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   icon: () => (/* binding */ icon)\n/* harmony export */ });\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ \"./node_modules/react/index.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _emotion_react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @emotion/react */ \"./node_modules/@emotion/react/dist/emotion-react.browser.development.esm.js\");\nvar _excluded = [\"title\", \"titleId\"];\nfunction _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }\nfunction _objectWithoutProperties(e, t) { if (null == e) return {}; var o, r, i = _objectWithoutPropertiesLoose(e, t); if (Object.getOwnPropertySymbols) { var n = Object.getOwnPropertySymbols(e); for (r = 0; r < n.length; r++) o = n[r], t.indexOf(o) >= 0 || {}.propertyIsEnumerable.call(e, o) && (i[o] = e[o]); } return i; }\nfunction _objectWithoutPropertiesLoose(r, e) { if (null == r) return {}; var t = {}; for (var n in r) if ({}.hasOwnProperty.call(r, n)) { if (e.indexOf(n) >= 0) continue; t[n] = r[n]; } return t; }\n/*\n * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one\n * or more contributor license agreements. Licensed under the Elastic License\n * 2.0 and the Server Side Public License, v 1; you may not use this file except\n * in compliance with, at your election, the Elastic License 2.0 or the Server\n * Side Public License, v 1.\n */\n\n// THIS IS A GENERATED FILE. DO NOT MODIFY MANUALLY. @see scripts/compile-icons.js\n\n\n\nvar EuiIconLogoCouchbase = function EuiIconLogoCouchbase(_ref) {\n  var title = _ref.title,\n    titleId = _ref.titleId,\n    props = _objectWithoutProperties(_ref, _excluded);\n  return (0,_emotion_react__WEBPACK_IMPORTED_MODULE_1__.jsx)(\"svg\", _extends({\n    xmlns: \"http://www.w3.org/2000/svg\",\n    width: 32,\n    height: 32,\n    viewBox: \"0 0 32 32\",\n    \"aria-labelledby\": titleId\n  }, props), title ? (0,_emotion_react__WEBPACK_IMPORTED_MODULE_1__.jsx)(\"title\", {\n    id: titleId\n  }, title) : null, (0,_emotion_react__WEBPACK_IMPORTED_MODULE_1__.jsx)(\"path\", {\n    fill: \"#ED2226\",\n    d: \"M16.072.024C7.29.024.144 7.146.144 15.952c0 8.782 7.122 15.928 15.928 15.928C24.854 31.88 32 24.758 32 15.952 32 7.146 24.854.024 16.072.024Zm10.755 18.719c0 .962-.553 1.804-1.636 1.997-1.877.336-5.823.53-9.119.53-3.296 0-7.242-.194-9.119-.53-1.082-.193-1.636-1.035-1.636-1.997v-6.208c0-.962.746-1.852 1.636-1.997.554-.096 1.853-.192 2.864-.192.385 0 .697.289.697.746v4.355l5.582-.12 5.582.12v-4.355c0-.457.313-.746.698-.746 1.01 0 2.31.096 2.863.192.914.145 1.636 1.035 1.636 1.997-.048 2.045-.048 4.139-.048 6.208Z\"\n  }));\n};\nvar icon = EuiIconLogoCouchbase;\n\n//# sourceURL=webpack://vibe-kibana/./node_modules/@elastic/eui/es/components/icon/assets/logo_couchbase.js?\n}");
+
+/***/ }
+
+}]);

@@ -1,256 +1,57 @@
 import dateMath from "@elastic/datemath";
 import {
   EuiButton,
-  EuiButtonIcon,
   EuiCallOut,
-  EuiCheckbox,
-  EuiFieldSearch,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiHorizontalRule,
   EuiLoadingSpinner,
   EuiPage,
   EuiPageBody,
   EuiPanel,
   EuiResizableContainer,
-  EuiSpacer,
   EuiSuperDatePicker,
-  EuiTitle,
   useEuiTheme,
 } from "@elastic/eui";
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   DocumentHistogram,
   CodeEditor,
   FieldList,
   DocumentDataGrid,
+  AssistantFlyout,
+  NewNav,
+  AppContainer,
+  KibanaHeader,
 } from "../../components";
 import {
   BaseDocument,
   getDataGenerator,
   DataGeneratorParams,
+  findMatchingQuery,
+  getFallbackQuery,
+  simulateAIProcessing,
 } from "../../data";
 import { useUrlSyncedStore } from "../../hooks";
 import { useAppStore } from "../../store/useAppStore";
 
-// Import our new data system
-
-// Helper function to apply aggregations to raw data
-const applyAggregations = (data: any[], aggregations: any[]): any[] => {
-  const aggregationResults: any[] = [];
-
-  for (const agg of aggregations) {
-    const { operation, field, groupBy } = agg;
-
-    if (groupBy) {
-      // Group by functionality - group logs by the specified field
-      const groups: { [key: string]: any[] } = {};
-
-      data.forEach((doc) => {
-        const groupValue = (doc[groupBy] as string) || "unknown";
-        if (!groups[groupValue]) {
-          groups[groupValue] = [];
-        }
-        groups[groupValue].push(doc);
-      });
-
-      // Calculate aggregation for each group
-      Object.entries(groups).forEach(([groupValue, groupData]) => {
-        let result: number | null = null;
-
-        switch (operation) {
-          case "sum":
-            result = groupData.reduce(
-              (sum, doc) => sum + ((doc[field] as number) || 0),
-              0
-            );
-            break;
-          case "avg":
-            result =
-              groupData.reduce(
-                (sum, doc) => sum + ((doc[field] as number) || 0),
-                0
-              ) / groupData.length;
-            break;
-          case "min":
-            result = Math.min(
-              ...groupData.map((doc) => (doc[field] as number) || Infinity)
-            );
-            break;
-          case "max":
-            result = Math.max(
-              ...groupData.map((doc) => (doc[field] as number) || -Infinity)
-            );
-            break;
-          case "count":
-            result = groupData.filter(
-              (doc) => doc[field] !== undefined && doc[field] !== null
-            ).length;
-            break;
-        }
-
-        if (result !== null) {
-          const aggDocument = {
-            [`${operation} of ${field}`]: result,
-            [groupBy]: groupValue,
-            aggregation: true,
-            aggregation_type: operation,
-            aggregation_field: field,
-            group_by_field: groupBy,
-            group_by_value: groupValue,
-          };
-
-          aggregationResults.push(aggDocument);
-        }
-      });
-    } else {
-      // No grouping - calculate aggregation for all data
-      let result: number | null = null;
-
-      switch (operation) {
-        case "sum":
-          result = data.reduce(
-            (sum, doc) => sum + ((doc[field] as number) || 0),
-            0
-          );
-          break;
-        case "avg":
-          result =
-            data.reduce((sum, doc) => sum + ((doc[field] as number) || 0), 0) /
-            data.length;
-          break;
-        case "min":
-          result = Math.min(
-            ...data.map((doc) => (doc[field] as number) || Infinity)
-          );
-          break;
-        case "max":
-          result = Math.max(
-            ...data.map((doc) => (doc[field] as number) || -Infinity)
-          );
-          break;
-        case "count":
-          result = data.filter(
-            (doc) => doc[field] !== undefined && doc[field] !== null
-          ).length;
-          break;
-        case "median":
-          const values = data
-            .map((doc) => doc[field] as number)
-            .filter((val) => val !== undefined && val !== null)
-            .sort((a, b) => a - b);
-          const mid = Math.floor(values.length / 2);
-          result =
-            values.length % 2 === 0
-              ? (values[mid - 1] + values[mid]) / 2
-              : values[mid];
-          break;
-      }
-
-      if (result !== null) {
-        const aggDocument = {
-          [`${operation} of ${field}`]: result,
-          aggregation: true,
-          aggregation_type: operation,
-          aggregation_field: field,
-        };
-
-        aggregationResults.push(aggDocument);
-      }
-    }
-  }
-
-  return aggregationResults;
-};
-
-// Helper function to get nested field values using dot notation
-const getNestedFieldValue = (obj: any, fieldPath: string): any => {
-  // First, try to get the value directly using the field path (for dot notation fields)
-  if (obj[fieldPath] !== undefined) {
-    return obj[fieldPath];
-  }
-
-  // Then, try the nested approach (for nested objects)
-  return fieldPath.split(".").reduce((current, key) => {
-    return current && current[key] !== undefined ? current[key] : undefined;
-  }, obj);
-};
-
-// Utility function to get EUI icon for field types (like in Kibana)
-const getFieldTypeIcon = (fieldType: string): string => {
-  const result = (() => {
-    switch (fieldType.toLowerCase()) {
-      case "text":
-        return "tokenString";
-      case "keyword":
-        return "tokenKeyword";
-      case "long":
-      case "integer":
-      case "short":
-      case "byte":
-      case "double":
-      case "float":
-      case "half_float":
-      case "scaled_float":
-        return "tokenNumber";
-      case "date":
-        return "tokenDate";
-      case "boolean":
-        return "tokenBoolean";
-      case "ip":
-        return "tokenIP";
-      case "geo_point":
-      case "geo_shape":
-        return "tokenGeo";
-      case "object":
-      case "nested":
-        return "tokenObject";
-      case "binary":
-        return "tokenBinary";
-      default:
-        return "tokenString"; // Default fallback
-    }
-  })();
-  return result;
-};
-
-// Convert data generator field types to Elasticsearch-compatible types
-const convertDataGeneratorTypes = (
-  generatorTypes: Record<string, string>
-): Record<string, string> => {
-  // console.log("convertDataGeneratorTypes input:", generatorTypes);
-  const convertedTypes: Record<string, string> = {};
-
-  for (const [fieldName, generatorType] of Object.entries(generatorTypes)) {
-    switch (generatorType) {
-      case "number":
-        convertedTypes[fieldName] = "long"; // Map number to long for consistency
-        break;
-      case "string":
-        convertedTypes[fieldName] = "text";
-        break;
-      case "keyword":
-        convertedTypes[fieldName] = "keyword";
-        break;
-      case "time":
-        convertedTypes[fieldName] = "date";
-        break;
-      case "ip":
-        convertedTypes[fieldName] = "ip";
-        break;
-      default:
-        convertedTypes[fieldName] = "text"; // Default fallback
-        break;
-    }
-  }
-
-  console.log("convertDataGeneratorTypes output:", convertedTypes);
-  return convertedTypes;
-};
-
 export const Discover: React.FC = () => {
-  // EUI theme hook for accessing color variables
   const { euiTheme } = useEuiTheme();
+  const { colorMode, setColorMode } = useAppStore();
+  const isDarkMode = colorMode === "dark";
+
+  const toggleColorMode = () => {
+    setColorMode(colorMode === "light" ? "dark" : "light");
+  };
+
+  const handleAssistantClick = () => {
+    setIsAssistantOpen(true);
+  };
+
+  // CodeEditor ref for tracking generated blocks
+  const codeEditorRef = useRef<{
+    view: any;
+    trackGeneratedBlock: (commentLine: number, codeLines: number[]) => void;
+  }>(null);
 
   // Field search state
   const [fieldSearchTerm, setFieldSearchTerm] = useState("");
@@ -268,7 +69,6 @@ export const Discover: React.FC = () => {
     setDraftSelectedIndex,
     handleUpdateRefresh,
     hasChanges,
-    applyChanges,
     setAppliedSearchTerm,
     setAppliedSelectedIndex,
   } = useUrlSyncedStore();
@@ -278,69 +78,70 @@ export const Discover: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(
     appliedSelectedIndex || "logs-*"
   );
-  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [isLoading, setIsLoading] = useState(true);
   const [documents, setDocuments] = useState<BaseDocument[]>([]);
   const [selectedFields, setSelectedFields] = useState<Record<string, boolean>>(
-    { timestamp: true }
+    { "@timestamp": true }
   );
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
-  // State for popovers
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [isAggregationPopoverOpen, setIsAggregationPopoverOpen] =
-    useState(false);
-
-  // State for aggregation
-  const [selectedOperation, setSelectedOperation] = useState<string>("sum");
-  const [selectedField, setSelectedField] = useState<string>("");
-
-  // State for field types from API
-  const [fieldTypes, setFieldTypes] = useState<Record<string, string>>({});
-  const [selectedGroupByField, setSelectedGroupByField] = useState<string>("");
-  const [appliedAggregations, setAppliedAggregations] = useState<
-    Array<{ operation: string; field: string; groupBy?: string }>
-  >([]);
-  // Track whether aggregations should be applied to the data grid
-  const [applyAggregationsToGrid, setApplyAggregationsToGrid] =
-    useState<boolean>(false);
-
-  // State for editing aggregations
-  const [editingAggregationIndex, setEditingAggregationIndex] = useState<
-    number | null
-  >(null);
-  const [isEditingAggregation, setIsEditingAggregation] =
-    useState<boolean>(false);
-
-  // State for filters
-  const [isFilterPopoverOpen, setIsFilterPopoverOpen] = useState(false);
-  const [selectedFilterField, setSelectedFilterField] = useState<string>("");
-  const [selectedFilterOperator, setSelectedFilterOperator] =
-    useState<string>("equals");
-  const [selectedFilterValues, setSelectedFilterValues] = useState<string[]>(
-    []
-  );
-  const [appliedFilters, setAppliedFilters] = useState<
-    Array<{ field: string; operator: string; values: string[] }>
-  >([]);
-  const [applyFiltersToGrid, setApplyFiltersToGrid] = useState<boolean>(false);
-
-  // State for editing filters
-  const [editingFilterIndex, setEditingFilterIndex] = useState<number | null>(
-    null
-  );
-  const [isEditingFilter, setIsEditingFilter] = useState<boolean>(false);
-
-  // State to force data reload when Run button is clicked
-  const [reloadTrigger, setReloadTrigger] = useState(0);
-
-  const [editorQuery, setEditorQuery] = useState("");
-
-  // Histogram field state
+  const [editorQuery, setEditorQuery] = useState("FROM logs-*");
   const [histogramField, setHistogramField] = useState<string>("@timestamp");
-  const { colorMode } = useAppStore();
+
+  // Prompt input box state
+  const [isPromptVisible, setIsPromptVisible] = useState(false);
+  const [promptValue, setPromptValue] = useState("");
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [generatedQuery, setGeneratedQuery] = useState("");
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [originalPrompt, setOriginalPrompt] = useState("");
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState("");
+  const [animatedDots, setAnimatedDots] = useState("");
+  const [queryGenerated, setQueryGenerated] = useState(false);
+
+  // AI Input Mode State
+  const [inputMode, setInputMode] = useState<"natural" | "keyword">("natural");
+  const [isModePopoverOpen, setIsModePopoverOpen] = useState(false);
+  
+  // Extract current data source from editor query
+  const currentDataSource = useMemo(() => {
+    const match = editorQuery.match(/FROM\s+([^\s|]+)/i);
+    return match ? match[1] : "logs-*";
+  }, [editorQuery]);
+
+  // Track last executed query to determine if button should show "Run"
+  const [lastExecutedQuery, setLastExecutedQuery] = useState("");
+
+  // Track current search term for highlighting in data grid
+  const [currentHighlightTerm, setCurrentHighlightTerm] = useState("");
+
+  // Assistant flyout state
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+  const [assistantInitialMessage, setAssistantInitialMessage] = useState("");
+
+  // VisorHex generating state - still managed at page level for handlePromptSubmit
+  const [visorHexGenerating, setVisorHexGenerating] = useState(false);
+
+
+  // Animate dots during AI processing
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isAIProcessing) {
+      let dotCount = 0;
+      interval = setInterval(() => {
+        dotCount = (dotCount + 1) % 4; // Cycle through 0, 1, 2, 3
+        setAnimatedDots(".".repeat(dotCount));
+      }, 500); // Update every 500ms
+    } else {
+      setAnimatedDots("");
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isAIProcessing]);
 
   // Use dateRange from URL synced store
   const timeRange = useMemo(() => {
@@ -357,219 +158,43 @@ export const Discover: React.FC = () => {
     };
   }, [appliedDateRange]);
 
-  // Generic data loading function using our data generator system
+  // Data loading function
   const loadData = useCallback(async () => {
-    console.log("loadData - Starting with state:", {
-      appliedAggregations,
-      applyAggregationsToGrid,
-      appliedFilters,
-      applyFiltersToGrid,
-    });
     setIsLoading(true);
 
     try {
-      // Use the data generator system (handles both local and API data sources)
       const dataGenerator = getDataGenerator(selectedIndex);
-
-      // Prepare parameters for data generation
       const params: DataGeneratorParams = {
         indexPattern: selectedIndex,
-        searchQuery: appliedSearchTerm,
-        from: timeRange.from,
-        to: timeRange.to,
+        searchQuery: appliedSearchTerm || "",
+        from: timeRange.from || undefined,
+        to: timeRange.to || undefined,
       };
 
-      // Note: Aggregations will be applied after data generation, not passed to generator
-      if (appliedAggregations.length > 0) {
-        console.log(
-          "loadData - Will apply aggregations after data generation:",
-          appliedAggregations
-        );
-      }
-
-      // Add filters only when user clicks Run (applyFiltersToGrid is true)
-      console.log("loadData - Checking filters:", {
-        appliedFiltersLength: appliedFilters.length,
-        appliedFilters: appliedFilters,
-        applyFiltersToGrid: applyFiltersToGrid,
-      });
-
-      if (appliedFilters.length > 0 && applyFiltersToGrid) {
-        params.filters = appliedFilters;
-        console.log("loadData - Adding filters to params:", appliedFilters);
-      } else {
-        console.log("loadData - No filters to add", {
-          filtersLength: appliedFilters.length,
-          shouldApply: applyFiltersToGrid,
-        });
-      }
-
-      // Generate data using the appropriate generator
-      console.log("loadData - About to call generateData with params:", params);
       const data = await dataGenerator.generateData(params);
-      console.log(
-        "loadData - Data generated successfully, count:",
-        data.length
-      );
+      const formattedData = dataGenerator.formatForDisplay(data);
 
-      // Apply aggregations if any are applied and should be applied to grid
-      let processedData = data;
-      if (appliedAggregations.length > 0 && applyAggregationsToGrid) {
-        console.log(
-          "loadData - Applying aggregations to data:",
-          appliedAggregations
-        );
-        processedData = applyAggregations(data, appliedAggregations);
-        console.log(
-          "loadData - After aggregations, processed data:",
-          processedData
-        );
-        console.log(
-          "loadData - After aggregations, count:",
-          processedData.length
-        );
-      }
-
-      // Format the data for display in the UI
-      const formattedData = dataGenerator.formatForDisplay(processedData);
-      console.log(
-        "loadData - Data after formatting, count:",
-        formattedData.length
-      );
-
-      // Set the formatted documents in state
-      console.log("loadData - Setting documents:", {
-        documentsCount: formattedData.length,
-        hasAggregations: appliedAggregations.length > 0,
-        hasFilters: appliedFilters.length > 0,
-        appliedFilters,
-        appliedAggregations,
-        applyAggregationsToGrid,
-        firstDoc: formattedData[0],
-        sampleLevels: formattedData.slice(0, 5).map((doc) => doc.level),
-      });
-
-      // Debug aggregation data specifically
-      if (appliedAggregations.length > 0) {
-        console.log("AGGREGATION DEBUG - Documents with aggregations:", {
-          aggregations: appliedAggregations,
-          applyToGrid: applyAggregationsToGrid,
-          documentCount: formattedData.length,
-          documents: formattedData,
-          documentFields:
-            formattedData.length > 0 ? Object.keys(formattedData[0]) : [],
-        });
-      }
-
+      // Reset to default fields for raw documents
+      setSelectedFields({ "@timestamp": true });
+      
       setDocuments(formattedData);
     } catch (error) {
       console.error("Error loading data:", error);
-      // In case of error, set empty documents
       setDocuments([]);
     } finally {
       setIsLoading(false);
     }
-  }, [
-    selectedIndex,
-    appliedSearchTerm,
-    timeRange.from,
-    timeRange.to,
-    appliedAggregations,
-    appliedFilters,
-    applyFiltersToGrid,
-    applyAggregationsToGrid,
-  ]);
+  }, [selectedIndex, appliedSearchTerm, timeRange.from, timeRange.to]);
 
-  // Load data on initial mount and when search/index/date changes, or when reloadTrigger changes
+  // Load data on mount and when dependencies change
   useEffect(() => {
-    console.log("useEffect triggered - Loading data with params:", {
-      selectedIndex,
-      appliedSearchTerm,
-      timeRangeFrom: timeRange.from,
-      timeRangeTo: timeRange.to,
-      appliedAggregationsCount: appliedAggregations.length,
-      appliedFiltersCount: appliedFilters.length,
-      appliedFilters,
-      reloadTrigger,
-    });
-
-    // When reloadTrigger changes (e.g., Run button clicked), use the full loadData function
-    // Otherwise, use loadDataWithoutAggregations for initial/background loading
-    if (reloadTrigger > 0) {
-      console.log(
-        "reloadTrigger detected - using full loadData with aggregations and filters"
-      );
-      loadData();
-    } else {
-      // Create a version of loadData that doesn't include appliedAggregations in its dependencies
-      const loadDataWithoutAggregations = async () => {
-        console.log(
-          "loadDataWithoutAggregations - Starting data load with filters:",
-          appliedFilters
-        );
-        setIsLoading(true);
-
-        try {
-          // Get the appropriate data generator for the selected index pattern
-          const dataGenerator = getDataGenerator(selectedIndex);
-
-          // Prepare parameters for data generation (without aggregations)
-          const params: DataGeneratorParams = {
-            indexPattern: selectedIndex,
-            searchQuery: appliedSearchTerm,
-            from: timeRange.from,
-            to: timeRange.to,
-          };
-
-          // Add filters only when user clicks Run (applyFiltersToGrid is true)
-          console.log("loadDataWithoutAggregations - Checking filters:", {
-            appliedFiltersLength: appliedFilters.length,
-            appliedFilters: appliedFilters,
-            applyFiltersToGrid: applyFiltersToGrid,
-          });
-
-          if (appliedFilters.length > 0 && applyFiltersToGrid) {
-            params.filters = appliedFilters;
-            console.log(
-              "loadDataWithoutAggregations - Adding filters to params:",
-              appliedFilters
-            );
-          } else {
-            console.log("loadDataWithoutAggregations - No filters to add", {
-              filtersLength: appliedFilters.length,
-              shouldApply: applyFiltersToGrid,
-            });
-          }
-
-          // Generate data using the appropriate generator
-          const data = await dataGenerator.generateData(params);
-
-          // Format the data for display in the UI
-          const formattedData = dataGenerator.formatForDisplay(data);
-
-          // Set the formatted documents in state
-          setDocuments(formattedData);
-        } catch (error) {
-          console.error("Error loading data:", error);
-          // In case of error, set empty documents
-          setDocuments([]);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      // Only load data on initial mount and when search/index/date changes
-      loadDataWithoutAggregations();
+    // Ensure we have a valid timeRange before loading data
+    if (timeRange.from && timeRange.to) {
+      // Use the default ES|QL query instead of regular loadData()
+      const defaultQuery = convertUIToQuery();
+      handleSearchRefreshWithQuery(defaultQuery);
     }
-  }, [
-    selectedIndex,
-    appliedSearchTerm,
-    timeRange.from,
-    timeRange.to,
-    applyFiltersToGrid,
-    reloadTrigger,
-    loadData,
-  ]);
+  }, [timeRange.from, timeRange.to]); // Use specific properties instead of entire object to avoid infinite loop
 
   // Set initial values from URL store when component mounts
   useEffect(() => {
@@ -579,310 +204,493 @@ export const Discover: React.FC = () => {
     if (appliedSelectedIndex) {
       setSelectedIndex(appliedSelectedIndex);
     }
-  }, [appliedSearchTerm, appliedSelectedIndex]);
+  }, [appliedSearchTerm, appliedSelectedIndex, appliedDateRange]);
 
-  // Initialize editor query
+  // Initialize editor query on mount only
   useEffect(() => {
-    setEditorQuery(convertUIToQuery());
-  }, [
-    appliedSearchTerm,
-    appliedAggregations,
-    appliedFilters,
-    selectedFields,
-    selectedIndex,
-  ]);
+    // Only set initial query if editor is empty
+    if (!editorQuery) {
+      setEditorQuery(convertUIToQuery());
+    }
+  }, []); // Empty dependency array - only runs on mount
 
-  // Combined function for search and refresh
-  const handleSearchRefresh = () => {
-    // First, always apply any draft changes (including date range) to applied state
-    handleUpdateRefresh();
+  // Note: Keyboard shortcut removed since prompt is always visible inline
 
-    // Parse the query and update UI state
-    parseQueryToUI(editorQuery);
-    // Need to wait for state updates before continuing
-    setTimeout(() => {
-      handleRunQuery();
-    }, 100);
+  // Streaming animation for query generation - line by line
+  const streamQueryIntoEditor = async (query: string): Promise<void> => {
+    return new Promise((resolve) => {
+      const lines = query.split('\n');
+      let currentLineIndex = 0;
+      const baseDelay = 250; // Base delay between lines in ms
+      
+      const typeNextLine = () => {
+        if (currentLineIndex < lines.length) {
+          // Build query up to current line
+          const currentQuery = lines.slice(0, currentLineIndex + 1).join('\n');
+          setEditorQuery(currentQuery);
+          currentLineIndex++;
+          
+          // Variable delay for more natural feel
+          const delay = baseDelay + Math.random() * 120;
+          setTimeout(typeNextLine, delay);
+        } else {
+          resolve();
+        }
+      };
+      
+      // Clear editor and start typing
+      setEditorQuery("");
+      setTimeout(typeNextLine, 200); // Small initial delay
+    });
   };
 
-  // Separate function to handle running the query
-  const handleRunQuery = () => {
-    console.log(
-      "handleRunQuery - Current appliedAggregations:",
-      appliedAggregations
-    );
+  // Handle AI prompt submission
+  const handlePromptSubmit = async (
+    prompt: string,
+    autoExecute: boolean = false,
+    forceMode?: "natural" | "keyword",
+    dataSource?: string
+  ) => {
+    if (!prompt.trim()) return;
 
-    // Update both draft and applied values immediately
-    setDraftSearchTerm(searchQuery);
-    setDraftSelectedIndex(selectedIndex);
+    const modeToUse = forceMode || inputMode;
+    const dataSourceToUse = dataSource || selectedIndex;
+    
+    setIsAIProcessing(true);
 
-    // Directly update applied state to trigger immediate data loading
-    setAppliedSearchTerm(searchQuery);
-    setAppliedSelectedIndex(selectedIndex);
+    try {
+      // Simulate processing delay
+      await simulateAIProcessing(1500);
 
-    // Set the flag to apply aggregations to the grid based on whether aggregations exist
-    const shouldApplyAggs = appliedAggregations.length > 0;
-    console.log(
-      "handleRunQuery - Setting applyAggregationsToGrid to:",
-      shouldApplyAggs
-    );
-    setApplyAggregationsToGrid(shouldApplyAggs);
+      let queryMapping;
 
-    // Set the flag to apply filters to the grid based on whether filters exist
-    setApplyFiltersToGrid(appliedFilters.length > 0);
+      if (modeToUse === "keyword") {
+        // For keyword search mode, use KQL function
+        queryMapping = {
+          query: `FROM ${dataSourceToUse} | WHERE KQL("${prompt.trim()}")`,
+          description: `Keyword search for: ${prompt.trim()}`,
+        };
+      } else {
+        // For natural language mode, use the existing AI query mapping
+        const matchingMapping = findMatchingQuery(prompt);
+        queryMapping = matchingMapping || getFallbackQuery(prompt);
+      }
 
-    // Debug: Log the current filter state when Run is clicked
-    console.log("handleSearchRefresh - Current filter state:", {
-      appliedFilters,
-      applyFiltersToGrid: appliedFilters.length > 0,
-    });
+      // Prepend the prompt as a comment before the query
+      // Format depends on mode: KQL uses [KQL] [datasource] format
+      let queryWithComment: string;
+      if (modeToUse === "keyword") {
+        // For KQL: // [KQL] [datasource] search term
+        queryWithComment = `// [KQL] [${dataSourceToUse}] ${prompt.trim()}\n${queryMapping.query}`;
+      } else {
+        // For natural language: // prompt
+        queryWithComment = `// ${prompt.trim()}\n${queryMapping.query}`;
+      }
 
-    // Debug logging for aggregations
-    console.log("handleSearchRefresh - Aggregations:", {
-      appliedAggregations,
-      applyToGrid: appliedAggregations.length > 0,
-    });
+      // Stream the generated query into the editor with typing animation
+      await streamQueryIntoEditor(queryWithComment);
 
-    // Force data reload by incrementing reload trigger
-    console.log(
-      "handleSearchRefresh - Before setReloadTrigger, current value:",
-      reloadTrigger
-    );
-    setReloadTrigger((prev) => {
-      console.log(
-        "handleSearchRefresh - setReloadTrigger, prev:",
-        prev,
-        "new:",
-        prev + 1
-      );
-      return prev + 1;
-    });
+      // Track the generated code for edit detection
+      // Comment is always on line 1, code starts on line 2
+      const commentLine = 1;
+      const queryLines = queryMapping.query.split('\n');
+      const codeLines = queryLines.map((_, index) => index + 2); // Lines 2, 3, 4, etc.
+      
+      // Use setTimeout to ensure tracking happens after the editor has been updated
+      setTimeout(() => {
+        if (codeEditorRef.current && (codeEditorRef.current as any).trackGeneratedBlock) {
+          (codeEditorRef.current as any).trackGeneratedBlock(commentLine, codeLines);
+        }
+      }, 500); // Increased timeout to ensure streaming completes
 
-    // Note: loadData() is called by the useEffect when dependencies change
-  };
+      // Set success state to show check icon
+      setQueryGenerated(true);
 
-  // Handle data source selection
-  const handleDataSourceChange = useCallback(
-    async (newIndex: string) => {
-      if (newIndex !== selectedIndex) {
-        // Update local state
-        setSelectedIndex(newIndex);
-        // Reset selected fields when index pattern changes
-        setSelectedFields({});
-        // Keep existing filters - they may result in empty state if fields don't exist
+      // Keep the prompt value in the input (don't clear it)
 
-        // Reset documents to clear any previous data
-        setDocuments([]);
-        // Immediately update the draft and applied values in the URL store
-        setDraftSelectedIndex(newIndex);
-        // Apply the changes immediately
-        handleUpdateRefresh();
+      // Auto-execute for keyword mode (always) or when explicitly requested
+      if (modeToUse === "keyword" || autoExecute) {
+        // For keyword search, directly parse and execute the QSTR query
+        if (modeToUse === "keyword") {
+          // Parse the QSTR query to extract filters, limit, and aggregation
+          const { filters: esqlFilters, limit, aggregation } = parseSimpleFilters(
+            queryMapping.query
+          );
+          
+          // Default limit to 1000 if not specified
+          const effectiveLimit = limit !== null ? limit : 1000;
 
-        // Load data immediately
-        try {
-          setIsLoading(true);
-          // Get the appropriate data generator for the new index pattern
-          const dataGenerator = getDataGenerator(newIndex);
+          // Update last executed query to show "Refresh" instead of "Run"
+          setLastExecutedQuery(queryMapping.query);
 
-          // Prepare parameters for data generation
-          const params: DataGeneratorParams = {
-            indexPattern: newIndex,
-            searchQuery: appliedSearchTerm,
-            from: timeRange.from,
-            to: timeRange.to,
-          };
-
-          // Generate data using the appropriate generator
-          const data = await dataGenerator.generateData(params);
-
-          // Format the data for display in the UI
-          const formattedData = dataGenerator.formatForDisplay(data);
-
-          // Set the formatted documents in state
-          setDocuments(formattedData);
-        } catch (error) {
-          console.error("Error loading data:", error);
-          // In case of error, set empty documents
-          setDocuments([]);
-        } finally {
-          setIsLoading(false);
+          // Execute the query directly with filters, limit, and aggregation
+          loadDataWithFilters(esqlFilters, effectiveLimit, aggregation);
+        } else {
+          // For natural language mode, use the regular flow
+          handleSearchRefreshWithQuery(queryMapping.query);
         }
       }
-    },
-    [
-      selectedIndex,
-      appliedFilters.length,
-      appliedSearchTerm,
-      timeRange,
-      setDraftSelectedIndex,
-      handleUpdateRefresh,
-    ]
-  );
+    } catch (error) {
+      console.error("Error processing prompt:", error);
+    } finally {
+      setIsAIProcessing(false);
+      // Clear generating state after processing completes
+      setVisorHexGenerating(false);
+    }
+  };
+
+  // Helper function to parse time range from ES|QL query
+  const parseTimeRangeFromQuery = (query: string) => {
+    // Look for patterns like: @timestamp >= NOW() - 1h, NOW() - 24h, etc.
+    const timeRangeMatch = query.match(
+      /@timestamp\s*>=\s*NOW\(\)\s*-\s*(\d+)([hHdDwWmM])/
+    );
+
+    if (timeRangeMatch) {
+      const [, amount, unit] = timeRangeMatch;
+      const now = new Date();
+      let start: Date;
+
+      switch (unit.toLowerCase()) {
+        case "h":
+          start = new Date(now.getTime() - parseInt(amount) * 60 * 60 * 1000);
+          break;
+        case "d":
+          start = new Date(
+            now.getTime() - parseInt(amount) * 24 * 60 * 60 * 1000
+          );
+          break;
+        case "w":
+          start = new Date(
+            now.getTime() - parseInt(amount) * 7 * 24 * 60 * 60 * 1000
+          );
+          break;
+        case "m":
+          start = new Date(
+            now.getTime() - parseInt(amount) * 30 * 24 * 60 * 60 * 1000
+          );
+          break;
+        default:
+          return null;
+      }
+
+      return {
+        start: start.toISOString(),
+        end: now.toISOString(),
+      };
+    }
+
+    return null;
+  };
+
+  // Helper function to extract simple WHERE filters and LIMIT from ES|QL query
+  const parseSimpleFilters = (query: string) => {
+    const filters = [];
+    let foundSearchTerm = "";
+    let limitValue = null;
+    let aggregation = null;
+
+    // Extract LIMIT value
+    const limitRegex = /LIMIT\s+(\d+)/i;
+    const limitMatch = limitRegex.exec(query);
+    if (limitMatch) {
+      limitValue = parseInt(limitMatch[1]);
+    }
+
+    // Extract STATS aggregation
+    // Pattern: STATS result_name = COUNT(*) BY field_name OR STATS COUNT() BY field_name
+    const statsRegex = /STATS\s+(?:(\w+)\s*=\s*)?COUNT\s*\(\s*\*?\s*\)\s+BY\s+([\w\.]+)/i;
+    const statsMatch = statsRegex.exec(query);
+    if (statsMatch) {
+      const [, resultName, groupByField] = statsMatch;
+      aggregation = {
+        resultName: resultName || "count", // Default to "count" if no result name provided
+        operation: "count",
+        groupByField,
+      };
+    }
+
+    // Extract WHERE field == "value" patterns (handle multiline with \s which includes \n, case-insensitive)
+    const equalityRegex = /WHERE\s+([^\s]+)\s*==\s*"([^"]+)"/gi;
+    let match;
+    while ((match = equalityRegex.exec(query)) !== null) {
+      const [, field, value] = match;
+      filters.push({
+        field: field,
+        operator: "equals" as const,
+        values: [value],
+      });
+    }
+
+    // Extract WHERE field CONTAINS "value" patterns (handle multiline, case-insensitive)
+    const containsRegex = /(?:WHERE|AND|OR)\s+([^\s]+)\s+CONTAINS\s+"([^"]+)"/gi;
+    while ((match = containsRegex.exec(query)) !== null) {
+      const [, field, value] = match;
+      // Store search term for highlighting if it's a message field
+      if (field === "message") {
+        foundSearchTerm = value;
+      }
+      filters.push({
+        field: field,
+        operator: "contains" as const,
+        values: [value],
+      });
+    }
+
+    // Extract WHERE QSTR("""value""") patterns for simple text search
+    const qstrRegex = /WHERE\s+QSTR\("""([^"]+)"""\)/g;
+    while ((match = qstrRegex.exec(query)) !== null) {
+      const [, value] = match;
+      // Store the search term for highlighting
+      foundSearchTerm = value;
+      filters.push({
+        field: "message", // QSTR searches across all fields, but we'll use message as the primary search field
+        operator: "contains" as const,
+        values: [value],
+      });
+    }
+
+    // Extract WHERE KQL("value") patterns for KQL search (case-insensitive)
+    const kqlRegex = /WHERE\s+KQL\("([^"]+)"\)/gi;
+    while ((match = kqlRegex.exec(query)) !== null) {
+      const [, value] = match;
+      // Store the search term for highlighting
+      foundSearchTerm = value;
+      filters.push({
+        field: "*", // KQL searches across ALL fields
+        operator: "contains" as const,
+        values: [value],
+      });
+    }
+
+    // Also check for OR conditions on the same line (case-insensitive)
+    const orEqualityRegex = /OR\s+([^\s]+)\s*==\s*"([^"]+)"/gi;
+    while ((match = orEqualityRegex.exec(query)) !== null) {
+      const [, field, value] = match;
+      filters.push({
+        field: field,
+        operator: "equals" as const,
+        values: [value],
+      });
+    }
+
+    // Update highlight term
+    setCurrentHighlightTerm(foundSearchTerm);
+    return { filters, limit: limitValue, aggregation };
+  };
+
+  // Handle accepting the generated query
+  const handleAcceptQuery = () => {
+    setEditorQuery(generatedQuery);
+    setShowAcceptDialog(false);
+    setGeneratedQuery("");
+    setOriginalPrompt("");
+    setIsEditingPrompt(false);
+    setEditedPrompt("");
+
+    // Parse and apply time range from the ES|QL query
+    const timeRangeFromQuery = parseTimeRangeFromQuery(generatedQuery);
+    if (timeRangeFromQuery) {
+      setDraftDateRange(timeRangeFromQuery);
+    }
+
+    // Call refresh directly with the generated query to avoid state timing issues
+    handleSearchRefreshWithQuery(generatedQuery);
+  };
+
+  // Handle discarding the generated query
+  const handleDiscardQuery = () => {
+    setShowAcceptDialog(false);
+    setGeneratedQuery("");
+    setOriginalPrompt("");
+    setIsEditingPrompt(false);
+    setEditedPrompt("");
+  };
+
+  // Handle editing the prompt
+  const handleEditPrompt = () => {
+    setEditedPrompt(originalPrompt);
+    setIsEditingPrompt(true);
+  };
+
+  // Handle saving the edited prompt and regenerating
+  const handleSaveEditedPrompt = async () => {
+    if (!editedPrompt.trim()) return;
+
+    setIsEditingPrompt(false);
+    setIsAIProcessing(true);
+
+    try {
+      // Simulate AI processing delay
+      await simulateAIProcessing(1500);
+
+      // Find matching query or use fallback
+      const matchingMapping = findMatchingQuery(editedPrompt);
+      const queryMapping = matchingMapping || getFallbackQuery(editedPrompt);
+
+      // Update with new query and prompt
+      setGeneratedQuery(queryMapping.query);
+      setOriginalPrompt(editedPrompt);
+      setEditedPrompt("");
+    } catch (error) {
+      console.error("Error processing edited prompt:", error);
+    } finally {
+      setIsAIProcessing(false);
+    }
+  };
+
+  // Handle canceling the edit
+  const handleCancelEdit = () => {
+    setIsEditingPrompt(false);
+    setEditedPrompt("");
+  };
+
+  // Combined function for search and refresh (with optional query parameter)
+  const handleSearchRefreshWithQuery = (queryToUse?: string) => {
+    const queryString = queryToUse || editorQuery;
+    
+    // Update last executed query
+    setLastExecutedQuery(queryString);
+    handleUpdateRefresh();
+
+    // If we have an ES|QL query, parse it for filters
+    if (queryString.trim() && queryString.includes("FROM")) {
+      // Parse simple filters, limit, and aggregation from the ES|QL query
+      const { filters: esqlFilters, limit, aggregation } = parseSimpleFilters(queryString);
+      
+      // Default limit to 1000 if not specified
+      const effectiveLimit = limit !== null ? limit : 1000;
+
+      // Always use ES|QL filter path for ES|QL queries (even with no explicit filters)
+      // Store current search term and clear it so ES|QL filters take precedence
+      const originalSearchTerm = searchQuery;
+      setDraftSearchTerm(""); // Clear search term when using ES|QL
+      setAppliedSearchTerm("");
+
+      // Load data with the parsed filters, limit, and aggregation
+      loadDataWithFilters(esqlFilters, effectiveLimit, aggregation);
+      return;
+    }
+
+    // Fallback to regular search logic
+    setDraftSearchTerm(searchQuery);
+    setDraftSelectedIndex(selectedIndex);
+    setAppliedSearchTerm(searchQuery);
+    setAppliedSelectedIndex(selectedIndex);
+    loadData();
+  };
+
+  const handleSearchRefresh = (queryToExecute?: string) => {
+    const query = queryToExecute || editorQuery;
+    
+    // Simply execute whatever query is in the editor
+    // Code generation from comments should ONLY happen via Cmd+K
+    setLastExecutedQuery(query);
+    handleSearchRefreshWithQuery(query);
+  };
+
+  // Helper function to load data with specific filters and optional limit and aggregation
+  const loadDataWithFilters = async (filters: any[], limit?: number | null, aggregation?: any) => {
+    setIsLoading(true);
+    try {
+      const dataGenerator = getDataGenerator(selectedIndex);
+
+      // Calculate time range
+      const fromDate = dateMath.parse(appliedDateRange.start);
+      const toDate = dateMath.parse(appliedDateRange.end, { roundUp: true });
+      const timeRange =
+        fromDate && toDate
+          ? {
+              from: fromDate.toISOString(),
+              to: toDate.toISOString(),
+            }
+          : {};
+
+      const params = {
+        indexPattern: selectedIndex,
+        searchQuery: "", // No search query when using ES|QL filters
+        from: timeRange.from || undefined,
+        to: timeRange.to || undefined,
+        filters: filters, // Pass the parsed ES|QL filters
+      };
+
+      const docs = await dataGenerator.generateData(params);
+
+      let finalDocs = docs;
+
+      // Perform aggregation if specified
+      if (aggregation) {
+        const { resultName, operation, groupByField } = aggregation;
+        
+        // Group by field and count
+        const groups = new Map<string, number>();
+        docs.forEach((doc) => {
+          // Get the field value, handling nested fields
+          const fieldValue = doc[groupByField] || 
+                            (groupByField.includes('.') ? 
+                              groupByField.split('.').reduce((obj: any, key: string) => obj?.[key], doc) : 
+                              undefined);
+          
+          if (fieldValue !== undefined && fieldValue !== null) {
+            const key = String(fieldValue);
+            groups.set(key, (groups.get(key) || 0) + 1);
+          }
+        });
+
+        // Convert to array of aggregated documents
+        finalDocs = Array.from(groups.entries()).map(([fieldValue, count]) => ({
+          [groupByField]: fieldValue,
+          [resultName]: count,
+        }));
+
+        // Sort by count descending (since query has SORT)
+        finalDocs.sort((a, b) => b[resultName] - a[resultName]);
+
+        // Update selected fields to show only aggregation result fields
+        setSelectedFields({
+          [resultName]: true,
+          [groupByField]: true,
+        });
+      } else {
+        // No aggregation - reset to default fields for raw documents
+        setSelectedFields({ "@timestamp": true });
+        
+        if (limit !== null && limit !== undefined) {
+          // Apply LIMIT if specified (only when not aggregating)
+          finalDocs = docs.slice(0, limit);
+        }
+      }
+
+      setDocuments(finalDocs);
+    } catch (error) {
+      console.error("Error loading data with filters:", error);
+      setDocuments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Helper function to convert UI state to query string
   const convertUIToQuery = () => {
-    let query = `FROM ${selectedIndex}`;
-
-    // Add search term if present
-    if (searchQuery) {
-      query += ` | WHERE message CONTAINS "${searchQuery}"`;
-    }
-
-    // Add filters
-    appliedFilters.forEach((filter) => {
-      const operator =
-        filter.operator === "equals"
-          ? "=="
-          : filter.operator === "not_equals"
-            ? "!="
-            : filter.operator === "contains"
-              ? "CONTAINS"
-              : "==";
-
-      if (filter.values.length === 1) {
-        query += ` | WHERE ${filter.field} ${operator} "${filter.values[0]}"`;
-      } else if (filter.values.length > 1) {
-        query += ` | WHERE ${filter.field} IN [${filter.values
-          .map((v) => `"${v}"`)
-          .join(", ")}]`;
-      }
-    });
-
-    // Add aggregations
-    appliedAggregations.forEach((agg) => {
-      if (agg.groupBy) {
-        query += ` | STATS ${agg.operation.toUpperCase()}(${agg.field}) BY ${
-          agg.groupBy
-        }`;
-      } else {
-        query += ` | STATS ${agg.operation.toUpperCase()}(${agg.field})`;
-      }
-    });
-
-    // Add field selection (limit to selected fields)
-    const selectedFieldsList = Object.keys(selectedFields).filter(
-      (field) => selectedFields[field]
-    );
-    if (
-      selectedFieldsList.length > 0 &&
-      !selectedFieldsList.includes("summary")
-    ) {
-      query += ` | KEEP ${selectedFieldsList.join(", ")}`;
-    }
-
-    return query;
-  };
-
-  // Helper function to parse query string and update UI state
-  const parseQueryToUI = (query: string) => {
-    // This is a simplified parser for the demo
-    // In a real implementation, you'd want a proper parser
-    const lines = query.split("|").map((line) => line.trim());
-
-    // Reset current state
-    setSearchQuery("");
-    setAppliedFilters([]);
-    setAppliedAggregations([]);
-
-    lines.forEach((line) => {
-      if (line.startsWith("FROM ")) {
-        const indexPattern = line.replace("FROM ", "").trim();
-        setSelectedIndex(indexPattern);
-      } else if (line.includes("WHERE") && line.includes("CONTAINS")) {
-        const match = line.match(/WHERE message CONTAINS "([^"]+)"/);
-        if (match) {
-          setSearchQuery(match[1]);
-        }
-      } else if (
-        line.includes("WHERE") &&
-        (line.includes("==") || line.includes("!="))
-      ) {
-        const match = line.match(/WHERE (\w+) (==|!=) "([^"]+)"/);
-        if (match) {
-          const [, field, operator, value] = match;
-          const filterOperator = operator === "==" ? "equals" : "not_equals";
-          setAppliedFilters((prev) => [
-            ...prev,
-            { field, operator: filterOperator, values: [value] },
-          ]);
-        }
-      } else if (line.includes("STATS")) {
-        const match = line.match(/STATS (\w+)\((\w+)\)(?:\s+BY\s+(\w+))?/);
-        if (match) {
-          const [, operation, field, groupBy] = match;
-          setAppliedAggregations((prev) => [
-            ...prev,
-            {
-              operation: operation.toLowerCase(),
-              field,
-              groupBy: groupBy || undefined,
-            },
-          ]);
-        }
-      }
-    });
-  };
-
-  // Helper function to highlight search terms in text
-  const highlightSearchTerm = (text: string, searchTerm: string) => {
-    if (!searchTerm || !text) return text;
-
-    const regex = new RegExp(
-      `(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-      "gi"
-    );
-    const parts = text.split(regex);
-
-    return parts.map((part, index) => {
-      if (regex.test(part)) {
-        return (
-          <span
-            key={index}
-            style={{
-              backgroundColor: euiTheme.colors.backgroundBaseWarning,
-              color: euiTheme.colors.textParagraph,
-              padding: "1px 2px",
-              borderRadius: "2px",
-            }}
-          >
-            {part}
-          </span>
-        );
-      }
-      return part;
-    });
+    return `FROM ${selectedIndex}`;
   };
 
   // Get available fields based on selected index and documents
   const availableFields = useMemo(() => {
     if (!documents.length) return [];
-
-    // If aggregations should be applied to the grid, show aggregation fields
-    if (applyAggregationsToGrid) {
-      // Get fields with their aggregation operation names and group by fields
-      const fields: string[] = [];
-
-      // Access current appliedAggregations without dependency
-      appliedAggregations.forEach((agg) => {
-        // Add group by field if it exists
-        if (agg.groupBy && !fields.includes(agg.groupBy)) {
-          fields.push(agg.groupBy);
-        }
-        // Add aggregated field
-        fields.push(`${agg.operation} of ${agg.field}`);
-      });
-
-      return fields;
-    }
-
-    // Get the appropriate data generator for the selected index pattern
     const dataGenerator = getDataGenerator(selectedIndex);
-
-    // Use the data generator to get available fields
     return dataGenerator.getAvailableFields(documents);
-  }, [documents, selectedIndex, applyAggregationsToGrid]);
+  }, [documents, selectedIndex]);
 
-  // Calculate filtered field counts for accordion badges
+  // Toggle field selection
+  const toggleFieldSelection = useCallback((fieldName: string) => {
+    setSelectedFields((prevFields) => ({
+      ...prevFields,
+      [fieldName]: !prevFields[fieldName],
+    }));
+  }, []);
+
+  // Calculate filtered field counts
   const filteredSelectedFields = useMemo(() => {
     return Object.entries(selectedFields)
       .filter(([_, selected]) => selected)
@@ -900,326 +708,45 @@ export const Discover: React.FC = () => {
       );
   }, [availableFields, selectedFields, fieldSearchTerm]);
 
-  // Get numeric fields for aggregation
-  const numericFields = useMemo(() => {
-    if (!documents.length) return [];
 
-    // Get the appropriate data generator for the selected index pattern
-    const dataGenerator = getDataGenerator(selectedIndex);
-
-    // Get all available fields
-    const allFields = dataGenerator.getAvailableFields(documents);
-
-    // Filter for numeric fields using the field types from the API
-    if (fieldTypes && Object.keys(fieldTypes).length > 0) {
-      return allFields.filter((field) => {
-        const fieldType = fieldTypes[field];
-        return [
-          "long",
-          "integer",
-          "short",
-          "byte",
-          "double",
-          "float",
-          "half_float",
-          "scaled_float",
-        ].includes(fieldType);
-      });
-    }
-
-    // Fallback: return commonly known numeric fields
-    return allFields.filter((field) =>
-      [
-        "bytes",
-        "memory",
-        "machine.ram",
-        "latency_ms",
-        "status_code",
-        "cpu",
-        "duration",
-        "count",
-      ].includes(field)
-    );
-  }, [documents, selectedIndex, fieldTypes]);
-
-  // Get non-numeric fields for group by functionality
-  const nonNumericFields = useMemo(() => {
-    if (!documents.length) return [];
-
-    // Get the appropriate data generator for the selected index pattern
-    const dataGenerator = getDataGenerator(selectedIndex);
-
-    // Get all available fields
-    const allFields = dataGenerator.getAvailableFields(documents);
-
-    // Filter for non-numeric fields using the field types from the API
-    if (fieldTypes && Object.keys(fieldTypes).length > 0) {
-      return allFields.filter((field) => {
-        const fieldType = fieldTypes[field];
-        const isNumeric = [
-          "long",
-          "integer",
-          "short",
-          "byte",
-          "double",
-          "float",
-          "half_float",
-          "scaled_float",
-        ].includes(fieldType);
-        return !isNumeric && field !== "_id";
-      });
-    }
-
-    // Fallback: return commonly known non-numeric fields
-    return allFields.filter(
-      (field) =>
-        ![
-          "bytes",
-          "memory",
-          "machine.ram",
-          "latency_ms",
-          "status_code",
-          "cpu",
-          "duration",
-          "count",
-          "_id",
-        ].includes(field)
-    );
-  }, [documents, selectedIndex, fieldTypes]);
-
-  // Toggle field selection
-  const toggleFieldSelection = useCallback((fieldName: string) => {
-    setSelectedFields((prevFields) => ({
-      ...prevFields,
-      [fieldName]: !prevFields[fieldName],
-    }));
-  }, []);
-
-  // Update selected fields when aggregations are applied to or removed from the grid
-  useEffect(() => {
-    if (applyAggregationsToGrid) {
-      // When aggregations are applied to the grid, only select the aggregation fields
-      const newSelectedFields: Record<string, boolean> = {};
-
-      // Mark all fields as unselected first
-      availableFields.forEach((field) => {
-        newSelectedFields[field] = false;
-      });
-
-      // Then select the aggregation fields and group by fields
-      // Access current appliedAggregations without dependency
-      appliedAggregations.forEach((agg) => {
-        // Select group by field if it exists
-        if (agg.groupBy) {
-          newSelectedFields[agg.groupBy] = true;
-        }
-        // Select aggregated field with proper name
-        const fieldName = `${agg.operation} of ${agg.field}`;
-        newSelectedFields[fieldName] = true;
-      });
-
-      setSelectedFields(newSelectedFields);
-    } else {
-      // When aggregations are not applied to grid, preserve existing selections but ensure new fields are available
-      setSelectedFields((prevSelectedFields) => {
-        const newSelectedFields: Record<string, boolean> = {};
-
-        // For each available field, preserve existing selection or default to false (except timestamp)
-        availableFields.forEach((field) => {
-          // If field was previously selected, keep it selected
-          // If it's a new field, only select @timestamp by default
-          newSelectedFields[field] =
-            prevSelectedFields[field] !== undefined
-              ? prevSelectedFields[field]
-              : field === "@timestamp";
-        });
-
-        return newSelectedFields;
-      });
-    }
-
-    // Update histogram field based on aggregations
-    if (applyAggregationsToGrid && appliedAggregations.length > 0) {
-      // Use the first aggregation's field name for the histogram
-      const firstAggregation = appliedAggregations[0];
-      const fieldName = `${firstAggregation.operation} of ${firstAggregation.field}`;
-      setHistogramField(fieldName);
-    } else {
-      // Reset to default timestamp field when no aggregations
-      setHistogramField("@timestamp");
-    }
-  }, [availableFields, applyAggregationsToGrid, appliedAggregations]);
-
-  // Fetch field types from Field Capabilities API
-  useEffect(() => {
-    const fetchFieldTypes = async () => {
-      const currentIndex = selectedIndex || appliedSelectedIndex;
-
-      if (!currentIndex) {
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `/api/fields/${encodeURIComponent(currentIndex)}`
-        );
-
-        if (response.ok) {
-          const apiResponse = await response.json();
-
-          // The API returns { fields: [...], breakdown: {...}, success: true }
-          const fieldInfo = apiResponse.fields;
-
-          if (Array.isArray(fieldInfo) && fieldInfo.length > 0) {
-            // Convert array of field info to a type mapping
-            const typeMapping: Record<string, string> = {};
-            fieldInfo.forEach((field: any) => {
-              typeMapping[field.name] = field.type;
-            });
-
-            setFieldTypes(typeMapping);
-          } else {
-            // Fallback for generated data (like logs-*) - use data generator field types
-            const dataGenerator = getDataGenerator(currentIndex);
-            if (dataGenerator && "getFieldTypes" in dataGenerator) {
-              const generatorFieldTypes = (
-                dataGenerator as any
-              ).getFieldTypes();
-              const convertedTypeMapping =
-                convertDataGeneratorTypes(generatorFieldTypes);
-              setFieldTypes(convertedTypeMapping);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching field types:", error);
-      }
-    };
-
-    fetchFieldTypes();
-  }, [appliedSelectedIndex, selectedIndex]);
-
-  // Render function for the field list panel
-  const renderFieldList = () => (
-    <>
-      <EuiTitle size="xs">
-        <h3>Fields</h3>
-      </EuiTitle>
-      <EuiSpacer size="s" />
-      <EuiFieldSearch
-        placeholder="Filter fields..."
-        compressed
-        fullWidth
-        value={fieldSearchTerm}
-        onChange={(e) => setFieldSearchTerm(e.target.value)}
-      />
-      <EuiSpacer size="m" />
-      <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 300px)" }}>
-        {availableFields.map((fieldName) => (
-          <div key={fieldName} style={{ marginBottom: "8px" }}>
-            <EuiCheckbox
-              id={`field-${fieldName}`}
-              label={
-                fieldName === "_id"
-                  ? "Document ID"
-                  : fieldName
-                    .replace(/_/g, " ")
-                    .replace(/\b\w/g, (c) => c.toUpperCase())
-              }
-              checked={!!selectedFields[fieldName]}
-              onChange={() => toggleFieldSelection(fieldName)}
-            />
-          </div>
-        ))}
-      </div>
-    </>
-  );
-
-  // For pagination
-  const onChangeItemsPerPage = useCallback(
-    (pageSize: number) => setPagination((p) => ({ ...p, pageSize })),
-    [setPagination]
-  );
-
-  const onChangePage = useCallback(
-    (pageIndex: number) => setPagination((p) => ({ ...p, pageIndex })),
-    [setPagination]
-  );
+  // Calculate dynamic editor height based on number of lines
+  const editorHeight = useMemo(() => {
+    const lineCount = editorQuery.split('\n').length;
+    const lineHeight = 20; // pixels per line
+    const padding = 20; // extra padding
+    const calculatedHeight = Math.max(80, Math.min(300, lineCount * lineHeight + padding));
+    return `${calculatedHeight}px`;
+  }, [editorQuery]);
 
   return (
-    <div>
-      {/* Page header with actions */}
-      <EuiFlexGroup
-        gutterSize="s"
-        alignItems="center"
-        justifyContent="flexEnd"
-        style={{ padding: "8px" }}
-      >
-        <EuiFlexItem grow={false}>
-          <EuiButtonIcon iconType="inspect" aria-label="Inspect" color="text" />
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButtonIcon iconType="share" aria-label="Share" color="text" />
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButton fill size="s" iconType="save">
-            Save
-          </EuiButton>
-        </EuiFlexItem>
-      </EuiFlexGroup>
+    <div style={{ display: "flex", height: "100vh", width: "100%" }}>
+      <NewNav activeItem="discover" />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+        <KibanaHeader
+          colorMode={colorMode}
+          onToggleColorMode={toggleColorMode}
+          onAssistantClick={handleAssistantClick}
+          isHomepage={false}
+          display="classic"
+        />
+        <div style={{ flex: 1, position: "relative", overflow: "hidden", paddingTop: 0, paddingRight: euiTheme.size.s, paddingBottom: euiTheme.size.s, paddingLeft: 0 }}>
+          <AppContainer>
+          {/* Search bar */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "auto 1fr auto",
+              gridTemplateRows: "auto auto",
+              gap: "8px",
+              padding: "8px 8px 0 8px",
+              width: "100%",
+              alignItems: "start",
+            }}
+          >
+        <div style={{ gridColumn: "1", gridRow: "1" }} />
 
-      <EuiHorizontalRule margin="none" />
-      <div
-        className="us2"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "auto 1fr auto",
-          gridTemplateRows: "auto auto",
-          gap: "8px",
-          padding: "8px 8px 0 8px",
-          width: "100%",
-          alignItems: "start",
-          borderBottom: `1px solid ${euiTheme.colors.borderBaseSubdued}`,
-        }}
-      >
+
         <div
-          className="leftSide"
-          style={{
-            gridColumn: "1",
-            gridRow: "1",
-          }}
-        >
-          <EuiFlexGroup gutterSize="s">
-            <EuiFlexItem>
-              <EuiFlexGroup gutterSize="s">
-                <EuiFlexItem grow={false}>
-                  <EuiButton
-                    size="s"
-                    color="text"
-                    onClick={() => {
-                      // TODO: Open ES|QL help documentation
-                      console.log("ES|QL Help clicked");
-                    }}
-                  >
-                    ES|QL Help
-                  </EuiButton>
-                </EuiFlexItem>
-              </EuiFlexGroup>
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        </div>
-        <div
-          className="middle"
-          style={{
-            minWidth: 0,
-            gridColumn: "2",
-            gridRow: "1",
-          }}
-        >
-          {/* Empty middle section - search and filters removed */}
-        </div>
-        <div
-          className="rightSide"
           style={{
             gridColumn: "3",
             gridRow: "1",
@@ -1243,16 +770,8 @@ export const Discover: React.FC = () => {
                 commonlyUsedRanges={[
                   { start: "now/d", end: "now/d", label: "Today" },
                   { start: "now/w", end: "now/w", label: "This week" },
-                  {
-                    start: "now-15m",
-                    end: "now",
-                    label: "Last 15 minutes",
-                  },
-                  {
-                    start: "now-30m",
-                    end: "now",
-                    label: "Last 30 minutes",
-                  },
+                  { start: "now-15m", end: "now", label: "Last 15 minutes" },
+                  { start: "now-30m", end: "now", label: "Last 30 minutes" },
                   { start: "now-1h", end: "now", label: "Last 1 hour" },
                   { start: "now-24h", end: "now", label: "Last 24 hours" },
                   { start: "now-7d", end: "now", label: "Last 7 days" },
@@ -1263,201 +782,226 @@ export const Discover: React.FC = () => {
             <EuiFlexItem grow={false}>
               <EuiButton
                 size="s"
-                iconType={
-                  searchQuery ||
-                  hasChanges ||
-                  (appliedAggregations.length > 0 &&
-                    !applyAggregationsToGrid) ||
-                  (appliedAggregations.length === 0 &&
-                    applyAggregationsToGrid) ||
-                  (appliedFilters.length > 0 && !applyFiltersToGrid) ||
-                  (appliedFilters.length === 0 && applyFiltersToGrid)
-                    ? "playFilled"
-                    : "refresh"
-                }
-                color={
-                  searchQuery ||
-                  hasChanges ||
-                  (appliedAggregations.length > 0 &&
-                    !applyAggregationsToGrid) ||
-                  (appliedAggregations.length === 0 &&
-                    applyAggregationsToGrid) ||
-                  (appliedFilters.length > 0 && !applyFiltersToGrid) ||
-                  (appliedFilters.length === 0 && applyFiltersToGrid)
-                    ? "success"
-                    : "primary"
-                }
-                onClick={handleSearchRefresh}
+                color="primary"
+                onClick={() => handleSearchRefresh()}
                 isLoading={isLoading}
-                fill={false}
-                // minWidth="auto"
+                fill={true}
               >
-                {searchQuery ||
-                hasChanges ||
-                (appliedAggregations.length > 0 && !applyAggregationsToGrid) ||
-                (appliedAggregations.length === 0 && applyAggregationsToGrid) ||
-                (appliedFilters.length > 0 && !applyFiltersToGrid) ||
-                (appliedFilters.length === 0 && applyFiltersToGrid)
-                  ? "Run"
-                  : "Refresh"}
+                Search
               </EuiButton>
             </EuiFlexItem>
           </EuiFlexGroup>
         </div>
-
-      </div>
-      <div
-        style={{
-          gridColumn: "1 / -1", // Span all three columns
-          gridRow: "2",
-          padding: "8px 0 0 0",
-          backgroundColor: euiTheme.colors.backgroundBasePlain,
-        }}
-      >
-        <CodeEditor
-          value={editorQuery}
-          onChange={setEditorQuery}
-          placeholder='FROM logs-* | WHERE QSTR("*timeout*")'
-          height="80px"
-          showFooter={true}
-        />
       </div>
 
-      <EuiPage paddingSize="none" style={{ flex: 1 }}>
-        <EuiPageBody>
-          {/* Histogram moved to inside the right panel */}
+          {/* Main Content with Resizable Layout */}
+          <div style={{ 
+            flex: "1 1 auto",
+            minHeight: "600px",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+        {/* Code Editor Panel */}
+        <div style={{ 
+          flex: "0 0 auto",
+          minHeight: "80px",
+        }}>
+          <div
+            style={{
+              minHeight: editorHeight,
+              padding: "0",
+              margin: "0",
+            }}
+          >
+            <CodeEditor
+              value={editorQuery}
+              onChange={setEditorQuery}
+              height="auto"
+              showFooter={true}
+              onSubmit={handleSearchRefresh}
+              editMarkerStyle="gutter"
+              editorRef={codeEditorRef}
+              visorDisplay="singleLine"
+              showEmptyLineHint={false}
+              enableVisor={true}
+              onVisorSubmit={(prompt: string, language: string, dataSource: string) => {
+                // Update selected index if different from current
+                if (dataSource !== selectedIndex) {
+                  setSelectedIndex(dataSource);
+                }
+                
+                // Set generating state only for Natural language
+                if (language === "Natural language") {
+                  setVisorHexGenerating(true);
+                }
+                
+                // Handle based on language mode
+                // Note: autoExecute is set to false - user must manually click Search
+                if (language === "Natural language") {
+                  // Use AI to generate query
+                  handlePromptSubmit(prompt, false, "natural", dataSource);
+                } else if (language === "KQL") {
+                  // Generate KQL query
+                  handlePromptSubmit(prompt, false, "keyword", dataSource);
+                } else if (language === "PromQL") {
+                  // For now, treat PromQL like natural language
+                  handlePromptSubmit(prompt, false, "natural", dataSource);
+                }
+              }}
+              visorCurrentDataSource={currentDataSource}
+              visorIsGenerating={visorHexGenerating}
+            />
+          </div>
+        </div>
 
-          {/* Main content area - always show */}
-          {!documents.length && !isLoading ? (
-            <EuiCallOut
-              title="No data available"
-              color="primary"
-              iconType="search"
-            >
-              <p>Click the Update button to find documents.</p>
-            </EuiCallOut>
-          ) : (
-            <>
-              <EuiResizableContainer
-                style={{ height: "calc(100vh - 160px)", minHeight: "600px" }}
-              >
-                {(EuiResizablePanel, EuiResizableButton) => (
-                  <>
-                    {/* Left sidebar with available fields */}
-                    <EuiResizablePanel
-                      initialSize={20}
-                      minSize="200px"
-                      paddingSize="s"
+        {/* Data Content - Takes remaining space */}
+        <div style={{ flex: "1 1 auto", minHeight: 0 }}>
+          <EuiPage paddingSize="none" style={{ height: "100%" }}>
+            <EuiPageBody paddingSize="none" style={{ height: "100%" }}>
+                  {!documents.length && !isLoading ? (
+                    <EuiCallOut
+                      title="No data available"
+                      color="primary"
+                      iconType="search"
                     >
-                      <FieldList
-                        availableFields={availableFields}
-                        selectedFields={selectedFields}
-                        fieldTypes={fieldTypes}
-                        onFieldToggle={toggleFieldSelection}
-                        getFieldTypeIcon={getFieldTypeIcon}
-                        filteredAvailableFieldsCount={
-                          filteredAvailableFields.length
-                        }
-                        filteredSelectedFieldsCount={
-                          filteredSelectedFields.length
-                        }
-                      />
-                    </EuiResizablePanel>
+                      <p>Click the Update button to find documents.</p>
+                    </EuiCallOut>
+                  ) : (
+                    <EuiResizableContainer style={{ height: "100%" }}>
+                      {(EuiResizablePanelInner, EuiResizableButtonInner) => (
+                        <>
+                          {/* Left sidebar with available fields */}
+                          <EuiResizablePanelInner
+                            initialSize={20}
+                            minSize="200px"
+                            paddingSize="s"
+                            style={{ paddingBottom: 0 }}
+                          >
+                            <FieldList
+                              availableFields={availableFields}
+                              selectedFields={selectedFields}
+                              fieldTypes={{}}
+                              onFieldToggle={toggleFieldSelection}
+                              getFieldTypeIcon={() => "tokenString"}
+                              filteredAvailableFieldsCount={
+                                filteredAvailableFields.length
+                              }
+                              filteredSelectedFieldsCount={
+                                filteredSelectedFields.length
+                              }
+                            />
+                          </EuiResizablePanelInner>
 
-                    <EuiResizableButton indicator="border" />
+                          <EuiResizableButtonInner indicator="border" />
 
-                    {/* Main content area with histogram and data grid OR code editor */}
-                    <EuiResizablePanel initialSize={80} paddingSize="none">
-                      <div
-                        style={{
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                        }}
-                      >
-                        {/* Editor Mode - Show histogram above data grid */}
-                        <EuiResizableContainer
-                          style={{ height: "100%" }}
-                          direction="vertical"
-                        >
-                          {(
-                            EuiResizablePanelInner,
-                            EuiResizableButtonInner
-                          ) => (
-                            <>
-                              {/* Histogram chart - top panel */}
-                              <EuiResizablePanelInner
-                                initialSize={30}
-                                minSize="150px"
-                                paddingSize="none"
+                          {/* Main content area with histogram and data grid */}
+                          <EuiResizablePanelInner
+                            initialSize={80}
+                            paddingSize="none"
+                          >
+                            <div
+                              style={{
+                                height: "100%",
+                                display: "flex",
+                                flexDirection: "column",
+                              }}
+                            >
+                              <EuiResizableContainer
+                                style={{ height: "100%" }}
+                                direction="vertical"
                               >
-                                <EuiPanel
-                                  paddingSize="none"
-                                  hasShadow={false}
-                                  hasBorder={false}
-                                  style={{ height: "100%" }}
-                                >
-                                  {isLoading ? (
-                                    <div
-                                      style={{
-                                        height: "100%",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                      }}
+                                {(
+                                  EuiResizablePanelDeep,
+                                  EuiResizableButtonDeep
+                                ) => (
+                                  <>
+                                    {/* Histogram chart - top panel */}
+                                    <EuiResizablePanelDeep
+                                      initialSize={30}
+                                      minSize="150px"
+                                      paddingSize="none"
                                     >
-                                      <EuiLoadingSpinner size="xl" />
-                                    </div>
-                                  ) : (
-                                    <>
-                                      <DocumentHistogram
-                                        logs={documents}
-                                        field={histogramField}
-                                        colorMode={colorMode}
-                                        dateRange={appliedDateRange}
+                                      <EuiPanel
+                                        paddingSize="none"
+                                        hasShadow={false}
+                                        hasBorder={false}
+                                        style={{ height: "100%" }}
+                                      >
+                                        {isLoading ? (
+                                          <div
+                                            style={{
+                                              height: "100%",
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "center",
+                                            }}
+                                          >
+                                            <EuiLoadingSpinner size="xl" />
+                                          </div>
+                                        ) : (
+                                          <DocumentHistogram
+                                            logs={documents}
+                                            field={histogramField}
+                                            colorMode={colorMode}
+                                            dateRange={appliedDateRange}
+                                          />
+                                        )}
+                                      </EuiPanel>
+                                    </EuiResizablePanelDeep>
+
+                                    <EuiResizableButtonDeep indicator="border" />
+
+                                    {/* Data grid - bottom panel */}
+                                    <EuiResizablePanelDeep
+                                      initialSize={70}
+                                      paddingSize="none"
+                                    >
+                                      <DocumentDataGrid
+                                        documents={documents}
+                                        selectedFields={selectedFields}
+                                        searchTerm={
+                                          currentHighlightTerm ||
+                                          appliedSearchTerm
+                                        }
+                                        dateRange={
+                                          timeRange.from && timeRange.to
+                                            ? timeRange
+                                            : undefined
+                                        }
+                                        appliedAggregations={[]}
+                                        applyAggregationsToGrid={false}
+                                        isCodeEditorMode={true}
+                                        isLoading={isLoading}
+                                        height="100%"
                                       />
-                                    </>
-                                  )}
-                                </EuiPanel>
-                              </EuiResizablePanelInner>
+                                    </EuiResizablePanelDeep>
+                                  </>
+                                )}
+                              </EuiResizableContainer>
+                            </div>
+                          </EuiResizablePanelInner>
+                        </>
+                      )}
+                    </EuiResizableContainer>
+                  )}
+                </EuiPageBody>
+              </EuiPage>
+            </div>
+          </div>
+        </AppContainer>
+        </div>
+      </div>
 
-                              <EuiResizableButtonInner indicator="border" />
-
-                              {/* Data grid - bottom panel */}
-                              <EuiResizablePanelInner
-                                initialSize={70}
-                                paddingSize="none"
-                              >
-                                <DocumentDataGrid
-                                  documents={documents}
-                                  selectedFields={selectedFields}
-                                  searchTerm={appliedSearchTerm}
-                                  dateRange={
-                                    timeRange.from && timeRange.to
-                                      ? timeRange
-                                      : undefined
-                                  }
-                                  appliedAggregations={appliedAggregations}
-                                  applyAggregationsToGrid={
-                                    applyAggregationsToGrid
-                                  }
-                                  isCodeEditorMode={true}
-                                  isLoading={isLoading}
-                                  height="100%"
-                                />
-                              </EuiResizablePanelInner>
-                            </>
-                          )}
-                        </EuiResizableContainer>
-                      </div>
-                    </EuiResizablePanel>
-                  </>
-                )}
-              </EuiResizableContainer>
-            </>
-          )}
-        </EuiPageBody>
-      </EuiPage>
+      {/* Assistant Flyout */}
+      <AssistantFlyout
+        isOpen={isAssistantOpen}
+        onClose={() => {
+          setIsAssistantOpen(false);
+          setAssistantInitialMessage("");
+        }}
+        initialMessage={assistantInitialMessage}
+        autoSubmit={true}
+      />
     </div>
   );
 };

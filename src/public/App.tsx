@@ -1,6 +1,6 @@
 import { EuiProvider } from "@elastic/eui";
 import React, { useState } from "react";
-import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   CommentingSystem,
   DesignerToolbar,
@@ -15,6 +15,12 @@ import { useAppStore } from "./store/useAppStore";
 import { useVersionStore } from "./store/useVersionStore";
 import { VersionedComponentLoader } from "./utils/componentLoader";
 import { TemplateLoader } from "./utils/templateLoader";
+
+// Wrapper component to extract templateName from URL params
+const TemplateLoaderWithParams: React.FC = () => {
+  const { templateName } = useParams<{ templateName: string }>();
+  return <TemplateLoader templateName={templateName || "discover"} />;
+};
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -55,9 +61,9 @@ const App: React.FC = () => {
       <div
         style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
-        {/* Only show KibanaHeader for non-discover-ux and non-simple-esql pages */}
+        {/* Only show KibanaHeader for non-discover-ux and non-discover pages */}
         {!location.pathname.startsWith("/discover-ux") && 
-         !location.pathname.startsWith("/simple-esql") && (
+         !location.pathname.startsWith("/discover") && (
           <KibanaHeader
             colorMode={colorMode}
             onToggleColorMode={toggleColorMode}
@@ -70,10 +76,16 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Homepage />} />
             
+            {/* Direct discover route */}
+            <Route
+              path="/discover"
+              element={<TemplateLoader templateName="discover" />}
+            />
+            
             {/* Template routes */}
             <Route
               path="/template/:templateName"
-              element={<TemplateLoader templateName="discover" />}
+              element={<TemplateLoaderWithParams />}
             />
             
             {/* Dynamic project route - catches all project paths */}

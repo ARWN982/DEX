@@ -25,7 +25,10 @@ interface VersionsData {
 }
 
 // Helper function to scan filesystem for actual version folders for a specific page (local dev only)
-async function getVersionsFromFilesystem(pageName: string = 'simple-esql'): Promise<string[]> {
+async function getVersionsFromFilesystem(pageName: string): Promise<string[]> {
+  if (!pageName) {
+    return [];
+  }
   try {
     console.log(`Scanning filesystem for versions of page: ${pageName}`);
     
@@ -55,7 +58,7 @@ async function getVersionsFromFilesystem(pageName: string = 'simple-esql'): Prom
 // GET /api/versions - Get all versions by scanning filesystem
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const pageName = req.query.page as string || 'simple-esql';
+    const pageName = req.query.page as string || '';
     const versionIds = await getVersionsFromFilesystem(pageName);
 
     // Create version objects from discovered folders
@@ -219,7 +222,7 @@ router.post('/active', async (req: Request, res: Response) => {
 
 // Helper function to create version-specific files
 async function createVersionFiles(versionId: string, baseVersionId?: string | null, pageName?: string) {
-  const targetPage = pageName || 'simple-esql';
+  const targetPage = pageName || '';
   
   // Try dist/public/pages first (production), fall back to src/public/pages (development)
   let pagesDir = path.join(__dirname, '../../public/pages');
@@ -338,7 +341,7 @@ async function createVersionComponentFiles(versionId: string, baseVersionId?: st
     pagesDir = path.join(__dirname, '../../../src/public/pages');
   }
   
-  const targetPage = pageName || 'simple-esql';
+  const targetPage = pageName || '';
   const pageNames = [targetPage]; // Only create version for the specific page
   
   try {
