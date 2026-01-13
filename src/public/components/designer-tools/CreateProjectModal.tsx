@@ -1,5 +1,5 @@
 import { X } from "phosphor-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { getToolbarColors } from "../../styles/designToolsColors";
 
@@ -7,20 +7,36 @@ interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  templateName?: string; // Optional template name to create project from
+  defaultProjectName?: string; // Default project name (e.g., template name)
 }
 
 export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
+  templateName,
+  defaultProjectName,
 }) => {
   const { colorMode } = useAppStore();
   const colors = getToolbarColors(colorMode);
 
-  const [projectName, setProjectName] = useState("");
+  const [projectName, setProjectName] = useState(defaultProjectName || "");
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update project name when defaultProjectName changes or modal opens
+  useEffect(() => {
+    if (isOpen && defaultProjectName) {
+      setProjectName(defaultProjectName);
+    } else if (!isOpen) {
+      // Reset when modal closes
+      setProjectName("");
+      setDescription("");
+      setError(null);
+    }
+  }, [defaultProjectName, isOpen]);
 
   const handleCreate = async () => {
     if (!projectName.trim()) {
@@ -39,6 +55,21 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setError(null);
 
     try {
+      // Check if project name already exists
+      const checkResponse = await fetch(`/api/projects`);
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        const normalizedName = projectName.trim().toLowerCase();
+        const existingProject = checkData.projects?.find(
+          (p: any) => p.name === normalizedName
+        );
+        if (existingProject) {
+          setError(`A project with the name "${normalizedName}" already exists`);
+          setIsCreating(false);
+          return;
+        }
+      }
+
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: {
@@ -47,6 +78,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         body: JSON.stringify({
           name: projectName.trim().toLowerCase(),
           description: description.trim() || undefined,
+          templateName: templateName,
         }),
       });
 
@@ -236,7 +268,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div style={headerStyle}>
-            <h2 style={titleStyle}>Create New Project</h2>
+            <h2 style={titleStyle}>
+              {templateName ? `Create Project from ${templateName.charAt(0).toUpperCase() + templateName.slice(1)} Template` : "Create New Project"}
+            </h2>
             <button
               style={closeButtonStyle}
               onClick={handleClose}

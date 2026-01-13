@@ -159,18 +159,26 @@ export const VersionedComponentLoader: React.FC<{
   version: string;
   fallbackComponent?: React.ComponentType<any>;
   loadingComponent?: React.ComponentType<any>;
+  onComponentLoaded?: (component: React.ComponentType<any> | null) => void;
   [key: string]: any;
 }> = ({
   pageName,
   version,
   fallbackComponent: FallbackComponent,
   loadingComponent: LoadingComponent,
+  onComponentLoaded,
   ...props
 }) => {
   const [Component, setComponent] =
     React.useState<React.ComponentType<any> | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  
+  // Store onComponentLoaded in a ref to ensure it's available in useEffect
+  const onComponentLoadedRef = React.useRef(onComponentLoaded);
+  React.useEffect(() => {
+    onComponentLoadedRef.current = onComponentLoaded;
+  }, [onComponentLoaded]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -185,8 +193,15 @@ export const VersionedComponentLoader: React.FC<{
         if (mounted) {
           if (LoadedComponent) {
             setComponent(() => LoadedComponent);
+            // Notify parent if component is loaded (for header visibility)
+            if (onComponentLoadedRef.current) {
+              onComponentLoadedRef.current(LoadedComponent);
+            }
           } else {
             setError(`Component not found: ${pageName} v${version}`);
+            if (onComponentLoadedRef.current) {
+              onComponentLoadedRef.current(null);
+            }
           }
         }
       } catch (err) {

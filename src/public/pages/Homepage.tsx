@@ -43,16 +43,17 @@ const Homepage: React.FC = () => {
   const [templatePopoverOpenId, setTemplatePopoverOpenId] = useState<string | null>(null);
   const [templatesWithMetadata, setTemplatesWithMetadata] = useState<Template[]>([]);
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
+  const [createProjectFromTemplate, setCreateProjectFromTemplate] = useState<{ templateName: string; defaultName: string } | null>(null);
 
   // For homepage, use main app theme colors
   const colors = getDesignUIColors(colorMode);
 
   // Define templates
   const templates = [
-    { name: "Discover", path: "/discover", key: "discover" },
-    { name: "Dashboards", path: "/dashboards", key: "dashboards" }, // TODO: Add this route
-    { name: "Stack Management", path: "/stack-management", key: "stack-management" }, // TODO: Add this route
-    { name: "Hosts", path: "/hosts", key: "hosts" }, // TODO: Add this route
+    { name: "Discover", path: "/templates/discover", key: "discover" },
+    { name: "Dashboards", path: "/templates/dashboards", key: "dashboards" }, // TODO: Add this route
+    { name: "Stack Management", path: "/templates/stack-management", key: "stack-management" }, // TODO: Add this route
+    { name: "Hosts", path: "/templates/hosts", key: "hosts" }, // TODO: Add this route
   ];
   
   useEffect(() => {
@@ -71,8 +72,15 @@ const Homepage: React.FC = () => {
         const data = await response.json();
         console.log('[Homepage] API response:', data);
         
-        if (!data.success || !data.projects) {
-          throw new Error('Invalid API response');
+        if (!data.success) {
+          throw new Error(data.error || 'Invalid API response');
+        }
+        
+        if (!data.projects || !Array.isArray(data.projects)) {
+          console.warn('[Homepage] No projects array in response:', data);
+          setProjects([]);
+          setLoading(false);
+          return;
         }
         
         console.log('[Homepage] Found', data.projects.length, 'projects');
@@ -101,6 +109,9 @@ const Homepage: React.FC = () => {
         setLoading(false);
       } catch (error) {
         console.error("[Homepage] Failed to load projects:", error);
+        // Show error message to user
+        const errorMessage = error instanceof Error ? error.message : "Failed to load projects";
+        console.error("[Homepage] Error details:", errorMessage);
         setLoading(false);
       }
     };
@@ -187,6 +198,16 @@ const Homepage: React.FC = () => {
   };
 
   const handleCreateProject = () => {
+    setCreateProjectFromTemplate(null);
+    setIsCreateProjectModalOpen(true);
+  };
+
+  const handleUseTemplate = (template: Template) => {
+    setTemplatePopoverOpenId(null);
+    setCreateProjectFromTemplate({
+      templateName: template.key,
+      defaultName: template.key,
+    });
     setIsCreateProjectModalOpen(true);
   };
 
@@ -750,6 +771,14 @@ const Homepage: React.FC = () => {
                             id: 0,
                             items: [
                               {
+                                name: "Use this template",
+                                icon: "plusInCircle",
+                                onClick: (e) => {
+                                  e.stopPropagation();
+                                  handleUseTemplate(template);
+                                },
+                              },
+                              {
                                 name: "Update thumbnail",
                                 icon: "image",
                                 onClick: (e) => {
@@ -842,8 +871,13 @@ const Homepage: React.FC = () => {
       {/* Create Project Modal */}
       <CreateProjectModal
         isOpen={isCreateProjectModalOpen}
-        onClose={() => setIsCreateProjectModalOpen(false)}
+        onClose={() => {
+          setIsCreateProjectModalOpen(false);
+          setCreateProjectFromTemplate(null);
+        }}
         onSuccess={handleProjectCreated}
+        templateName={createProjectFromTemplate?.templateName}
+        defaultProjectName={createProjectFromTemplate?.defaultName}
       />
     </div>
   );

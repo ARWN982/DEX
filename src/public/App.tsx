@@ -50,25 +50,25 @@ const App: React.FC = () => {
   // Get project name from current path (dynamic - extracts first segment after /)
   const getProjectNameFromPath = (pathname: string): string | null => {
     const segments = pathname.split('/').filter(s => s);
-    if (segments.length > 0 && segments[0] !== 'template') {
+    if (segments.length > 0 && segments[0] !== 'templates') {
       return segments[0];
     }
     return null;
   };
+
 
   return (
     <EuiProvider colorMode={colorMode}>
       <div
         style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
       >
-        {/* Only show KibanaHeader for non-discover-ux and non-discover pages */}
-        {!location.pathname.startsWith("/discover-ux") && 
-         !location.pathname.startsWith("/discover") && (
+        {/* Only show KibanaHeader on homepage - projects bring their own headers */}
+        {location.pathname === "/" && (
           <KibanaHeader
             colorMode={colorMode}
             onToggleColorMode={toggleColorMode}
             onAssistantClick={handleAssistantClick}
-            isHomepage={location.pathname === "/"}
+            isHomepage={true}
             display="classic"
           />
         )}
@@ -76,15 +76,9 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Homepage />} />
             
-            {/* Direct discover route */}
-            <Route
-              path="/discover"
-              element={<TemplateLoader templateName="discover" />}
-            />
-            
             {/* Template routes */}
             <Route
-              path="/template/:templateName"
+              path="/templates/:templateName"
               element={<TemplateLoaderWithParams />}
             />
             

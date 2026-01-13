@@ -22,7 +22,7 @@ export const getCurrentPage = (): string => {
   const firstSegment = segments[0];
   
   // Skip template routes - they don't have project pages
-  if (firstSegment === 'template' || firstSegment === 'discover') {
+  if (firstSegment === 'templates') {
     return '';
   }
   

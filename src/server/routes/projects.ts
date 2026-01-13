@@ -115,7 +115,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, templateName } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ 
@@ -168,33 +168,110 @@ router.post('/', async (req: Request, res: Response) => {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join('');
 
-    // Create initial index.tsx file
-    const indexContent = `import React from 'react';
-import { EuiPage, EuiPageBody, EuiPageSection, EuiTitle, EuiText } from '@elastic/eui';
+    // If creating from a template, copy template files
+    if (templateName) {
+      const templateDir = path.join(__dirname, '../../../src/public/templates', templateName);
+      const templateIndexPath = path.join(templateDir, 'index.tsx');
+      
+      try {
+        // Check if template exists
+        await fs.access(templateIndexPath);
+        
+        // Read template index.tsx
+        let templateContent = await fs.readFile(templateIndexPath, 'utf-8');
+        
+        // Replace the component name with the new project's component name
+        // Find the component name in the template (usually the first export)
+        const templateComponentMatch = templateContent.match(/export\s+(?:const|default)\s+(\w+)/);
+        if (templateComponentMatch) {
+          const templateComponentName = templateComponentMatch[1];
+          templateContent = templateContent.replace(
+            new RegExp(`\\b${templateComponentName}\\b`, 'g'),
+            componentName
+          );
+        }
+        
+        // Update import paths - templates are at templates/discover/, projects are at pages/project/v1.0/
+        // Templates: import from '../../components' (2 levels up from templates/discover/)
+        // Projects: import from '../../../components' (3 levels up from pages/project/v1.0/)
+        // Replace relative imports that go up 2 levels with 3 levels
+        templateContent = templateContent.replace(
+          /from\s+['"]\.\.\/\.\.\/([^'"]+)/g,
+          (match, importPath) => {
+            // Skip if it's already 3 levels or more, or if it's an absolute path
+            if (importPath.startsWith('../')) {
+              return match;
+            }
+            return `from '../../../${importPath}`;
+          }
+        );
+        
+        // Write the template content as the project's index.tsx
+        await fs.writeFile(indexPath, templateContent, 'utf-8');
+        
+        // Copy template components directory if it exists
+        const templateComponentsDir = path.join(templateDir, 'components');
+        const projectComponentsDir = path.join(versionDir, 'components');
+        try {
+          await fs.access(templateComponentsDir);
+          // Copy entire components directory
+          await fs.cp(templateComponentsDir, projectComponentsDir, { recursive: true });
+          
+          // Fix import paths in copied component files
+          // Components in templates use ../../../utils, but in projects need ../../../../utils
+          const componentFiles = await fs.readdir(projectComponentsDir, { recursive: true });
+          for (const file of componentFiles) {
+            if (typeof file === 'string' && file.endsWith('.tsx')) {
+              const filePath = path.join(projectComponentsDir, file);
+              let fileContent = await fs.readFile(filePath, 'utf-8');
+              
+              // Replace ../../../utils with ../../../../utils (one more level up)
+              fileContent = fileContent.replace(
+                /from\s+['"]\.\.\/\.\.\/\.\.\/utils\//g,
+                "from '../../../../utils/"
+              );
+              
+              // Also fix other relative imports that go up 3 levels
+              fileContent = fileContent.replace(
+                /from\s+['"]\.\.\/\.\.\/\.\.\/([^'"]+)/g,
+                (match, importPath) => {
+                  // Skip if it's already 4 levels or more, or if it's an absolute path
+                  if (importPath.startsWith('../')) {
+                    return match;
+                  }
+                  return `from '../../../../${importPath}`;
+                }
+              );
+              
+              await fs.writeFile(filePath, fileContent, 'utf-8');
+            }
+          }
+        } catch {
+          // No components directory, that's fine
+        }
+        
+        console.log(`Created project "${normalizedName}" from template "${templateName}"`);
+      } catch (templateError) {
+        console.error(`Failed to load template "${templateName}":`, templateError);
+        return res.status(404).json({
+          success: false,
+          error: `Template "${templateName}" not found`
+        });
+      }
+    } else {
+      // Create initial index.tsx file with EmptyState
+      const indexContent = `import React from 'react';
+import { EmptyState } from '../../../components/shared/EmptyState';
 
 const ${componentName}: React.FC = () => {
-  return (
-    <EuiPage>
-      <EuiPageBody>
-        <EuiPageSection>
-          <EuiTitle size="l">
-            <h1>${normalizedName.split('-').map((word: string) => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ')}</h1>
-          </EuiTitle>
-          <EuiText>
-            <p>${description || 'Welcome to your new project!'}</p>
-          </EuiText>
-        </EuiPageSection>
-      </EuiPageBody>
-    </EuiPage>
-  );
+  return <EmptyState pageName="${normalizedName}" versionId="1.0" />;
 };
 
 export default ${componentName};
 `;
 
-    await fs.writeFile(indexPath, indexContent, 'utf-8');
+      await fs.writeFile(indexPath, indexContent, 'utf-8');
+    }
 
     // Create about.json metadata file
     const aboutData = {

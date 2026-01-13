@@ -1,4 +1,4 @@
-import { EuiEmptyPrompt, EuiCode } from "@elastic/eui";
+import { EuiEmptyPrompt, EuiCode, EuiPage, EuiPageBody } from "@elastic/eui";
 import React from "react";
 
 interface EmptyStateProps {
@@ -6,7 +6,8 @@ interface EmptyStateProps {
   versionId: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
+// Add a static property to identify EmptyState components
+export const EmptyState: React.FC<EmptyStateProps> & { isEmptyState?: boolean } = ({
   pageName,
   versionId,
 }) => {
@@ -23,32 +24,39 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   const filePath = `src/public/pages/${pageName}/v${versionId}/index.tsx`;
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        minHeight: "400px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <EuiEmptyPrompt
-        title={
-          <h2>
-            {displayName} v{versionId}
-          </h2>
-        }
-        body={
-          <p>
-            This page is empty. Add functionality to it by targeting
-            <EuiCode>
-              {displayName} v{versionId}
-            </EuiCode>{" "}
-            in your AI agent or by directly editing{" "}
-            <EuiCode>{filePath}</EuiCode>
-          </p>
-        }
-      />
-    </div>
+    <EuiPage style={{ minHeight: "100vh" }}>
+      <EuiPageBody>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+            padding: "40px",
+          }}
+        >
+          <EuiEmptyPrompt
+            title={
+              <h2>
+                {displayName} v{versionId}
+              </h2>
+            }
+            body={
+              <p>
+                This page is empty. Add functionality to it by targeting
+                <EuiCode>
+                  {displayName} v{versionId}
+                </EuiCode>{" "}
+                in your AI agent or by directly editing{" "}
+                <EuiCode>{filePath}</EuiCode>
+              </p>
+            }
+          />
+        </div>
+      </EuiPageBody>
+    </EuiPage>
   );
 };
+
+// Mark this component as an empty state
+EmptyState.isEmptyState = true;

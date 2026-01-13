@@ -40,8 +40,10 @@ router.post('/screenshots/:projectName', async (req, res) => {
     let targetVersion = version;
     if (!targetVersion) {
       // Get latest version if not specified
+      // Use backend port for API calls
+      const backendPort = process.env.PORT || 3000;
       try {
-        const versionsResponse = await fetch(`http://localhost:${process.env.PORT || 3001}/api/versions?page=${projectName}`);
+        const versionsResponse = await fetch(`http://localhost:${backendPort}/api/versions?page=${projectName}`);
         if (versionsResponse.ok) {
           const data = await versionsResponse.json();
           if (data.versions && data.versions.length > 0) {
@@ -80,9 +82,9 @@ router.post('/screenshots/:projectName', async (req, res) => {
       });
 
       // Navigate to the project page
-      const baseUrl = process.env.NODE_ENV === 'development' 
-        ? `http://localhost:${process.env.PORT || 3001}`
-        : 'http://localhost:3001'; // Fallback for production
+      // Projects are served by the frontend (webpack dev server), not the backend
+      const frontendPort = process.env.FRONTEND_PORT || '3002';
+      const baseUrl = `http://localhost:${frontendPort}`;
       
       const projectUrl = `${baseUrl}/${projectName}`;
       console.log(`Navigating to ${projectUrl}`);
@@ -203,16 +205,8 @@ router.post('/screenshots/templates/:templateName', async (req, res) => {
       const frontendPort = process.env.FRONTEND_PORT || '3002';
       const baseUrl = `http://localhost:${frontendPort}`;
       
-      // Templates are accessed via /discover, /template/discover, etc.
-      // Map template names to their routes
-      const templateRoutes: Record<string, string> = {
-        'discover': '/discover',
-        'dashboards': '/dashboards',
-        'stack-management': '/stack-management',
-        'hosts': '/hosts',
-      };
-      
-      const templateRoute = templateRoutes[templateName] || `/template/${templateName}`;
+      // Templates are accessed via /templates/discover, /templates/dashboards, etc.
+      const templateRoute = `/templates/${templateName}`;
       const templateUrl = `${baseUrl}${templateRoute}`;
       console.log(`Navigating to ${templateUrl}`);
       
