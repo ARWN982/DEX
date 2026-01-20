@@ -10,7 +10,7 @@ import {
 } from "@elastic/eui";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useProjectMetadata } from "../../hooks";
+import { useProjectMetadata, useTemplateMetadata } from "../../hooks";
 
 interface KibanaHeaderProps {
   colorMode: "light" | "dark";
@@ -31,10 +31,21 @@ export const KibanaHeader: React.FC<KibanaHeaderProps> = ({
   const navigate = useNavigate();
   const { euiTheme } = useEuiTheme();
 
+  // Get template name from path if we're on a template route
+  const getTemplateNameFromPath = (pathname: string): string | null => {
+    if (pathname.startsWith('/templates/')) {
+      const segments = pathname.split('/').filter(s => s);
+      if (segments.length >= 2 && segments[0] === 'templates') {
+        return segments[1];
+      }
+    }
+    return null;
+  };
+
   // Get project name from current path (dynamic - extracts first segment after /)
   const getProjectNameFromPath = (pathname: string): string | null => {
     const segments = pathname.split('/').filter(s => s);
-    if (segments.length > 0 && segments[0] !== 'template') {
+    if (segments.length > 0 && segments[0] !== 'templates') {
       return segments[0];
     }
     return null;
@@ -43,6 +54,10 @@ export const KibanaHeader: React.FC<KibanaHeaderProps> = ({
   // Get current project name and fetch its metadata
   const currentProjectName = getProjectNameFromPath(location.pathname);
   const { metadata } = useProjectMetadata(currentProjectName);
+  
+  // Get current template name if we're on a template route and fetch its metadata
+  const currentTemplateKey = getTemplateNameFromPath(location.pathname);
+  const { displayName: templateDisplayName } = useTemplateMetadata(currentTemplateKey);
 
   // Generate breadcrumbs based on current route and project metadata
   const getBreadcrumbs = (): EuiBreadcrumbsProps["breadcrumbs"] => {
@@ -54,8 +69,14 @@ export const KibanaHeader: React.FC<KibanaHeaderProps> = ({
       },
     ];
 
+    // Add template breadcrumb if we're on a template page
+    if (currentTemplateKey && templateDisplayName) {
+      breadcrumbs.push({
+        text: templateDisplayName,
+      });
+    }
     // Add project breadcrumb if we're on a project page
-    if (currentProjectName && metadata) {
+    else if (currentProjectName && metadata) {
       const breadcrumbText =
         metadata.breadcrumb || metadata.projectName || currentProjectName;
       breadcrumbs.push({

@@ -27,6 +27,9 @@ export const TemplateLoader: React.FC<{
           case 'discover':
             module = await import('../templates/discover');
             break;
+          case 'dashboards':
+            module = await import('../templates/dashboards');
+            break;
           default:
             throw new Error(`Unknown template: ${templateName}`);
         }

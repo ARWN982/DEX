@@ -875,7 +875,7 @@ export const Discover: React.FC = () => {
                             initialSize={20}
                             minSize="200px"
                             paddingSize="s"
-                            style={{ paddingBottom: 0 }}
+                            style={{ paddingBottom: 0, backgroundColor: euiTheme.colors.emptyShade }}
                           >
                             <FieldList
                               availableFields={availableFields}

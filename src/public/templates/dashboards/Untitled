@@ -1,0 +1,1 @@
+Now let's work on the dashboards template. I want you to duplicate the Discover template and keep the navigation bars, the Kibana header, and the app container, but delete everything inside the app container. We will begin working on the content of that app container now.
