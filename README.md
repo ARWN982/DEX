@@ -4,24 +4,30 @@ A design system and prototyping environment for Kibana experiences.
 
 ## Project Team
 
-**Andrea Del Rio** ([@andreadelrio](https://github.com/andreadelrio)) - Project Lead & Product Vision  
-Provided the initial requirements, technical direction, and iterative feedback throughout development. Guided the implementation of the Elasticsearch integration, UI/UX design decisions, and development workflow optimization.
-
-## Overview
-
-This project provides a modern web interface for exploring and visualizing data from Elasticsearch. It features a responsive grid layout of charts with search functionality, time range selection, and pagination for easy navigation through large datasets.
+**Andrea Del Rio** ([@andreadelrio](https://github.com/andreadelrio)) - Project Lead  
 
 ## Features
 
-- **📊 Interactive Chart Grid**: 3x5 responsive grid displaying metric visualizations (15 charts per page)
-- **🔍 Real-time Search**: Filter metrics by name with instant results
-- **📅 Time Range Selection**: Configurable date/time pickers for data exploration
-- **📄 Pagination**: Navigate through metrics with 15 charts per page
-- **⚡ Auto-reload Development**: Hot reloading for both frontend and backend during development
-- **🎨 Modern UI**: Built with Elastic UI (EUI) components for consistent design
-- **📈 ESQL Integration**: Direct querying of Elasticsearch using ES|QL for efficient data retrieval
-- **🔬 Metric Insights**: Enhanced popover with OpenTelemetry semantic conventions, stability indicators, and technical details
-- **📏 Smart Unit Formatting**: Automatic formatting for bytes, percentages, and other units based on OpenTelemetry conventions
+### 🎨 Project Templates
+Quickly spin up new projects using pre-built templates. Each template comes with a foundation of components and layouts, so you can focus on designing rather than setup.
+
+### 🧩 Reusable Component Library
+Access a curated set of shared components—charts, panels, controls, grids, and more—all built with Elastic UI. These components are ready to use and customize, helping you maintain consistency across your prototypes.
+
+### 📚 Version History
+Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution.
+
+### 📋 Job Stories
+Track job stories alongside your prototypes. Keep your design decisions grounded in user needs and maintain alignment with product goals.
+
+### 📄 PRD Tracking
+Document and reference product requirements directly within your project. Keep specs, context, and design work together in one place.
+
+### ⚡ Auto-reload Development
+Hot reloading for both frontend and backend during development. See your changes instantly without manual refreshes.
+
+### 🎨 Modern UI
+Built with Elastic UI (EUI) components for consistent design language and a polished look out of the box.
 
 ## Architecture
 
@@ -41,7 +47,6 @@ This project provides a modern web interface for exploring and visualizing data 
 
 - Node.js 18+ and npm
 - Elasticsearch 8.x cluster running locally or remotely
-- Metrics data indexed in `metrics-*` pattern
 
 ## Quick Start
 
@@ -52,21 +57,12 @@ This project provides a modern web interface for exploring and visualizing data 
    npm install --legacy-peer-deps
    ```
 
-2. **Configure Elasticsearch connection (optional):**
-   ```bash
-   export ELASTICSEARCH_URL="http://localhost:9200"
-   export ELASTICSEARCH_USERNAME="elastic"
-   export ELASTICSEARCH_PASSWORD="changeme"
-   ```
-
-   *Default values are used if environment variables are not set.*
-
-3. **Start development servers:**
+2. **Start development servers:**
    ```bash
    npm run dev
    ```
 
-4. **Access the application:**
+3. **Access the application:**
    - Frontend: http://localhost:3001 (with auto-reload)
    - Backend API: http://localhost:3000
 
@@ -92,85 +88,6 @@ For detailed instructions, see [Creating New Projects Guide](docs/CREATING_NEW_P
 | `npm run build:server` | Build server TypeScript only |
 | `npm run build:client` | Build client webpack bundle only |
 | `npm test` | Run test suite |
-
-## API Endpoints
-
-### `GET /api/metrics/fields`
-Retrieves available metric fields from Elasticsearch using field capabilities API, enhanced with OpenTelemetry semantic conventions data when available.
-
-**Response:**
-```json
-{
-  "fields": [
-    {
-      "name": "system.cpu.utilization",
-      "index": "metrics-system-default",
-      "dimensions": [
-        {"name": "cpu", "type": "keyword"},
-        {"name": "host.name", "type": "keyword"}
-      ],
-      "type": "double",
-      "time_series_metric": "gauge",
-      "unit": "1",
-      "brief": "Difference in system CPU time since the last measurement, divided by the elapsed time",
-      "stability": "experimental"
-    },
-    {
-      "name": "system.memory.usage",
-      "index": "metrics-system-default",
-      "dimensions": [
-        {"name": "state", "type": "keyword"},
-        {"name": "host.name", "type": "keyword"}
-      ],
-      "type": "long",
-      "time_series_metric": "gauge",
-      "unit": "By",
-      "brief": "Reports memory in use by state",
-      "stability": "stable"
-    }
-  ]
-}
-```
-
-**Field Description:**
-- `name`: Metric field name
-- `index`: Data stream containing the metric
-- `dimensions`: Array of time series dimension fields
-- `type`: Elasticsearch field type
-- `time_series_metric`: Type of time series metric (gauge, counter, etc.)
-- `unit`: Measurement unit (enhanced with OpenTelemetry conventions)
-- `brief`: Description from OpenTelemetry semantic conventions (when available)
-- `stability`: Stability level from OpenTelemetry semantic conventions (when available)
-
-**OpenTelemetry Unit Mappings:**
-- `"By"` → Bytes (formatted as KB, MB, GB)
-- `"1"` → Unitless ratio (formatted as percentage)
-- `"s"` → Seconds
-- Custom units displayed as-is
-
-### `POST /api/metrics/data`
-Fetches time-series data for a specific metric using ES|QL queries.
-
-**Request:**
-```json
-{
-  "metric": "cpu.usage",
-  "from": "2023-12-07T10:00:00.000Z",
-  "to": "2023-12-07T11:00:00.000Z"
-}
-```
-
-**Response:**
-```json
-{
-  "metric": "cpu.usage",
-  "data": [
-    {"x": 1701943200000, "y": 45.2},
-    {"x": 1701943260000, "y": 48.1}
-  ],
-  "esql": "FROM metrics-* | WHERE @timestamp >= \"2023-12-07T10:00:00.000Z\" AND @timestamp <= \"2023-12-07T11:00:00.000Z\" | STATS AVG(cpu.usage) BY BUCKET(@timestamp, 200, \"2023-12-07T10:00:00.000Z\", \"2023-12-07T11:00:00.000Z\")"
-}
-```
 
 ## Project Structure
 
