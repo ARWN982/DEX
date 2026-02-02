@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Router, Request, Response } from 'express';
+import { Router, type Router as RouterType, Request, Response } from 'express';
 
-const router = Router();
+const router: RouterType = Router();
 
 // Paths to data files
 const VERSIONS_PATH = path.join(__dirname, '../../../src/data/versions.json');

@@ -1,18 +1,33 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef } from "react";
 import { useEuiTheme } from "@elastic/eui";
+import ReactGridLayout, { Layout, LayoutItem, useContainerWidth } from "react-grid-layout";
+import type { GridLayoutProps } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 import { DashboardPanel } from "./DashboardPanel";
 
-export interface GridItem {
-  id: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+export type PanelType = "markdown" | "metric" | "timeseries" | "links" | "control" | "table" | "other";
+
+export interface GridItem extends LayoutItem {
   content: React.ReactNode;
-  minW?: number;
-  minH?: number;
-  maxW?: number;
-  maxH?: number;
+  title?: string;
+  showTitle?: boolean;
+  /** If true, panel content padding is set to 0 (e.g., for metric panels) */
+  noPadding?: boolean;
+  /** Panel type for determining settings options */
+  panelType?: PanelType;
+  /** Markdown content for markdown panels */
+  markdownContent?: string;
+  /** If true, panel height will automatically adjust to fit content */
+  autoHeight?: boolean;
+  /** If false, panel border/shadow is hidden (used for control panels) */
+  showBorder?: boolean;
+  /** Control panel configuration */
+  controlConfig?: {
+    label: string;
+    options: Array<{ value: string; label: string }>;
+    selectedValues: string[];
+  };
 }
 
 interface DashboardGridProps {
@@ -21,334 +36,165 @@ interface DashboardGridProps {
   columns?: number;
   rowHeight?: number;
   gap?: number;
+  onSettingsClick?: (itemId: string) => void;
+  /** If true, grid height auto-sizes to fit content. If false, fills parent container. Default: false */
+  autoSize?: boolean;
 }
 
 export const DashboardGrid: React.FC<DashboardGridProps> = ({
   items,
   onItemsChange,
   columns = 12,
-  rowHeight = 60,
-  gap = 12,
+  rowHeight = 20,
+  gap = 8,
+  onSettingsClick,
+  autoSize = false,
 }) => {
   const { euiTheme } = useEuiTheme();
-  const [draggedItem, setDraggedItem] = useState<string | null>(null);
-  const [resizingItem, setResizingItem] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  // Calculate grid template columns
-  const gridTemplateColumns = `repeat(${columns}, 1fr)`;
-
-  // Check if two items overlap
-  const checkCollision = useCallback((item1: GridItem, item2: GridItem): boolean => {
-    return !(
-      item1.x + item1.w <= item2.x ||
-      item2.x + item2.w <= item1.x ||
-      item1.y + item1.h <= item2.y ||
-      item2.y + item2.h <= item1.y
-    );
-  }, []);
-
-  // Resolve collisions by nudging overlapping items
-  const resolveCollisions = useCallback((
-    draggedItemId: string,
-    targetX: number,
-    targetY: number,
-    currentItems: GridItem[]
-  ): GridItem[] => {
-    const draggedItem = currentItems.find((i) => i.id === draggedItemId);
-    if (!draggedItem) return currentItems;
-
-    // Start with the dragged item at its new position
-    const targetItem: GridItem = {
-      ...draggedItem,
-      x: targetX,
-      y: targetY,
-    };
-
-    // Create a working copy of items with the dragged item moved
-    let workingItems = currentItems.map((item) =>
-      item.id === draggedItemId ? targetItem : item
-    );
-
-    let changed = true;
-    const maxIterations = 100; // Safety limit
-    let iterations = 0;
-
-    // Keep resolving collisions until no more collisions exist or max iterations reached
-    while (changed && iterations < maxIterations) {
-      iterations++;
-      changed = false;
-
-      // Check each item for collisions
-      for (let i = 0; i < workingItems.length; i++) {
-        const item = workingItems[i];
-
-        // Check if this item collides with any other item
-        for (let j = i + 1; j < workingItems.length; j++) {
-          const otherItem = workingItems[j];
-
-          if (checkCollision(item, otherItem)) {
-            // Determine which item to move (always move the non-dragged item)
-            const itemToMove = item.id === draggedItemId ? otherItem : item;
-            const blockingItem = item.id === draggedItemId ? item : otherItem;
-
-            // Try different nudging strategies
-            let newX = itemToMove.x;
-            let newY = itemToMove.y;
-            let nudged = false;
-
-            // Strategy 1: Move right (preferred)
-            const rightX = blockingItem.x + blockingItem.w;
-            if (rightX + itemToMove.w <= columns) {
-              newX = rightX;
-              nudged = true;
-            }
-            // Strategy 2: Move down
-            else if (blockingItem.y + blockingItem.h + itemToMove.h <= 1000) {
-              newY = blockingItem.y + blockingItem.h;
-              nudged = true;
-            }
-            // Strategy 3: Move left (if there's space)
-            else if (blockingItem.x - itemToMove.w >= 0) {
-              newX = blockingItem.x - itemToMove.w;
-              nudged = true;
-            }
-            // Strategy 4: Move up (if there's space)
-            else if (blockingItem.y - itemToMove.h >= 0) {
-              newY = blockingItem.y - itemToMove.h;
-              nudged = true;
-            }
-
-            if (nudged) {
-              // Update the item position
-              workingItems = workingItems.map((it) =>
-                it.id === itemToMove.id
-                  ? { ...it, x: newX, y: newY }
-                  : it
-              );
-              changed = true;
-              break; // Break inner loop to re-check all items from the beginning
-            }
-          }
-        }
-        
-        // If we made a change, restart the collision check from the beginning
-        if (changed) break;
-      }
-    }
-
-    return workingItems;
-  }, [columns, checkCollision]);
-
-  // Handle drag start
-  const handleDragStart = useCallback((itemId: string, e: React.DragEvent) => {
-    setDraggedItem(itemId);
-    const item = items.find((i) => i.id === itemId);
-    if (!item || !gridRef.current) return;
-
-    const gridRect = gridRef.current.getBoundingClientRect();
-    const itemElement = e.currentTarget as HTMLElement;
-    const itemRect = itemElement.getBoundingClientRect();
-
-    // Calculate offset from mouse to item top-left corner
-    setDragOffset({
-      x: e.clientX - itemRect.left,
-      y: e.clientY - itemRect.top,
-    });
-
-    // Set drag image
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", itemId);
-  }, [items]);
-
-  // Handle drag over
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-
-    if (!draggedItem || !gridRef.current) return;
-
-    const gridRect = gridRef.current.getBoundingClientRect();
-    const colWidth = (gridRect.width - gap * (columns - 1)) / columns;
+  const { width, containerRef, mounted } = useContainerWidth();
+  
+  // Calculate grid height based on items when autoSize is true
+  const calculatedHeight = React.useMemo(() => {
+    if (!autoSize || items.length === 0) return undefined;
     
-    // Calculate grid position based on mouse position relative to grid
-    const gridX = e.clientX - gridRect.left - gap;
-    const gridY = e.clientY - gridRect.top - gap;
+    // Find the maximum y + h to determine total rows needed
+    const maxRow = items.reduce((max, item) => {
+      const bottom = item.y + item.h;
+      return bottom > max ? bottom : max;
+    }, 0);
     
-    const newX = Math.max(0, Math.floor(gridX / (colWidth + gap)));
-    const newY = Math.max(0, Math.floor(gridY / (rowHeight + gap)));
+    // Calculate height: (rows * rowHeight) + ((rows - 1) * gap) + (2 * containerPadding)
+    // containerPadding is the same as gap
+    const height = (maxRow * rowHeight) + ((maxRow - 1) * gap) + (2 * gap);
+    return height;
+  }, [autoSize, items, rowHeight, gap]);
+  
+  // Track pending height updates to batch them
+  const pendingHeightUpdates = useRef<Map<string, number>>(new Map());
 
-    // Update item position only if it changed
-    const currentItem = items.find((i) => i.id === draggedItem);
-    if (currentItem && (currentItem.x !== newX || currentItem.y !== newY)) {
-      const clampedX = Math.min(newX, columns - currentItem.w);
-      const clampedY = Math.max(0, newY);
+  // Convert pixel height to grid rows
+  const pixelsToGridRows = useCallback((pixels: number): number => {
+    // Formula: pixels = rows * rowHeight + (rows - 1) * gap
+    // Solving for rows: rows = (pixels + gap) / (rowHeight + gap)
+    return Math.ceil((pixels + gap) / (rowHeight + gap));
+  }, [rowHeight, gap]);
+
+  // Handle auto-height updates from panels
+  const handleAutoHeight = useCallback((itemId: string, contentHeight: number) => {
+    const item = items.find(i => i.i === itemId);
+    if (!item?.autoHeight) return;
+    
+    const requiredRows = pixelsToGridRows(contentHeight);
+    const minRows = item.minH || 1;
+    const newHeight = Math.max(requiredRows, minRows);
+    
+    // Only update if height actually changed
+    if (item.h !== newHeight) {
+      pendingHeightUpdates.current.set(itemId, newHeight);
       
-      // Resolve collisions by nudging overlapping items
-      const updatedItems = resolveCollisions(draggedItem, clampedX, clampedY, items);
-      onItemsChange(updatedItems);
-    }
-  }, [draggedItem, items, columns, rowHeight, gap, resolveCollisions, onItemsChange]);
-
-  // Handle drag end
-  const handleDragEnd = useCallback(() => {
-    setDraggedItem(null);
-    setDragOffset({ x: 0, y: 0 });
-    setResizingItem(null);
-  }, []);
-
-  // Handle resize
-  const handleResize = useCallback((
-    itemId: string,
-    direction: "right" | "bottom" | "corner",
-    deltaX: number,
-    deltaY: number
-  ) => {
-    if (!gridRef.current) return;
-
-    const gridRect = gridRef.current.getBoundingClientRect();
-    const colWidth = (gridRect.width - gap * (columns - 1)) / columns;
-
-    setResizingItem(itemId);
-
-    // First, calculate the new size for the resizing item
-    const resizingItem = items.find((item) => item.id === itemId);
-    if (!resizingItem) return;
-
-    let newW = resizingItem.w;
-    let newH = resizingItem.h;
-
-    if (direction === "right" || direction === "corner") {
-      const deltaCols = Math.round(deltaX / (colWidth + gap));
-      const proposedW = resizingItem.w + deltaCols;
-      newW = Math.max(resizingItem.minW || 2, Math.min(resizingItem.maxW || columns, proposedW));
-    }
-
-    if (direction === "bottom" || direction === "corner") {
-      const deltaRows = Math.round(deltaY / (rowHeight + gap));
-      const proposedH = resizingItem.h + deltaRows;
-      newH = Math.max(resizingItem.minH || 1, Math.min(resizingItem.maxH || 20, proposedH));
-    }
-
-    // Ensure item doesn't go out of bounds
-    if (resizingItem.x + newW > columns) {
-      newW = columns - resizingItem.x;
-    }
-
-    // Create updated item with new dimensions
-    const resizedItem: GridItem = {
-      ...resizingItem,
-      w: newW,
-      h: newH,
-    };
-
-    // Start with the resized item and resolve collisions
-    let workingItems = items.map((item) =>
-      item.id === itemId ? resizedItem : item
-    );
-
-    // Resolve collisions caused by the resize
-    let changed = true;
-    const maxIterations = 100;
-    let iterations = 0;
-
-    while (changed && iterations < maxIterations) {
-      iterations++;
-      changed = false;
-
-      // Check each item for collisions
-      for (let i = 0; i < workingItems.length; i++) {
-        const item = workingItems[i];
-
-        // Check if this item collides with any other item
-        for (let j = i + 1; j < workingItems.length; j++) {
-          const otherItem = workingItems[j];
-
-          if (checkCollision(item, otherItem)) {
-            // Determine which item to move (prefer moving the non-resizing item)
-            const itemToMove = item.id === itemId ? otherItem : item;
-            const blockingItem = item.id === itemId ? item : otherItem;
-
-            // Try different nudging strategies (prefer down and left)
-            let newX = itemToMove.x;
-            let newY = itemToMove.y;
-            let nudged = false;
-
-            // Strategy 1: Move down (preferred for resize collisions)
-            if (blockingItem.y + blockingItem.h + itemToMove.h <= 1000) {
-              newY = blockingItem.y + blockingItem.h;
-              nudged = true;
+      // Batch updates using requestAnimationFrame
+      requestAnimationFrame(() => {
+        if (pendingHeightUpdates.current.size > 0) {
+          const updates = new Map(pendingHeightUpdates.current);
+          pendingHeightUpdates.current.clear();
+          
+          const updatedItems = items.map(item => {
+            const newH = updates.get(item.i);
+            if (newH !== undefined) {
+              return { ...item, h: newH };
             }
-            // Strategy 2: Move left
-            else if (blockingItem.x - itemToMove.w >= 0) {
-              newX = blockingItem.x - itemToMove.w;
-              nudged = true;
-            }
-            // Strategy 3: Move right (if there's space)
-            else if (blockingItem.x + blockingItem.w + itemToMove.w <= columns) {
-              newX = blockingItem.x + blockingItem.w;
-              nudged = true;
-            }
-            // Strategy 4: Move up (if there's space)
-            else if (blockingItem.y - itemToMove.h >= 0) {
-              newY = blockingItem.y - itemToMove.h;
-              nudged = true;
-            }
-
-            if (nudged) {
-              // Update the item position
-              workingItems = workingItems.map((it) =>
-                it.id === itemToMove.id
-                  ? { ...it, x: newX, y: newY }
-                  : it
-              );
-              changed = true;
-              break; // Break inner loop to re-check all items from the beginning
-            }
-          }
+            return item;
+          });
+          onItemsChange(updatedItems);
         }
-
-        // If we made a change, restart the collision check from the beginning
-        if (changed) break;
-      }
+      });
     }
+  }, [items, onItemsChange, pixelsToGridRows]);
 
-    onItemsChange(workingItems);
-  }, [items, columns, rowHeight, gap, checkCollision, onItemsChange]);
+  // Convert GridItem[] to Layout[] for react-grid-layout
+  const layout: Layout = items.map((item) => ({
+    i: item.i,
+    x: item.x,
+    y: item.y,
+    w: item.w,
+    h: item.h,
+    minW: item.minW,
+    maxW: item.maxW,
+    minH: item.minH,
+    maxH: item.maxH,
+    static: item.static,
+  }));
+
+  // Handle layout changes from react-grid-layout
+  const handleLayoutChange = useCallback(
+    (newLayout: Layout) => {
+      // Map layout back to GridItem[] preserving content and other properties
+      const updatedItems: GridItem[] = newLayout.map((layoutItem) => {
+        const originalItem = items.find((item) => item.i === layoutItem.i);
+        if (originalItem) {
+          return {
+            ...originalItem,
+            x: layoutItem.x,
+            y: layoutItem.y,
+            w: layoutItem.w,
+            h: layoutItem.h,
+          };
+        }
+        // Fallback (shouldn't happen)
+        return {
+          i: layoutItem.i,
+          x: layoutItem.x,
+          y: layoutItem.y,
+          w: layoutItem.w,
+          h: layoutItem.h,
+          content: <div>Missing content</div>,
+        };
+      });
+      onItemsChange(updatedItems);
+    },
+    [items, onItemsChange]
+  );
+
+  if (!mounted) {
+    return <div ref={containerRef as any} style={{ width: "100%", height: autoSize ? "auto" : "100%" }} />;
+  }
 
   return (
-    <div
-      ref={gridRef}
-      style={{
-        display: "grid",
-        gridTemplateColumns,
-        gridAutoRows: `${rowHeight}px`,
-        gap: `${gap}px`,
-        width: "100%",
-        height: "100%",
-        padding: gap,
-        position: "relative",
-      }}
-      onDragOver={handleDragOver}
-      onDrop={(e) => {
-        e.preventDefault();
-        handleDragEnd();
-      }}
-    >
-      {items.map((item) => (
-        <DashboardPanel
-          key={item.id}
-          item={item}
-          columns={columns}
-          rowHeight={rowHeight}
-          gap={gap}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onResize={handleResize}
-          isDragging={draggedItem === item.id}
-        />
-      ))}
+    <div ref={containerRef as any} style={{ width: "100%", height: autoSize ? calculatedHeight : "100%", position: 'relative', overflow: 'hidden' }}>
+      <ReactGridLayout
+        layout={layout}
+        width={width}
+        gridConfig={{
+          cols: columns,
+          rowHeight: rowHeight,
+          margin: [gap, gap],
+          containerPadding: [gap, gap],
+        }}
+        dragConfig={{
+          enabled: true,
+          handle: ".drag-handle",
+        }}
+        resizeConfig={{
+          enabled: true,
+          handles: ["se"],
+        }}
+        onLayoutChange={handleLayoutChange}
+      >
+        {items.map((item) => (
+          <div key={item.i} style={{ width: "100%", height: "100%" }}>
+            <DashboardPanel
+              item={item}
+              onSettingsClick={onSettingsClick || (() => {})}
+              rowHeight={rowHeight}
+              gap={gap}
+              noPadding={item.noPadding}
+              autoHeight={item.autoHeight}
+              onAutoHeight={handleAutoHeight}
+              showBorder={item.showBorder}
+            />
+          </div>
+        ))}
+      </ReactGridLayout>
     </div>
   );
 };

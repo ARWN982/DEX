@@ -1,5 +1,5 @@
 import React from "react";
-import { EuiText } from "@elastic/eui";
+import { EuiText, useEuiTheme } from "@elastic/eui";
 
 interface TextPanelProps {
   title?: string;
@@ -10,8 +10,10 @@ export const TextPanel: React.FC<TextPanelProps> = ({
   title = "Text Panel",
   content = "This is a text panel. You can customize the content here.",
 }) => {
+  const { euiTheme } = useEuiTheme();
+  
   return (
-    <div>
+    <div style={{ padding: euiTheme.size.m, height: "100%" }}>
       <EuiText>
         <h3 style={{ marginBottom: "8px" }}>{title}</h3>
         <p>{content}</p>

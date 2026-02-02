@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { EuiButtonIcon, EuiIcon } from "@elastic/eui";
+import { EuiIcon } from "@elastic/eui";
 
 interface VisorHexProps {
   isDarkMode?: boolean;
@@ -69,17 +69,29 @@ export const VisorHex: React.FC<VisorHexProps> = ({
     ? '0px 6px 14px 0px rgba(137, 157, 170, 0.28)' 
     : '0px 6px 14px 0px rgba(11, 14, 22, 0.03)';
 
-  // Gradient border style - always visible
-  const gradientBorder: React.CSSProperties = {
+  // Shared gradient border base style
+  const gradientBorderBase: React.CSSProperties = {
     background: isDarkMode
       ? "linear-gradient(104.14deg, #61A2FF 18.35%, #8A82E8 51.95%, #D846BB 88.68%, #FF27A5 112.9%)"
       : "linear-gradient(107.9deg, #0B64DD 21.85%, #FF27A5 98.82%)",
     borderRadius: "6px",
     padding: "1px",
-    width: "50%",
     height: "32px",
     boxShadow: boxShadow,
-    transition: "box-shadow 0.15s cubic-bezier(0.25, 0.1, 0.25, 1)",
+    flexShrink: 0,
+  };
+
+  // Main input gradient border
+  const gradientBorder: React.CSSProperties = {
+    ...gradientBorderBase,
+    width: "50%",
+  };
+
+  // Close button gradient border
+  const closeButtonGradientBorder: React.CSSProperties = {
+    ...gradientBorderBase,
+    width: "32px",
+    marginLeft: "8px",
   };
 
   const innerContainerStyle: React.CSSProperties = {
@@ -368,19 +380,19 @@ export const VisorHex: React.FC<VisorHexProps> = ({
           outline: "none",
         }}
       />
-
-      {/* Close Button */}
-      <div style={{ flexShrink: 0, padding: "0 4px" }}>
-        <EuiButtonIcon
-          iconType="cross"
-          aria-label="Close"
-          onClick={onClose}
-          color="text"
-          size="s"
-        />
-      </div>
     </div>
   );
+  
+  const closeButtonInnerStyle: React.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    background: bgColor,
+    borderRadius: "5px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  };
 
   // Always wrap with gradient border
   return (
@@ -389,6 +401,7 @@ export const VisorHex: React.FC<VisorHexProps> = ({
         width: "100%",
         display: "flex",
         justifyContent: "center",
+        alignItems: "center",
         animation: "slideUpFromBottom 0.15s cubic-bezier(0.25, 0.1, 0.25, 1) forwards",
         transformOrigin: "bottom",
       }}
@@ -409,6 +422,22 @@ export const VisorHex: React.FC<VisorHexProps> = ({
       </style>
       <div style={gradientBorder}>
         {isGenerating ? generatingContent : content}
+      </div>
+      
+      {/* Close Button - with gradient border */}
+      <div style={closeButtonGradientBorder}>
+        <div 
+          style={closeButtonInnerStyle}
+          onClick={onClose}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = euiTheme?.colors?.backgroundBaseSubdued || (isDarkMode ? '#25262E' : '#F5F7FA');
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = bgColor;
+          }}
+        >
+          <EuiIcon type="cross" size="m" color="subdued" />
+        </div>
       </div>
     </div>
   );

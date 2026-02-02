@@ -1,8 +1,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { Router, Request, Response } from 'express';
+import { Router, type Router as RouterType, Request, Response } from 'express';
 
-const router = Router();
+const router: RouterType = Router();
 
 // Base path to the public pages directory
 const PAGES_DIR = path.join(__dirname, '../../../src/public/pages');

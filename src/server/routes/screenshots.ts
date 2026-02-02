@@ -1,9 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
-import express from 'express';
+import express, { Router } from 'express';
 import { chromium } from 'playwright';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Screenshot storage directory
 const SCREENSHOTS_DIR = path.join(process.cwd(), 'public', 'thumbnails');

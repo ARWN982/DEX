@@ -1,2 +1,12 @@
 export { TextPanel } from "./TextPanel";
+export { MarkdownPanel } from "./MarkdownPanel";
 export { MetricPanel } from "./MetricPanel";
+export { TimeSeriesPanel } from "./TimeSeriesPanel";
+export { LinksPanel } from "./LinksPanel";
+export type { LinkItem } from "./LinksPanel";
+export { ControlPanel } from "./ControlPanel";
+export type { ControlOption } from "./ControlPanel";
+export { TablePanel } from "./TablePanel";
+export type { TableColumn, TableRow } from "./TablePanel";
+export { SectionHeader } from "./SectionHeader";
+export { StackedBarChartPanel } from "./StackedBarChartPanel";

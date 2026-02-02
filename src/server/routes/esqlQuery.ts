@@ -1,6 +1,6 @@
-import { Router, Request, Response } from 'express';
+import { Router, type Router as RouterType, Request, Response } from 'express';
 
-const router = Router();
+const router: RouterType = Router();
 
 interface ESQLQueryRequest {
   query: string;

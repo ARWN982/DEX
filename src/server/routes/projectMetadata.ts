@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
-import express from 'express';
+import express, { Router } from 'express';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Get project metadata
 router.get('/:projectName', async (req, res) => {

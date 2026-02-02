@@ -1,8 +1,8 @@
-import { Router, Request, Response } from 'express';
+import { Router, type Router as RouterType, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 
-const router = Router();
+const router: RouterType = Router();
 
 interface Project {
   name: string;

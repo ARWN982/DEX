@@ -1,7 +1,7 @@
-import { Router, Request, Response } from "express";
+import { Router, type Router as RouterType, Request, Response } from "express";
 import { esClient } from "../lib/elasticsearch";
 
-const router = Router();
+const router: RouterType = Router();
 
 // Get field capabilities for an index pattern
 router.get("/fields/:index", async (req: Request, res: Response) => {

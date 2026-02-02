@@ -1,7 +1,7 @@
-import { Router, Request, Response } from "express";
+import { Router, type Router as RouterType, Request, Response } from "express";
 import { esClient } from "../lib/elasticsearch";
 
-const router = Router();
+const router: RouterType = Router();
 
 // Fallback mock data in case ES is unavailable
 function generateFallbackData(index: string) {

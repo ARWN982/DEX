@@ -115,6 +115,16 @@ interface CodeEditorProps {
    * Used to show generating state in VisorHex
    */
   visorIsGenerating?: boolean;
+  /**
+   * Whether to use gradient styling for the Quick search button in footer
+   * Defaults to true
+   */
+  useGradient?: boolean;
+  /**
+   * Whether to show a search icon instead of the keyboard shortcut in footer
+   * Defaults to false
+   */
+  showIcon?: boolean;
 }
 
 // Define visor state management outside component for stable references
@@ -200,6 +210,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   onVisorSubmit,
   visorCurrentDataSource = "logs-*",
   visorIsGenerating = false,
+  useGradient = true,
+  showIcon = false,
 }) => {
   console.log("[DEBUG] CodeEditor render", { valueLength: value?.length });
   const euiThemeHook = useEuiTheme();
@@ -2010,6 +2022,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           euiTheme={euiTheme}
           compressed={compressed}
           onQuickEdit={enableVisor ? handleToggleVisorHex : onQuickEdit}
+          isDarkMode={isDarkMode}
+          useGradient={useGradient}
+          showIcon={showIcon}
+          isVisorOpen={visorHexOpen}
         />
       )}
     </div>

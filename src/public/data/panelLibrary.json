@@ -1,0 +1,20 @@
+{
+  "panels": [
+    {
+      "id": "sample-logs-markdown",
+      "type": "markdown",
+      "title": "Sample Logs Data",
+      "description": "Introduction text for the sample logs dashboard",
+      "config": {
+        "showTitle": false,
+        "markdownContent": "## Sample Logs Data\n\nThis dashboard contains sample data for you to play with. You can view it, search it, and interact with the visualizations. For more information about Kibana, check our docs."
+      },
+      "defaultSize": {
+        "w": 16,
+        "h": 10,
+        "minW": 8,
+        "minH": 4
+      }
+    }
+  ]
+}
