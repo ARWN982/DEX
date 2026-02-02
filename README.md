@@ -76,7 +76,7 @@ mkdir -p src/public/pages/my-new-project/v1.0
 
 Then create `src/public/pages/my-new-project/v1.0/index.tsx` with your React component. Your project will automatically appear on the homepage at http://localhost:3001/
 
-For detailed instructions, see [Creating New Projects Guide](docs/CREATING_NEW_PROJECTS.md).
+Alternatively you can create a project using the UI. Just go to the homepage (http://localhost:3001) and press "Create a project".
 
 ## Development Commands
 
