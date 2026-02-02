@@ -52,7 +52,7 @@ Built with Elastic UI (EUI) components for consistent design language and a poli
 
 1. **Clone and install dependencies:**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/elastic/vibe-kibana.git
    cd vibe-kibana
    npm install --legacy-peer-deps
    ```
