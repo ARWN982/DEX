@@ -570,8 +570,8 @@ export const Dashboards: React.FC = () => {
                 onSettingsClick={handleSettingsClick}
                 autoSize
               />
-                            {/* Horizontal Divider */}
-                            <div style={{ padding: `0 ${gridGap}px` }}>
+              {/* Horizontal Divider to mimic collapsible section */}
+              <div style={{ padding: `0 ${gridGap}px` }}>
                 <EuiHorizontalRule margin="none" />
               </div>
 

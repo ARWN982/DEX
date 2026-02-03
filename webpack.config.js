@@ -78,6 +78,15 @@ module.exports = {
     historyApiFallback: true,
     hot: true,
     liveReload: true,
+    watchFiles: {
+      paths: ['src/**/*'],
+      options: {
+        ignored: /node_modules/,
+      },
+    },
+  },
+  watchOptions: {
+    ignored: /node_modules/,
   },
   mode: "development",
   optimization: {
