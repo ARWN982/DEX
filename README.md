@@ -8,61 +8,71 @@ A prototyping tool to build coded prototypes of Kibana.
 
 ## Features
 
-### 🎨 Project Templates
+#### 🎨 Project Templates
 Quickly spin up new projects using pre-built templates. Each template comes with a foundation of components and layouts, so you can focus on designing rather than setup.
 
-### 🧩 Reusable Component Library
+#### 🧩 Reusable Component Library
 Access a curated set of shared components—charts, panels, controls, grids, and more—all built with Elastic UI. These components are ready to use and customize, helping you maintain consistency across your prototypes.
 
-### 📚 Version History
+#### 📚 Version History
 Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution.
 
-### 📋 Job Stories
+#### 📋 Job Stories
 Track job stories alongside your prototypes. Keep your design decisions grounded in user needs and maintain alignment with product goals.
 
-### 📄 PRD Tracking
+#### 📄 PRD Tracking
 Document and reference product requirements directly within your project. Keep specs, context, and design work together in one place.
 
-### ⚡ Auto-reload Development
+#### ⚡ Auto-reload Development
 Hot reloading for both frontend and backend during development. See your changes instantly without manual refreshes.
 
-### 🎨 Modern UI
+#### 🎨 Modern UI
 Built with Elastic UI (EUI) components for consistent design language and a polished look out of the box.
 
 ## Architecture
 
-### Frontend
+#### Frontend
 - **React 18** with TypeScript for type-safe component development
 - **@elastic/eui** for UI components and design system
 - **@elastic/charts** for data visualization
 - **Webpack** with hot module replacement for development
 
-### Backend
+#### Backend
 - **Express.js** server with TypeScript
 - **@elastic/elasticsearch** client for database connectivity
 - **CORS** enabled for cross-origin requests
 - **Nodemon** for automatic server restarts during development
 
-## Prerequisites
+### Prerequisites
 
 - Node.js 18+ and npm
 - Elasticsearch 8.x cluster running locally or remotely
 
-## Quick Start
+### Quick Start
 
-1. **Clone and install dependencies:**
+1. **Fork and set up the repository:**
    ```bash
-   git clone https://github.com/elastic/vibe-kibana.git
+   # Fork the repository on GitHub by clicking the "Fork" button at the top right
+   # Then clone your fork:
+   git clone https://github.com/YOUR_USERNAME/vibe-kibana.git
    cd vibe-kibana
+   
+   # Install dependencies:
    npm install --legacy-peer-deps
    ```
+   
+   #### Optionally, add the upstream repository to sync changes:
+   Note: You'll need to do this if you want to have access to latest updates (new features, latest version of EUI, new shared components, etc).
+   ```bash
+   git remote add upstream https://github.com/elastic/vibe-kibana.git
+   ```
 
-2. **Start development servers:**
+3. **Start development servers:**
    ```bash
    npm run dev
    ```
 
-3. **Access the application:**
+4. **Access the application:**
    - Frontend: http://localhost:3001 (with auto-reload)
    - Backend API: http://localhost:3000
 
