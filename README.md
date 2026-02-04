@@ -1,6 +1,6 @@
 # Vibe Kibana
 
-A design system and prototyping environment for Kibana experiences.
+A prototyping tool to build coded prototypes of Kibana.
 
 ## Project Team
 
