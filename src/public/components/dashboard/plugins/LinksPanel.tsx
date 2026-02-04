@@ -31,7 +31,6 @@ export const LinksPanel: React.FC<LinksPanelProps> = ({
       css={css`
         display: flex;
         align-items: center;
-        height: 100%;
       `}
     >
       <div

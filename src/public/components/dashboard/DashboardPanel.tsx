@@ -218,10 +218,12 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
         <div
           ref={titleRef}
           data-title
+          className="panel-title"
           css={css`
             padding: ${panelSettings.titlePaddingTop}px ${panelSettings.titlePaddingRight}px ${panelSettings.titlePaddingBottom}px ${panelSettings.titlePaddingLeft}px;
             display: flex;
             align-items: center;
+            height:40px;
             flex-shrink: 0;
           `}
         >
@@ -230,7 +232,7 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
             style={{ 
               fontWeight: panelSettings.titleFontWeight, 
               fontSize: `${panelSettings.titleFontSize}px`,
-              lineHeight: '24px',
+              // lineHeight: '24px',
               flex: 1 
             }}
           >
