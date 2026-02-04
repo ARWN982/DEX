@@ -51,6 +51,8 @@ Built with Elastic UI (EUI) components for consistent design language and a poli
 ### Quick Start
 
 1. **Fork and set up the repository:**
+<img width="458" height="77" alt="image" src="https://github.com/user-attachments/assets/615bb506-8d20-4db0-b403-fd1f449f5acc" />
+
    ```bash
    # Fork the repository on GitHub by clicking the "Fork" button at the top right
    # Then clone your fork:
@@ -60,21 +62,22 @@ Built with Elastic UI (EUI) components for consistent design language and a poli
    # Install dependencies:
    npm install --legacy-peer-deps
    ```
-   
-   #### Optionally, add the upstream repository to sync changes:
-   Note: You'll need to do this if you want to have access to latest updates (new features, latest version of EUI, new shared components, etc).
-   ```bash
-   git remote add upstream https://github.com/elastic/vibe-kibana.git
-   ```
 
-3. **Start development servers:**
+2. **Start development servers:**
    ```bash
    npm run dev
    ```
 
-4. **Access the application:**
+3. **Access the application:**
    - Frontend: http://localhost:3001 (with auto-reload)
    - Backend API: http://localhost:3000
+  
+  
+4. **Optionally, add the upstream repository to sync changes:**
+   Note: You'll need to do this if you want to have access to latest updates (new features, latest version of EUI, new shared components, etc).
+   ```bash
+   git remote add upstream https://github.com/elastic/vibe-kibana.git
+   ```
 
 ## Creating New Projects
 
