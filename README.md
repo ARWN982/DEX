@@ -94,25 +94,83 @@ Alternatively you can create a project using the UI. Just go to the homepage (ht
 ```
 vibe-kibana/
 ├── src/
-│   ├── public/                    # React frontend application
-│   │   ├── components/            # Reusable React components
-│   │   │   ├── index.ts          # Barrel exports for components
-│   │   │   ├── MetricChart.tsx   # Individual chart component
-│   │   │   ├── MetricsGrid.tsx   # Grid layout for charts
-│   │   │   ├── SearchAndFilters.tsx  # Search and date picker
-│   │   │   ├── MetricsCount.tsx  # Metrics count display
-│   │   │   └── Pagination.tsx    # Pagination controls
-│   │   ├── App.tsx               # Main application component (refactored)
-│   │   ├── index.tsx             # React entry point
-│   │   └── index.html            # HTML template
-│   └── server/                   # Express backend server
-│       └── index.ts              # Server entry point and API routes
-├── dist/                         # Built assets (generated)
-├── CLAUDE.md                     # Development workflow and project memory
-├── PROMPTS.md                    # Development history and prompt tracking
-├── package.json                  # Dependencies and scripts
-├── tsconfig.json                 # TypeScript configuration
-└── webpack.config.js             # Frontend build configuration
+│   ├── context/                      # Design context files
+│   │   └── design-principles.md
+│   ├── data/
+│   │   └── versions.json
+│   ├── public/                       # React frontend application
+│   │   ├── components/
+│   │   │   ├── dashboard/            # Dashboard components
+│   │   │   │   ├── DashboardGrid.tsx
+│   │   │   │   ├── DashboardLevaPanel.tsx
+│   │   │   │   ├── DashboardPanel.tsx
+│   │   │   │   ├── PanelSettingsFlyout.tsx
+│   │   │   │   └── plugins/          # Dashboard panel plugins
+│   │   │   │       ├── ControlPanel.tsx
+│   │   │   │       ├── LinksPanel.tsx
+│   │   │   │       ├── MarkdownPanel.tsx
+│   │   │   │       ├── MetricPanel.tsx
+│   │   │   │       ├── SectionHeader.tsx
+│   │   │   │       ├── StackedBarChartPanel.tsx
+│   │   │   │       ├── TablePanel.tsx
+│   │   │   │       ├── TextPanel.tsx
+│   │   │   │       └── TimeSeriesPanel.tsx
+│   │   │   ├── designer-tools/       # Designer workflow tools
+│   │   │   │   ├── CommentingSystem.tsx
+│   │   │   │   ├── CreateProjectModal.tsx
+│   │   │   │   ├── CreateVersionModal.tsx
+│   │   │   │   ├── DesignerToolbar.tsx
+│   │   │   │   ├── JobStoriesFlyout.tsx
+│   │   │   │   ├── ProjectInfoFlyout.tsx
+│   │   │   │   └── VersionSwitcher.tsx
+│   │   │   └── shared/               # Shared UI components
+│   │   │       ├── AppContainer.tsx
+│   │   │       ├── AssistantFlyout.tsx
+│   │   │       ├── EmptyState.tsx
+│   │   │       ├── KibanaHeader.tsx
+│   │   │       ├── NewNav.tsx
+│   │   │       ├── TabBar.tsx
+│   │   │       └── VisorHex.tsx
+│   │   ├── data/                     # Data generators and sample data
+│   │   │   ├── apiDataGenerator.ts
+│   │   │   ├── logsDataGenerator.ts
+│   │   │   └── panelLibrary.json
+│   │   ├── hooks/                    # Custom React hooks
+│   │   │   ├── useChartTheme.ts
+│   │   │   ├── useESQLQuery.ts
+│   │   │   ├── useLogsData.ts
+│   │   │   └── useProjectMetadata.ts
+│   │   ├── pages/                    # Project pages (auto-discovered)
+│   │   │   ├── Homepage.tsx
+│   │   │   └── [project-name]/       # Each project folder
+│   │   │       ├── about.json        # Project metadata
+│   │   │       └── v1.0/             # Version folders
+│   │   │           ├── index.tsx     # Page component
+│   │   │           ├── comments.json # Comments data
+│   │   │           └── jobStories.json
+│   │   ├── store/                    # Zustand state stores
+│   │   │   ├── useAppStore.ts
+│   │   │   ├── useCommentStore.ts
+│   │   │   └── useDashboardPanelSettings.ts
+│   │   ├── templates/                # Page templates
+│   │   │   ├── dashboards/
+│   │   │   └── discover/
+│   │   ├── App.tsx                   # Main application component
+│   │   ├── index.tsx                 # React entry point
+│   │   └── index.html                # HTML template
+│   └── server/                       # Express backend server
+│       ├── index.ts                  # Server entry point
+│       ├── lib/
+│       │   └── elasticsearch.ts      # ES client
+│       └── routes/                   # API routes
+│           ├── comments.ts
+│           ├── jobStories.ts
+│           ├── projects.ts
+│           └── versions.ts
+├── dist/                             # Built assets (generated)
+├── package.json                      # Dependencies and scripts
+├── tsconfig.json                     # TypeScript configuration
+└── webpack.config.js                 # Frontend build configuration
 ```
 
 ## Supported Metric Types
