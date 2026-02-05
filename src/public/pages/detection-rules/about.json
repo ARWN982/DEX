@@ -1,0 +1,8 @@
+{
+  "title": "Detection Rules",
+  "description": "Elastic Security detection rule management interface for creating, managing, and monitoring security detection rules.",
+  "author": "ARWNightingale",
+  "tags": ["security", "rules", "detection", "management"],
+  "category": "Security",
+  "thumbnail": ""
+}
