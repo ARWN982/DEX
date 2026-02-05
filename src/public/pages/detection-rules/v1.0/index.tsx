@@ -4,6 +4,7 @@ import {
   EuiPageBody,
   EuiPageHeader,
   EuiButton,
+  EuiButtonEmpty,
   EuiFlexGroup,
   EuiFlexItem,
   EuiSpacer,
@@ -29,13 +30,12 @@ import SecuritySideNav from './components/SecuritySideNav';
 interface DetectionRule {
   id: string;
   name: string;
-  method: string;
-  runs: string;
+  riskScore: number;
   severity: 'Low' | 'Medium' | 'High';
+  lastRun: string;
+  lastResponse: 'Failed' | 'Succeeded';
   lastUpdated: string;
-  lastResponse: string;
-  version: string;
-  tags: string[];
+  notify: boolean;
   enabled: boolean;
   hasWarning: boolean;
 }
@@ -43,157 +43,121 @@ interface DetectionRule {
 const mockRules: DetectionRule[] = [
   {
     id: '1',
-    name: 'Persistence via Scheduled Discovery/Setubot/Schtask Windows API Execution',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.123',
-    lastResponse: '2.9s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Persistence'],
+    name: 'Unusual Network Destination Domain Name',
+    riskScore: 50,
+    severity: 'High',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Failed',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: true,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '2',
-    name: 'Msi.Exec Detection via Added Windows Shell or Command Web Processes',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'High',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.148',
-    lastResponse: '7.0s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Execution'],
+    name: 'Potential PowerShell HackTool Script by Author',
+    riskScore: 50,
+    severity: 'Low',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Succeeded',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: false,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '3',
-    name: 'AWS SG (to any) EventTypes (e.g. Sensitive Entries on Window Matching',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'Medium',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.149',
-    lastResponse: '7.0s',
-    version: 'V. 1.0 and later',
-    tags: ['AWS', 'Configuration'],
+    name: 'Potential Widespread Malware Infection Across Multiple Hosts',
+    riskScore: 50,
+    severity: 'High',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Succeeded',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: true,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '4',
-    name: 'Unusual Cobalt/detect Cmd Upstart',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'High',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.151',
-    lastResponse: '2.8s',
-    version: 'V. 1.0 and later',
-    tags: ['Linux', 'Persistence'],
+    name: 'Route53 Resolver Query Log Configuration Deleted',
+    riskScore: 50,
+    severity: 'Medium',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Failed',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: false,
     enabled: true,
-    hasWarning: true,
+    hasWarning: false,
   },
   {
     id: '5',
-    name: 'Andmed processes CMD',
-    method: 'Modified',
-    runs: 'Every 5m',
+    name: 'Potential File Download via a Headless Browser',
+    riskScore: 50,
     severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.152',
-    lastResponse: '2.8s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Defense Evasion'],
-    enabled: false,
+    lastRun: '29 minutes ago',
+    lastResponse: 'Succeeded',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: true,
+    enabled: true,
     hasWarning: false,
   },
   {
     id: '6',
-    name: 'Possible Encoding Attempts via WScript Library',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.152',
-    lastResponse: '2.8s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Execution'],
+    name: 'EC2 AM Shared with Another Account',
+    riskScore: 50,
+    severity: 'Medium',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Failed',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: false,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '7',
-    name: 'Regsvcs.EXE Service Cmd Uninstallation',
-    method: 'Modified',
-    runs: 'Every 5m',
+    name: 'Suspicious File Renamed via SMB',
+    riskScore: 50,
     severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.152',
-    lastResponse: '2.8s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Defense Evasion'],
+    lastRun: '29 minutes ago',
+    lastResponse: 'Succeeded',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: true,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '8',
-    name: 'Azure ML Studio Notebook',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.246',
-    lastResponse: '7.1s',
-    version: 'V. 1.0 and later',
-    tags: ['Azure', 'Execution'],
+    name: 'AWS EC2 Admin Credential Fetch via Assumed Role',
+    riskScore: 50,
+    severity: 'High',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Failed',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: false,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '9',
-    name: 'Executing Default Calltab via VMToolsd',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.156',
-    lastResponse: '2.8s',
-    version: 'V. 1.0 and later',
-    tags: ['Linux', 'Execution'],
+    name: 'Unusual Execution via Microsoft Common Console File',
+    riskScore: 50,
+    severity: 'Medium',
+    lastRun: '29 minutes ago',
+    lastResponse: 'Succeeded',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: true,
     enabled: true,
     hasWarning: false,
   },
   {
     id: '10',
-    name: 'Account Password Reset Remotely',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'High',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.204',
-    lastResponse: '7.1s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Persistence'],
-    enabled: true,
-    hasWarning: false,
-  },
-  {
-    id: '11',
-    name: 'Encoding Default Calltab via VMToolsd',
-    method: 'Modified',
-    runs: 'Every 5m',
+    name: 'Unsigned DLL Loaded by a Trusted Process',
+    riskScore: 50,
     severity: 'Low',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.292',
-    lastResponse: '7.1s',
-    version: 'V. 1.0 and later',
-    tags: ['Linux', 'Execution'],
-    enabled: true,
-    hasWarning: false,
-  },
-  {
-    id: '12',
-    name: 'LDAP System Mutual Authentication Windows Directory Mutating',
-    method: 'Modified',
-    runs: 'Every 5m',
-    severity: 'High',
-    lastUpdated: 'Dec 5, 2024 at 17:17:27.304',
-    lastResponse: '7.1s',
-    version: 'V. 1.0 and later',
-    tags: ['Windows', 'Credential Access'],
+    lastRun: '29 minutes ago',
+    lastResponse: 'Succeeded',
+    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
+    notify: false,
     enabled: true,
     hasWarning: false,
   },
@@ -224,19 +188,14 @@ const DetectionRulesPage: React.FC = () => {
     {
       field: 'name',
       name: 'Rule',
-      width: '22%',
+      width: '30%',
       sortable: true,
       render: (name: string, item: DetectionRule) => (
         <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-          {item.hasWarning && (
-            <EuiFlexItem grow={false}>
-              <EuiIcon type="alert" color="danger" size="m" />
-            </EuiFlexItem>
-          )}
           <EuiFlexItem grow={false}>
-            <EuiLink>
-              <EuiText size="s">
-                <strong>{name}</strong>
+            <EuiLink href="#">
+              <EuiText size="s" style={{ fontWeight: 600 }}>
+                {name}
               </EuiText>
             </EuiLink>
           </EuiFlexItem>
@@ -244,86 +203,115 @@ const DetectionRulesPage: React.FC = () => {
       ),
     },
     {
-      field: 'method',
-      name: 'Method',
-      width: '100px',
-      render: (method: string) => (
-        <EuiBadge color="hollow" style={{ fontSize: '11px' }}>
-          {method}
-        </EuiBadge>
+      name: '',
+      width: '60px',
+      render: () => (
+        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <EuiIcon type="analyzeEvent" size="s" />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiIcon type="tag" size="s" />
+          </EuiFlexItem>
+        </EuiFlexGroup>
       ),
     },
     {
-      field: 'runs',
-      name: 'Runs',
-      width: '80px',
+      field: 'riskScore',
+      name: (
+        <span>
+          Risk score <EuiIcon type="sortable" size="s" />
+        </span>
+      ),
+      width: '100px',
       sortable: true,
-      render: (runs: string) => <EuiText size="xs">{runs}</EuiText>,
+      render: (riskScore: number) => (
+        <EuiText size="xs">{riskScore}</EuiText>
+      ),
     },
     {
       field: 'severity',
-      name: 'Severity',
-      width: '100px',
+      name: (
+        <span>
+          Severity <EuiIcon type="sortable" size="s" />
+        </span>
+      ),
+      width: '120px',
       sortable: true,
       render: (severity: string) => (
-        <EuiHealth color={getSeverityColor(severity)} style={{ fontSize: '12px' }}>
+        <EuiHealth color={getSeverityColor(severity)} style={{ fontSize: '12px', fontWeight: 500 }}>
           {severity}
+        </EuiHealth>
+      ),
+    },
+    {
+      field: 'lastRun',
+      name: (
+        <span>
+          Last run <EuiIcon type="sortable" size="s" />
+        </span>
+      ),
+      width: '140px',
+      sortable: true,
+      render: (lastRun: string) => (
+        <EuiText size="xs" style={{ fontSize: '12px' }}>
+          {lastRun}
+        </EuiText>
+      ),
+    },
+    {
+      field: 'lastResponse',
+      name: (
+        <span>
+          Last response <EuiIcon type="sortable" size="s" />
+        </span>
+      ),
+      width: '140px',
+      sortable: true,
+      render: (lastResponse: 'Failed' | 'Succeeded') => (
+        <EuiHealth 
+          color={lastResponse === 'Failed' ? 'danger' : 'success'} 
+          style={{ fontSize: '12px', fontWeight: 500 }}
+        >
+          {lastResponse}
         </EuiHealth>
       ),
     },
     {
       field: 'lastUpdated',
       name: (
-        <EuiToolTip content="Last updated">
-          <span>
-            Last updated <EuiIcon type="sortable" size="s" />
-          </span>
-        </EuiToolTip>
+        <span>
+          Last updated <EuiIcon type="sortable" size="s" />
+        </span>
       ),
       width: '180px',
       sortable: true,
       render: (lastUpdated: string) => (
-        <EuiText size="xs" color="subdued" style={{ whiteSpace: 'nowrap' }}>
+        <EuiText size="xs" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
           {lastUpdated}
         </EuiText>
       ),
     },
     {
-      field: 'lastResponse',
-      name: 'Last response',
-      width: '110px',
-      sortable: true,
-      render: (lastResponse: string) => <EuiText size="xs">{lastResponse}</EuiText>,
-    },
-    {
-      field: 'version',
-      name: 'Version',
-      width: '120px',
-      render: (version: string) => (
-        <EuiText size="xs" color="subdued">
-          {version}
-        </EuiText>
+      field: 'notify',
+      name: (
+        <span>
+          Notify <EuiIcon type="sortable" size="s" />
+        </span>
       ),
-    },
-    {
-      field: 'tags',
-      name: 'Tags',
-      width: '140px',
-      render: (tags: string[]) => (
-        <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
-          {tags.slice(0, 2).map((tag, index) => (
-            <EuiFlexItem key={index} grow={false}>
-              <EuiBadge color="hollow" style={{ fontSize: '10px' }}>
-                {tag}
-              </EuiBadge>
-            </EuiFlexItem>
-          ))}
-        </EuiFlexGroup>
+      width: '80px',
+      align: 'center',
+      render: (notify: boolean) => (
+        notify ? <EuiIcon type="bell" size="m" /> : null
       ),
     },
     {
       field: 'enabled',
-      name: 'Enabled',
+      name: (
+        <span>
+          Enabled <EuiIcon type="sortable" size="s" />
+        </span>
+      ),
       width: '80px',
       align: 'center',
       render: (enabled: boolean) => (
@@ -338,7 +326,7 @@ const DetectionRulesPage: React.FC = () => {
     },
     {
       name: '',
-      width: '40px',
+      width: '50px',
       align: 'center',
       render: () => (
         <EuiButtonIcon
@@ -388,28 +376,31 @@ const DetectionRulesPage: React.FC = () => {
       <SecurityHeader onMenuClick={() => setNavIsOpen(!navIsOpen)} />
       <SecuritySideNav isOpen={navIsOpen} onClose={() => setNavIsOpen(false)} />
       
-      <EuiPage paddingSize="l" style={{ marginTop: 48, marginLeft: navIsOpen ? 72 : 0 }}>
-        <EuiPageBody>
+      <div style={{ backgroundColor: 'white', minHeight: '100vh', marginTop: 48 }}>
+        <EuiPage paddingSize="none" style={{ backgroundColor: 'white' }}>
+          <EuiPageBody style={{ padding: '16px', backgroundColor: 'white' }}>
         {/* Page Header */}
         <EuiPageHeader
           pageTitle="Rules"
           rightSideItems={[
-            <EuiButton iconType="gear" color="text" size="s" key="settings">
-              Settings
-            </EuiButton>,
-            <EuiButton iconType="plusInCircle" color="text" size="s" key="add-elastic">
-              Add Elastic rules
-            </EuiButton>,
-            <EuiButtonIcon iconType="iInCircle" aria-label="Info" color="text" key="info" />,
-            <EuiButton iconType="gear" color="text" size="s" key="manage">
-              Manage rules
-            </EuiButton>,
-            <EuiButton iconType="importAction" color="text" size="s" key="import">
-              Import rules
-            </EuiButton>,
             <EuiButton iconType="plusInCircle" fill size="s" key="create">
               Create new rule
             </EuiButton>,
+            <EuiButtonEmpty iconType="importAction" size="s" key="import">
+              Import rules
+            </EuiButtonEmpty>,
+            <EuiButtonEmpty iconType="download" size="s" key="manage-value">
+              Manage value lists
+            </EuiButtonEmpty>,
+            <EuiButtonEmpty iconType="plusInCircle" size="s" key="add-elastic">
+              Add Elastic rules
+              <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
+                1517
+              </EuiBadge>
+            </EuiButtonEmpty>,
+            <EuiButtonEmpty iconType="gear" size="s" key="settings">
+              Settings
+            </EuiButtonEmpty>,
           ]}
         />
 
@@ -513,7 +504,8 @@ const DetectionRulesPage: React.FC = () => {
           </EuiText>
         )}
         </EuiPageBody>
-      </EuiPage>
+        </EuiPage>
+      </div>
     </>
   );
 };

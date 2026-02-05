@@ -91,7 +91,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = ({ isOpen, onClose }) =>
       size={72}
       style={{ 
         paddingTop: 0,  // Remove padding to align Security icon to top
-        backgroundColor: 'white',
+        backgroundColor: '#F6F9FC',
         borderRight: '1px solid #e3e8f2'
       }}
     >
