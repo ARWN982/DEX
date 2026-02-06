@@ -142,7 +142,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
               <NavItem icon="dashboardApp" label="Dashboards" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <NavItem icon="indexEdit" label="Rules" isActive />
+              <NavItem icon="radar" label="Rules" isActive />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <NavItem icon="alert" label="Alerts" />
@@ -151,16 +151,13 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
               <NavItem icon="bolt" label="Attack discovery" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <NavItem icon="folderClosed" label="Assets" />
+              <NavItem icon="bullseye" label="Findings" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <NavItem icon="calendar" label="Cases" />
+              <NavItem icon="folderClosed" label="Cases" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <NavItem icon="visBarVerticalStacked" label="Entity analytics" />
-            </EuiFlexItem>
-            <EuiFlexItem grow={false}>
-              <NavItem icon="list" label="Explore" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <NavItem icon="boxesVertical" label="More" />
@@ -229,7 +226,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
                   cursor: 'pointer',
                 }}
               >
-                <EuiIcon type="menu" size="m" color="text" />
+                <EuiIcon type="document" size="m" color="text" />
               </div>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
