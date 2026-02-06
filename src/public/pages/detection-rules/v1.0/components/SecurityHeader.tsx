@@ -34,7 +34,7 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
   ];
 
   return (
-    <EuiHeader position="fixed" style={{ zIndex: 1000, backgroundColor: '#F6F9FC' }}>
+    <EuiHeader position="fixed" style={{ zIndex: 1000, backgroundColor: '#F6F9FC', borderBottom: '1px solid #D3DAE6' }}>
       {/* Left Section: Elastic Logo + Space Avatar + Breadcrumbs */}
       <EuiHeaderSection grow={false}>
         <EuiHeaderSectionItem>
