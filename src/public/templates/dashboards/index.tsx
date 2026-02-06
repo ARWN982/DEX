@@ -4,7 +4,7 @@ import {
 } from "@elastic/eui";
 import React, { useState, useMemo } from "react";
 import {
-  NewNav,
+  NavBar,
   AppContainer,
   KibanaHeader,
   DashboardGrid,
@@ -532,7 +532,7 @@ export const Dashboards: React.FC = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100%" }}>
-      <NewNav activeItem="dashboards" />
+      <NavBar solution="o11y" activeItem="dashboard" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
         <KibanaHeader
           colorMode={colorMode}

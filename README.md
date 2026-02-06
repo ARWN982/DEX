@@ -141,7 +141,7 @@ vibe-kibana/
 │   │   │       ├── AssistantFlyout.tsx
 │   │   │       ├── EmptyState.tsx
 │   │   │       ├── KibanaHeader.tsx
-│   │   │       ├── NewNav.tsx
+│   │   │       ├── NavBar.tsx
 │   │   │       ├── TabBar.tsx
 │   │   │       └── VisorHex.tsx
 │   │   ├── data/                     # Data generators and sample data

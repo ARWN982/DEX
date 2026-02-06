@@ -19,7 +19,7 @@ import {
   FieldList,
   DocumentDataGrid,
   AssistantFlyout,
-  NewNav,
+  NavBar,
   AppContainer,
   KibanaHeader,
 } from "../../components";
@@ -720,7 +720,7 @@ export const Discover: React.FC = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100%" }}>
-      <NewNav activeItem="discover" />
+      <NavBar solution="o11y" activeItem="discover" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
         <KibanaHeader
           colorMode={colorMode}
