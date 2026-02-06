@@ -20,7 +20,6 @@ import {
   EuiIcon,
   EuiText,
   EuiToolTip,
-  EuiCallOut,
   EuiLink,
   EuiPageSidebar,
   EuiFilterButton,
@@ -443,39 +442,45 @@ const DetectionRulesPage: React.FC = () => {
             >
               <div style={{ padding: '24px' }}>
         {/* Page Header */}
-        <EuiPageHeader
-          pageTitle="Rules"
-          rightSideItems={[
-            <EuiButton iconType="plusInCircle" fill size="s" key="create">
-              Create new rule
-            </EuiButton>,
-            <EuiButtonEmpty iconType="importAction" size="s" key="import">
-              Import rules
-            </EuiButtonEmpty>,
-            <EuiButtonEmpty iconType="download" size="s" key="manage-value">
-              Manage value lists
-            </EuiButtonEmpty>,
-            <EuiButtonEmpty iconType="plusInCircle" size="s" key="add-elastic">
-              Add Elastic rules
-              <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
-                1517
-              </EuiBadge>
-            </EuiButtonEmpty>,
-            <EuiButtonEmpty iconType="gear" size="s" key="settings">
-              Settings
-            </EuiButtonEmpty>,
-          ]}
-        />
-
-        <EuiSpacer size="m" />
-
-        {/* Info Banner */}
-        <EuiCallOut size="s" iconType="iInCircle">
-          <EuiText size="s">
-            In rule is one action per rule, built or created in version 7.13, multiple actions are no longer{' '}
-            <EuiLink>Learn more</EuiLink>
-          </EuiText>
-        </EuiCallOut>
+        <div style={{ marginLeft: '-24px', marginRight: '-24px', paddingLeft: '24px', paddingRight: '24px' }}>
+          <EuiPageHeader
+            pageTitle="Rules"
+            responsive={false}
+            paddingSize="none"
+            rightSideItems={[
+              <EuiFlexGroup gutterSize="s" responsive={false} wrap={false} key="buttons-group">
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty iconType="gear" size="s">
+                    Settings
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty iconType="plusInCircle" size="s">
+                    Add Elastic rules
+                    <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
+                      1517
+                    </EuiBadge>
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty iconType="download" size="s">
+                    Manage value lists
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty iconType="importAction" size="s">
+                    Import rules
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButton iconType="plusInCircle" fill size="s">
+                    Create new rule
+                  </EuiButton>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            ]}
+          />
+        </div>
 
         <EuiSpacer size="m" />
 

@@ -94,14 +94,14 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
               <EuiButton
                 iconType="sparkles"
                 size="s"
-                fill
                 style={{ 
-                  background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #D946EF 100%)',
+                  backgroundColor: '#d9e8ff',
+                  color: '#1750ba',
                   border: 'none',
                   fontWeight: 500
                 }}
               >
-                AI Assistant
+                AI Agent
               </EuiButton>
             </EuiFlexItem>
             
