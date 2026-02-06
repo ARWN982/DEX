@@ -6,8 +6,6 @@ import {
   EuiTitle,
   EuiText,
   EuiHorizontalRule,
-  EuiLink,
-  EuiIcon,
 } from '@elastic/eui';
 
 interface RulesSecondaryNavProps {
@@ -23,10 +21,8 @@ const RulesSecondaryNav: React.FC<RulesSecondaryNavProps> = ({
     <div style={{ 
       width: 240, 
       padding: '8px 12px',
-      borderRight: '1px solid #D3DAE6',
+      borderRight: 'none',
       height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
     }}>
       {/* Header */}
       <div style={{ padding: '4px', marginBottom: '12px' }}>
@@ -36,9 +32,6 @@ const RulesSecondaryNav: React.FC<RulesSecondaryNavProps> = ({
           </h4>
         </EuiTitle>
       </div>
-
-      {/* Content - flex grow to push feedback to bottom */}
-      <div style={{ flex: 1 }}>
         {/* Management Section */}
         <div style={{ marginBottom: 2 }}>
           <div style={{ padding: '6px 4px', height: 32 }}>
@@ -49,39 +42,51 @@ const RulesSecondaryNav: React.FC<RulesSecondaryNavProps> = ({
           
           <EuiListGroup flush gutterSize="none">
             <EuiListGroupItem
-              label="Detection rules (SIEM)"
+              label={
+                <span style={{ color: selectedSection === 'installed' ? '#1750BA' : '#1d2a3e' }}>
+                  Detection rules (SIEM)
+                </span>
+              }
               onClick={() => onSectionChange('installed')}
               isActive={selectedSection === 'installed'}
               style={{ 
                 height: 32,
                 padding: '6px 4px',
                 borderRadius: 4,
-                fontSize: 14,
-                fontWeight: 500,
+                fontSize: 13,
+                fontWeight: 400,
               }}
             />
             <EuiListGroupItem
-              label="Benchmarks"
+              label={
+                <span style={{ color: selectedSection === 'benchmarks' ? '#1750BA' : '#1d2a3e' }}>
+                  Benchmarks
+                </span>
+              }
               onClick={() => onSectionChange('benchmarks')}
               isActive={selectedSection === 'benchmarks'}
               style={{ 
                 height: 32,
                 padding: '6px 4px',
                 borderRadius: 4,
-                fontSize: 14,
-                fontWeight: 500,
+                fontSize: 13,
+                fontWeight: 400,
               }}
             />
             <EuiListGroupItem
-              label="Shared exception lists"
+              label={
+                <span style={{ color: selectedSection === 'exceptions' ? '#1750BA' : '#1d2a3e' }}>
+                  Shared exception lists
+                </span>
+              }
               onClick={() => onSectionChange('exceptions')}
               isActive={selectedSection === 'exceptions'}
               style={{ 
                 height: 32,
                 padding: '6px 4px',
                 borderRadius: 4,
-                fontSize: 14,
-                fontWeight: 500,
+                fontSize: 13,
+                fontWeight: 400,
               }}
             />
           </EuiListGroup>
@@ -99,37 +104,23 @@ const RulesSecondaryNav: React.FC<RulesSecondaryNavProps> = ({
           
           <EuiListGroup flush gutterSize="none">
             <EuiListGroupItem
-              label="MITRE ATT&CK® Coverage"
+              label={
+                <span style={{ color: selectedSection === 'mitre-coverage' ? '#1750BA' : '#1d2a3e' }}>
+                  MITRE ATT&CK® Coverage
+                </span>
+              }
               onClick={() => onSectionChange('mitre-coverage')}
               isActive={selectedSection === 'mitre-coverage'}
               style={{ 
                 height: 32,
                 padding: '6px 4px',
                 borderRadius: 4,
-                fontSize: 14,
-                fontWeight: 500,
+                fontSize: 13,
+                fontWeight: 400,
               }}
             />
           </EuiListGroup>
         </div>
-      </div>
-
-      {/* Feedback snippet at bottom */}
-      <div style={{ paddingTop: 16 }}>
-        <EuiLink 
-          href="#" 
-          style={{ 
-            fontSize: 14, 
-            fontWeight: 500,
-            color: '#1d2a3e',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-          }}
-        >
-          Navigation feedback <EuiIcon type="popout" size="s" />
-        </EuiLink>
-      </div>
     </div>
   );
 };

@@ -406,33 +406,42 @@ const DetectionRulesPage: React.FC = () => {
         minHeight: '100vh', 
         marginTop: 48,
         marginLeft: 80,
-        paddingLeft: '4px',
-        paddingRight: '0',
-        paddingTop: '2px',
-        paddingBottom: '2px',
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingTop: '8px',
+        paddingBottom: '8px',
       }}>
-        {/* White Card Container */}
-        <EuiPanel 
-          paddingSize="none" 
-          hasShadow={true}
-          style={{ 
-            borderRadius: 8, 
-            overflow: 'hidden',
-            minHeight: 'calc(100vh - 52px)'
-          }}
-        >
-          <EuiFlexGroup gutterSize="none" responsive={false} style={{ minHeight: 'calc(100vh - 52px)' }}>
-            {/* Secondary Navigation */}
-            <EuiFlexItem grow={false}>
+        <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart" style={{ minHeight: 'calc(100vh - 64px)' }}>
+          {/* Secondary Navigation Card */}
+          <EuiFlexItem grow={false}>
+            <EuiPanel 
+              paddingSize="none" 
+              hasShadow={true}
+              style={{ 
+                borderRadius: 8, 
+                overflow: 'hidden',
+                minHeight: 'calc(100vh - 64px)'
+              }}
+            >
               <RulesSecondaryNav 
                 selectedSection={selectedTab} 
                 onSectionChange={(section) => setSelectedTab(section as 'installed' | 'monitoring' | 'updates')}
               />
-            </EuiFlexItem>
+            </EuiPanel>
+          </EuiFlexItem>
 
-            {/* Main Content Area */}
-            <EuiFlexItem>
-              <div style={{ paddingLeft: '16px', paddingRight: '24px', paddingTop: '24px', paddingBottom: '24px' }}>
+          {/* Rules Panel Card */}
+          <EuiFlexItem>
+            <EuiPanel 
+              paddingSize="none" 
+              hasShadow={true}
+              style={{ 
+                borderRadius: 8, 
+                overflow: 'hidden',
+                minHeight: 'calc(100vh - 64px)'
+              }}
+            >
+              <div style={{ padding: '24px' }}>
         {/* Page Header */}
         <EuiPageHeader
           pageTitle="Rules"
@@ -631,9 +640,9 @@ const DetectionRulesPage: React.FC = () => {
           </EuiText>
         )}
               </div>
-            </EuiFlexItem>
-          </EuiFlexGroup>
-        </EuiPanel>
+            </EuiPanel>
+          </EuiFlexItem>
+        </EuiFlexGroup>
       </div>
     </>
   );
