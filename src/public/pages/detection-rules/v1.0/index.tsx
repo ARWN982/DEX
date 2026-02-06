@@ -176,7 +176,6 @@ const DetectionRulesPage: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<'installed' | 'monitoring' | 'updates'>('installed');
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(50);
-  const [navIsOpen, setNavIsOpen] = useState(true);
   
   // Filter popover states
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
@@ -398,20 +397,19 @@ const DetectionRulesPage: React.FC = () => {
 
   return (
     <>
-      <SecurityHeader onMenuClick={() => setNavIsOpen(!navIsOpen)} />
-      <SecuritySideNav isOpen={navIsOpen} onClose={() => setNavIsOpen(false)} />
+      <SecurityHeader onMenuClick={() => {}} />
+      <SecuritySideNav />
       
       {/* Gray Background Container */}
       <div style={{ 
         backgroundColor: '#F6F9FC', 
         minHeight: '100vh', 
         marginTop: 48,
-        marginLeft: navIsOpen ? 72 : 0,
-        paddingLeft: '2px',
+        marginLeft: 80,
+        paddingLeft: '4px',
         paddingRight: '0',
         paddingTop: '2px',
         paddingBottom: '2px',
-        transition: 'margin-left 0.25s ease'
       }}>
         {/* White Card Container */}
         <EuiPanel 
@@ -434,7 +432,7 @@ const DetectionRulesPage: React.FC = () => {
 
             {/* Main Content Area */}
             <EuiFlexItem>
-              <div style={{ paddingLeft: '8px', paddingRight: '24px', paddingTop: '24px', paddingBottom: '24px' }}>
+              <div style={{ paddingLeft: '16px', paddingRight: '24px', paddingTop: '24px', paddingBottom: '24px' }}>
         {/* Page Header */}
         <EuiPageHeader
           pageTitle="Rules"

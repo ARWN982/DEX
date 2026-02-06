@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  EuiCollapsibleNav,
   EuiFlexItem,
   EuiText,
   EuiSpacer,
@@ -10,8 +9,8 @@ import {
 } from '@elastic/eui';
 
 interface SecuritySideNavProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 interface NavItemProps {
@@ -82,17 +81,20 @@ const SecurityLogo: React.FC = () => {
   );
 };
 
-const SecuritySideNav: React.FC<SecuritySideNavProps> = ({ isOpen, onClose }) => {
+const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
   return (
-    <EuiCollapsibleNav
-      isOpen={isOpen}
-      onClose={onClose}
-      isDocked
-      size={72}
+    <div
       style={{ 
-        paddingTop: 0,  // Remove padding to align Security icon to top
+        width: '80px',
+        position: 'fixed',
+        top: '48px',
+        left: 0,
+        bottom: 0,
+        paddingTop: '8px',
+        paddingBottom: '16px',
         backgroundColor: '#F6F9FC',
-        borderRight: 'none'
+        borderRight: 'none',
+        zIndex: 999,
       }}
     >
       {/* Content Container - Top aligned */}
@@ -248,7 +250,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = ({ isOpen, onClose }) =>
           </EuiFlexGroup>
         </EuiFlexItem>
       </EuiFlexGroup>
-    </EuiCollapsibleNav>
+    </div>
   );
 };
 
