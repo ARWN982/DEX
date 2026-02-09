@@ -1,5 +1,6 @@
 import { Cursor, ChatCircle, UserList } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { getToolbarColors, createBoxShadow } from '../../styles/designToolsColors';
 import { AboutFlyout, type ProjectMetadata } from './AboutFlyout';
@@ -27,6 +28,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | null>(null);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { colorMode } = useAppStore();
+  const navigate = useNavigate();
 
   const handleMouseEnter = () => {
     if (hideTimeoutRef.current) {
@@ -119,6 +121,10 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
     }
   };
 
+  const handleHomeClick = () => {
+    navigate('/');
+  };
+
   const handleAboutClick = () => {
     setIsAboutFlyoutOpen(true);
   };
@@ -144,6 +150,36 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         data-exclude-comments
       >
         <div style={toolbarStyle}>
+          {/* Home Button */}
+          <button
+            style={{
+              backgroundColor: colors.buttonHover,
+              color: colors.textPrimary,
+              border: 'none',
+              borderRadius: '16px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              outline: 'none',
+              marginRight: '16px',
+            }}
+            onClick={handleHomeClick}
+            title="Go to home page"
+            onMouseEnter={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = colors.accent;
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+            }}
+          >
+            Home
+          </button>
+
           {/* About Button */}
           <button
             style={{

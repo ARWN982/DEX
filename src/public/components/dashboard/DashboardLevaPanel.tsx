@@ -19,7 +19,7 @@ export const DashboardLevaPanel: React.FC = () => {
     }),
     "Panel Border": folder({
       borderStyle: {
-        value: "shadow",
+        value: "border",
         options: {
           "Border": "border",
           "Box Shadow": "shadow",
@@ -36,7 +36,7 @@ export const DashboardLevaPanel: React.FC = () => {
         render: (get) => get("Panel Border.borderStyle") === "border",
       },
       borderColorKey: {
-        value: "borderBasePlain",
+        value: "borderBaseSubdued",
         options: {
           "Subdued": "borderBaseSubdued",
           "Plain": "borderBasePlain",
@@ -56,6 +56,15 @@ export const DashboardLevaPanel: React.FC = () => {
         value: 500, 
         options: { Normal: 400, Medium: 500, Semibold: 600, Bold: 700 },
         label: "Font Weight" 
+      },
+      titleHeight: {
+        value: 32,
+        options: {
+          "24px": 24,
+          "32px": 32,
+          "40px": 40,
+        },
+        label: "Height",
       },
       "Title Padding": folder({
         titlePaddingTop: { value: 0, min: 0, max: 24, step: 1, label: "Top" },

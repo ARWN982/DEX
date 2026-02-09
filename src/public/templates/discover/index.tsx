@@ -22,7 +22,9 @@ import {
   NavBar,
   AppContainer,
   KibanaHeader,
+  TabBar,
 } from "../../components";
+import type { Tab } from "../../components";
 import {
   BaseDocument,
   getDataGenerator,
@@ -120,6 +122,47 @@ export const Discover: React.FC = () => {
 
   // VisorHex generating state - still managed at page level for handlePromptSubmit
   const [visorHexGenerating, setVisorHexGenerating] = useState(false);
+
+  // Tabs state
+  const [tabs, setTabs] = useState<Tab[]>([{ id: "1", title: "Untitled", isActive: true }]);
+  const [activeTabId, setActiveTabId] = useState<string>("1");
+
+  const handleTabClick = (tabId: string) => {
+    setActiveTabId(tabId);
+    setTabs((prevTabs) =>
+      prevTabs.map((tab) => ({
+        ...tab,
+        isActive: tab.id === tabId,
+      }))
+    );
+  };
+
+  const handleTabClose = (tabId: string) => {
+    if (tabs.length === 1) return; // Don't close the last tab
+    const newTabs = tabs.filter((tab) => tab.id !== tabId);
+    if (activeTabId === tabId) {
+      // If closing active tab, switch to first tab
+      const newActiveTabId = newTabs[0]?.id || "";
+      setActiveTabId(newActiveTabId);
+      setTabs(
+        newTabs.map((tab, index) => ({
+          ...tab,
+          isActive: index === 0,
+        }))
+      );
+    } else {
+      setTabs(newTabs);
+    }
+  };
+
+  const handleAddTab = () => {
+    const newTabId = String(Date.now());
+    setTabs((prevTabs) => [
+      ...prevTabs.map((tab) => ({ ...tab, isActive: false })),
+      { id: newTabId, title: "Untitled", isActive: true },
+    ]);
+    setActiveTabId(newTabId);
+  };
 
 
   // Animate dots during AI processing
@@ -731,6 +774,16 @@ export const Discover: React.FC = () => {
         />
         <div style={{ flex: 1, position: "relative", overflow: "hidden", paddingTop: 0, paddingRight: euiTheme.size.s, paddingBottom: euiTheme.size.s, paddingLeft: 0 }}>
           <AppContainer>
+          {/* Tabs row with AppMenuBar */}
+          <TabBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onTabClick={handleTabClick}
+            onTabCloseMultiple={handleTabClose}
+            onAddTab={handleAddTab}
+            showAppMenuBar={true}
+            appMenuBarConfig="discover"
+          />
           {/* Search bar */}
           <div
             style={{

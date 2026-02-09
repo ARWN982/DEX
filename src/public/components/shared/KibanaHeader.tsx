@@ -120,6 +120,7 @@ export const KibanaHeader: React.FC<KibanaHeaderProps> = ({
         paddingTop: 0,
         paddingBottom: 0,
         height: "48px",
+        flexShrink: 0,
         ...(display === "new" && {
           backgroundColor: euiTheme.colors.backgroundBaseSubdued,
         }),

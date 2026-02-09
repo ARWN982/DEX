@@ -7,6 +7,8 @@ import {
   NavBar,
   AppContainer,
   KibanaHeader,
+  UnifiedSearch,
+  AppMenuBar,
   DashboardGrid,
   GridItem,
   MarkdownPanel,
@@ -541,9 +543,22 @@ export const Dashboards: React.FC = () => {
           isHomepage={false}
           display="classic"
         />
-        <div style={{ flex: 1, position: "relative", overflow: "hidden", paddingTop: 0, paddingRight: euiTheme.size.s, paddingBottom: euiTheme.size.s, paddingLeft: 0 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <AppContainer>
-            <div style={{ height: "100%", width: "100%", overflow: "auto" }}>
+            <div style={{ flexShrink: 0 }}>
+              <AppMenuBar config="dashboard-view" />
+              <EuiHorizontalRule margin="none" />
+              <UnifiedSearch
+                onSearchChange={(value) => console.log("Search:", value)}
+                onFilterClick={() => console.log("Filter clicked")}
+                onAddClick={() => console.log("Add clicked")}
+                onRefresh={() => console.log("Refresh clicked")}
+                onTimeChange={(start, end) => console.log("Time changed:", start, end)}
+              />
+              <EuiHorizontalRule margin="none" />
+            </div>
+            <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
+            <div style={{ padding: `${euiTheme.size.s} 0`, height: "100%", width: "100%", overflow: "auto" }}>
               {/* Top Grid */}
               <DashboardGrid
                 items={renderedTopGridItems}
@@ -588,7 +603,8 @@ export const Dashboards: React.FC = () => {
               
 
             </div>
-          </AppContainer>
+          </div>
+        </AppContainer>
         </div>
       </div>
 
