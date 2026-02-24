@@ -1,10 +1,11 @@
-import { Cursor, ChatCircle, UserList } from 'phosphor-react';
+import { Cursor, ChatCircle, UserList, X } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { getToolbarColors, createBoxShadow } from '../../styles/designToolsColors';
 import { AboutFlyout, type ProjectMetadata } from './AboutFlyout';
 import { VersionSwitcher } from './VersionSwitcher';
+
 
 interface DesignerToolbarProps {
   isCommentingEnabled: boolean;
@@ -26,6 +27,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   const [isVisible, setIsVisible] = useState(false);
   const [isAboutFlyoutOpen, setIsAboutFlyoutOpen] = useState(false);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | null>(null);
+  const [isDismissed, setIsDismissed] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { colorMode } = useAppStore();
   const navigate = useNavigate();
@@ -140,6 +142,21 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
       onToggleCommenting();
     }
   };
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+  };
+
+  // Don't render toolbar if dismissed
+  if (isDismissed) {
+    return (
+      <AboutFlyout
+        isOpen={isAboutFlyoutOpen}
+        onClose={() => setIsAboutFlyoutOpen(false)}
+        projectMetadata={projectMetadata}
+      />
+    );
+  }
 
   return (
     <>
@@ -278,6 +295,24 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
             }}
           >
             <UserList size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+          </button>
+
+          {/* Dismiss Button */}
+          <button
+            style={{
+              ...buttonStyle(false),
+              marginLeft: '8px',
+            }}
+            onClick={handleDismiss}
+            title="Dismiss toolbar"
+            onMouseEnter={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = 'transparent';
+            }}
+          >
+            <X size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
           </button>
         </div>
       </div>

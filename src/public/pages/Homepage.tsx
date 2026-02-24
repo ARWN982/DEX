@@ -51,9 +51,7 @@ const Homepage: React.FC = () => {
   // Define templates
   const templates = [
     { name: "Discover", path: "/templates/discover", key: "discover" },
-    { name: "Dashboards", path: "/templates/dashboards", key: "dashboards" }, // TODO: Add this route
-    { name: "Stack Management", path: "/templates/stack-management", key: "stack-management" }, // TODO: Add this route
-    { name: "Hosts", path: "/templates/hosts", key: "hosts" }, // TODO: Add this route
+    { name: "Dashboards", path: "/templates/dashboards", key: "dashboards" },
   ];
   
   useEffect(() => {

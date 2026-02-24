@@ -57,14 +57,14 @@ const defaultSettings: DashboardPanelSettings = {
   // Title settings
   titleFontSize: 14,
   titleFontWeight: 500,
-  titleHeight: 32,
+  titleHeight: 40,
   titlePaddingTop: 0,
   titlePaddingRight: 12,
   titlePaddingBottom: 0,
-  titlePaddingLeft: 12,
+  titlePaddingLeft: 16,
   
   // Panel content padding
-  panelPaddingTop: 12,
+  panelPaddingTop: 0,
   panelPaddingRight: 16,
   panelPaddingBottom: 12,
   panelPaddingLeft: 16,

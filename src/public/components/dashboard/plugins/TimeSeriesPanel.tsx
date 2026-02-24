@@ -39,6 +39,10 @@ interface TimeSeriesPanelProps {
   color?: string;
   /** Show legend for multiple series */
   showLegend?: boolean;
+  /** Legend position */
+  legendPosition?: "bottom" | "right" | "left" | "top";
+  /** Series name for single series (used in legend) */
+  seriesName?: string;
   /** Y-axis value formatter */
   valueFormatter?: (value: number) => string;
   /** X-axis time formatter */
@@ -54,6 +58,8 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
   chartType = "area",
   color,
   showLegend = false,
+  legendPosition = "bottom",
+  seriesName,
   valueFormatter = (v) => v.toLocaleString(),
   timeFormatter,
   xAxisTitle,
@@ -140,7 +146,7 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
     return (
       <SeriesComponent
         id="timeseries"
-        name={title}
+        name={seriesName || title}
         data={chartData || []}
         xScaleType={ScaleType.Time}
         yScaleType={ScaleType.Linear}
@@ -151,13 +157,20 @@ export const TimeSeriesPanel: React.FC<TimeSeriesPanelProps> = ({
     );
   };
 
+  const legendPositionMap = {
+    bottom: Position.Bottom,
+    right: Position.Right,
+    left: Position.Left,
+    top: Position.Top,
+  };
+
   return (
     <div style={{ height: "100%", width: "100%" }}>
       <Chart>
         <Settings
           baseTheme={theme}
           showLegend={showLegend}
-          legendPosition={Position.Bottom}
+          legendPosition={legendPositionMap[legendPosition]}
         />
         
         {renderSeries()}

@@ -38,6 +38,81 @@ const generateTimeSeriesData = (hours: number = 24, baseValue: number = 50, vari
   return data;
 };
 
+// Generate Document Indexing Rate data (matching the image: Feb 9, 2026, 22:08-22:20)
+const generateDocumentIndexingRateData = () => {
+  // Feb 9, 2026, 22:08:00 UTC
+  const baseTime = new Date(2026, 1, 9, 22, 8, 0).getTime();
+  const data = [];
+  
+  // Generate data points every minute from 22:08 to 22:20 (13 points)
+  for (let i = 0; i <= 12; i++) {
+    const timestamp = baseTime + i * 60000; // Add minutes
+    let value = 0;
+    
+    // Match the image: ~27.5k at 22:10 (i=2), ~32.5k at 22:15 (i=7)
+    if (i === 2) {
+      value = 27500; // 22:10
+    } else if (i === 7) {
+      value = 32500; // 22:15
+    } else if (i < 2) {
+      // Interpolate from 0 to 27.5k
+      value = Math.floor((27500 / 2) * i);
+    } else if (i > 2 && i < 7) {
+      // Interpolate from 27.5k to 32.5k
+      const progress = (i - 2) / 5;
+      value = Math.floor(27500 + (32500 - 27500) * progress);
+    } else {
+      // After 22:15, gradually decrease
+      value = Math.floor(32500 - (i - 7) * 2000);
+    }
+    
+    data.push({
+      x: timestamp,
+      y: Math.max(0, value), // Ensure non-negative
+    });
+  }
+  
+  return data;
+};
+
+// Generate Byte Indexing Rate data (matching the image: Feb 9, 2026, 22:30-22:40)
+const generateByteIndexingRateData = () => {
+  // Feb 9, 2026, 22:30:00 UTC
+  const baseTime = new Date(2026, 1, 9, 22, 30, 0).getTime();
+  const data = [];
+  
+  // Generate data points every minute from 22:30 to 22:40 (11 points)
+  for (let i = 0; i <= 10; i++) {
+    const timestamp = baseTime + i * 60000; // Add minutes
+    let value = 0;
+    
+    // Match the image: ~10 MB/s at 22:30 (i=0), ~11.5 MB/s at 22:38 (i=8)
+    // Convert MB/s to bytes/s: 10 MB/s = 10 * 1024 * 1024 bytes/s = 10485760 bytes/s
+    const mb10 = 10 * 1024 * 1024; // 10 MB/s in bytes/s
+    const mb115 = 11.5 * 1024 * 1024; // 11.5 MB/s in bytes/s
+    
+    if (i === 0) {
+      value = mb10; // 22:30
+    } else if (i === 8) {
+      value = mb115; // 22:38
+    } else if (i < 8) {
+      // Interpolate from 10 MB/s to 11.5 MB/s
+      const progress = i / 8;
+      value = Math.floor(mb10 + (mb115 - mb10) * progress);
+    } else {
+      // After 22:38, maintain or slightly increase
+      value = Math.floor(mb115 + (i - 8) * 50000);
+    }
+    
+    data.push({
+      x: timestamp,
+      y: Math.max(0, value), // Ensure non-negative
+    });
+  }
+  
+  return data;
+};
+
 // Generate stacked bar chart data for CPU Usage (colors are set in the component)
 const generateStackedBarData = (vis0Color: string, vis1Color: string) => {
   // Start at 10:00:00 on May 15, 2023
@@ -428,6 +503,69 @@ export const Dashboards: React.FC = () => {
         />
       ),
     },
+    {
+      i: "document-indexing-rate",
+      x: 0,
+      y: 10,
+      w: 24,
+      h: 12,
+      minW: 12,
+      minH: 8,
+      title: "[Bulk] Document Indexing Rate",
+      showTitle: true,
+      content: (
+        <TimeSeriesPanel 
+          data={generateDocumentIndexingRateData()}
+          title="docs/s"
+          chartType="area"
+          xAxisTitle="@timestamp per 5 minutes"
+          color="#F8719D" // Pink color matching the image
+          showLegend={true}
+          legendPosition="right"
+          seriesName="Indexing Rate"
+          valueFormatter={(v) => {
+            if (v >= 1000) {
+              return `${(v / 1000).toFixed(1)}k`;
+            }
+            return v.toString();
+          }}
+        />
+      ),
+    },
+    {
+      i: "byte-indexing-rate",
+      x: 24,
+      y: 10,
+      w: 24,
+      h: 12,
+      minW: 12,
+      minH: 8,
+      title: "[Bulk] Byte Indexing Rate",
+      showTitle: true,
+      content: (
+        <TimeSeriesPanel 
+          data={generateByteIndexingRateData()}
+          title="bytes/s"
+          chartType="area"
+          xAxisTitle="@timestamp per 5 minutes"
+          color="#F8719D" // Pink color matching the image
+          showLegend={true}
+          legendPosition="right"
+          seriesName="Bytes Received"
+          valueFormatter={(v) => {
+            // Format bytes/s: B, KB, MB, GB
+            if (v >= 1024 * 1024 * 1024) {
+              return `${(v / (1024 * 1024 * 1024)).toFixed(2)}GB/s`;
+            } else if (v >= 1024 * 1024) {
+              return `${(v / (1024 * 1024)).toFixed(2)}MB/s`;
+            } else if (v >= 1024) {
+              return `${(v / 1024).toFixed(2)}KB/s`;
+            }
+            return `${v.toFixed(2)}B/s`;
+          }}
+        />
+      ),
+    },
   ]);
 
   const handleSettingsClick = (itemId: string) => {
@@ -543,7 +681,7 @@ export const Dashboards: React.FC = () => {
           isHomepage={false}
           display="classic"
         />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: 0, paddingRight: euiTheme.size.s, paddingBottom: euiTheme.size.s, paddingLeft: 0 }}>
           <AppContainer>
             <div style={{ flexShrink: 0 }}>
               <AppMenuBar config="dashboard-view" />
@@ -558,7 +696,7 @@ export const Dashboards: React.FC = () => {
               <EuiHorizontalRule margin="none" />
             </div>
             <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
-            <div style={{ padding: `${euiTheme.size.s} 0`, height: "100%", width: "100%", overflow: "auto" }}>
+            <div style={{ height: "100%", width: "100%", overflow: "auto" }}>
               {/* Top Grid */}
               <DashboardGrid
                 items={renderedTopGridItems}

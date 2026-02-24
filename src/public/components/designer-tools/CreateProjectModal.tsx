@@ -250,8 +250,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   const createButtonStyle: React.CSSProperties = {
     ...buttonBaseStyle,
-    backgroundColor: colors.accent,
-    color: "#ffffff",
+    backgroundColor: colors.primaryButton,
+    color: colors.primaryButtonText,
+    borderRadius: "24px",
   };
 
   const createButtonDisabledStyle: React.CSSProperties = {
@@ -361,13 +362,12 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               disabled={isCreating || !projectName.trim()}
               onMouseEnter={(e) => {
                 if (!isCreating && projectName.trim()) {
-                  (e.target as HTMLElement).style.backgroundColor = "#0084d1";
+                  (e.target as HTMLElement).style.transform = "scale(1.03)";
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isCreating && projectName.trim()) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    colors.accent;
+                  (e.target as HTMLElement).style.transform = "scale(1)";
                 }
               }}
             >

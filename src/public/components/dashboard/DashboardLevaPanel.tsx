@@ -58,7 +58,7 @@ export const DashboardLevaPanel: React.FC = () => {
         label: "Font Weight" 
       },
       titleHeight: {
-        value: 32,
+        value: 40,
         options: {
           "24px": 24,
           "32px": 32,
@@ -70,11 +70,11 @@ export const DashboardLevaPanel: React.FC = () => {
         titlePaddingTop: { value: 0, min: 0, max: 24, step: 1, label: "Top" },
         titlePaddingRight: { value: 12, min: 0, max: 24, step: 1, label: "Right" },
         titlePaddingBottom: { value: 0, min: 0, max: 24, step: 1, label: "Bottom" },
-        titlePaddingLeft: { value: 12, min: 0, max: 24, step: 1, label: "Left" },
+        titlePaddingLeft: { value: 16, min: 0, max: 24, step: 1, label: "Left" },
       }),
     }),
-    "Panel Padding": folder({
-      panelPaddingTop: { value: 12, min: 0, max: 24, step: 1, label: "Top" },
+    "Panel Body Padding": folder({
+      panelPaddingTop: { value: 0, min: 0, max: 24, step: 1, label: "Top" },
       panelPaddingRight: { value: 16, min: 0, max: 24, step: 1, label: "Right" },
       panelPaddingBottom: { value: 12, min: 0, max: 24, step: 1, label: "Bottom" },
       panelPaddingLeft: { value: 16, min: 0, max: 24, step: 1, label: "Left" },
