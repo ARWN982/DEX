@@ -2,7 +2,7 @@
  * Design Tools Color System
  *
  * Centralized color definitions for design tools
- * - Toolbar: Uses reverse theme colors (dark in light mode, light in dark mode)
+ * - Toolbar: Follows main app theme (light in light mode, dark in dark mode)
  * - UI Components: Follow main app theme (light in light mode, dark in dark mode)
  */
 
@@ -122,14 +122,14 @@ export const designToolsColors = {
 };
 
 /**
- * Get toolbar colors (reverse theme - dark in light mode, light in dark mode)
+ * Get toolbar colors (matches app theme - light in light mode, dark in dark mode)
  * @param colorMode - Current color mode ('light' or 'dark')
- * @returns Color scheme for toolbar (reverse theme)
+ * @returns Color scheme for toolbar (same as app theme)
  */
 export const getToolbarColors = (
   colorMode: "light" | "dark"
 ): DesignToolsColorScheme => {
-  return designToolsColors[colorMode];
+  return designToolsColors[colorMode === "light" ? "dark" : "light"];
 };
 
 /**

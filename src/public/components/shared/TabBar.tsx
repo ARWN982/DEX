@@ -62,7 +62,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   
   // Kibana-specific measurements: TabBar height: 40px, Tab height: 32px
   const TAB_BAR_HEIGHT = 42;
-  const TAB_HEIGHT = 32;
+  const TAB_HEIGHT = 36;
 
   const renderTab = (tab: Tab, isActive: boolean) => {
     const isHovered = hoveredTabId === tab.id;
@@ -72,6 +72,7 @@ export const TabBar: React.FC<TabBarProps> = ({
     
     const curveSize = euiTheme.size.s; // 8px
     const tabPaddingY = euiTheme.size.m; // 12px
+    const hoverColor = colorMode === "light" ? "rgba(0, 0, 0, 0.07)" : "rgba(255, 255, 255, 0.07)";
     const closeButtonWidth = 24; // EuiButtonIcon size="xs" is 24px
     const closeButtonBuffer = 2; // 2px buffer
     const closeButtonTotalSpace = closeButtonWidth + closeButtonBuffer; // 26px
@@ -109,9 +110,9 @@ export const TabBar: React.FC<TabBarProps> = ({
             gap: euiTheme.size.s,
             paddingTop: tabPaddingY,
             paddingBottom: tabPaddingY,
-            paddingLeft: euiTheme.size.xs, // 4px
+            paddingLeft: euiTheme.size.s, // 8px
             paddingRight: euiTheme.size.xs, // 4px
-            minWidth: "80px",
+            minWidth: "100px",
             height: `${TAB_HEIGHT}px`,
             boxSizing: "border-box",
             backgroundColor: isActive ? tabBackgroundColor : "transparent",
@@ -119,11 +120,26 @@ export const TabBar: React.FC<TabBarProps> = ({
             position: "relative",
           }}
         >
+          {/* Hover background - inset from bottom */}
+          {!isActive && (
+            <div
+              style={{
+                position: "absolute",
+                top: "2px",
+                left: "2px",
+                right: "2px",
+                bottom: "4px",
+                borderRadius: euiTheme.border.radius.medium,
+                backgroundColor: isHovered ? hoverColor : "transparent",
+                transition: "background-color 0.15s ease",
+                pointerEvents: "none",
+              }}
+            />
+          )}
           <EuiText 
             size="s" 
             color={isActive ? "default" : "subdued"}
             style={{
-              fontWeight: isActive ? 500 : 400,
               ...(shouldReserveCloseButtonSpace && isHovered ? {
                 width: `calc(100% - ${closeButtonTotalSpace}px)`,
                 maskImage: `linear-gradient(to right, rgb(0, 0, 0) calc(100% - 8px), rgba(0, 0, 0, 0.1) 100%)`,
@@ -176,7 +192,6 @@ export const TabBar: React.FC<TabBarProps> = ({
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "space-between",
-        paddingLeft: euiTheme.size.s,
         paddingRight: euiTheme.size.s,
         paddingBottom: 0,
         backgroundColor: colorMode === "light" ? "#ecf1f9" : "#172336",
@@ -188,7 +203,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         style={{
           display: "flex",
           alignItems: "flex-end",
-          gap: euiTheme.size.xs,
+          gap: 0,
         }}
       >
         {isMultipleTabsMode && tabs ? (

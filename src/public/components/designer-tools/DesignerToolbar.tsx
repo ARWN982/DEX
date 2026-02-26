@@ -1,9 +1,10 @@
 import { Cursor, ChatCircle, UserList, X } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { getToolbarColors, createBoxShadow } from '../../styles/designToolsColors';
 import { AboutFlyout, type ProjectMetadata } from './AboutFlyout';
+import { CreateProjectModal } from './CreateProjectModal';
 import { VersionSwitcher } from './VersionSwitcher';
 
 
@@ -24,8 +25,14 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   onCreateVersion,
   projectName,
 }) => {
+  const location = useLocation();
+  const isTemplate = location.pathname.startsWith('/templates/');
+  const templateName = isTemplate
+    ? location.pathname.split('/').filter(Boolean)[1] || null
+    : null;
   const [isVisible, setIsVisible] = useState(false);
   const [isAboutFlyoutOpen, setIsAboutFlyoutOpen] = useState(false);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | null>(null);
   const [isDismissed, setIsDismissed] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -88,9 +95,9 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   };
 
   const buttonStyle = (isActive: boolean): React.CSSProperties => ({
-    width: '40px',
-    height: '40px',
-    borderRadius: '20px',
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
     border: 'none',
     backgroundColor: isActive ? colors.accent : 'transparent',
     color: isActive ? '#ffffff' : colors.textSecondary,
@@ -143,6 +150,13 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
     }
   };
 
+  const handleJobStoriesClick = () => {
+    if (isCommentingEnabled) {
+      onToggleCommenting();
+    }
+    onToggleJobStoriesTracking();
+  };
+
   const handleDismiss = () => {
     setIsDismissed(true);
   };
@@ -175,7 +189,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               border: 'none',
               borderRadius: '16px',
               padding: '8px 16px',
-              fontSize: '14px',
+              fontSize: '11px',
               fontWeight: '500',
               cursor: 'pointer',
               display: 'flex',
@@ -197,48 +211,84 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
             Home
           </button>
 
-          {/* About Button */}
-          <button
-            style={{
-              backgroundColor: colors.buttonHover,
-              color: colors.textPrimary,
-              border: 'none',
-              borderRadius: '16px',
-              padding: '8px 16px',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-              outline: 'none',
-              marginRight: '16px',
-            }}
-            onClick={handleAboutClick}
-            title="About this project"
-            onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.backgroundColor = colors.accent;
-            }}
-            onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
-            }}
-          >
-            About
-          </button>
+          {isTemplate && templateName && (
+            <button
+              style={{
+                backgroundColor: colors.accent,
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '16px',
+                padding: '8px 16px',
+                fontSize: '11px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                outline: 'none',
+                marginRight: '16px',
+                whiteSpace: 'nowrap',
+              }}
+              onClick={() => setIsCreateProjectModalOpen(true)}
+              title="Create a project from this template"
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.opacity = '0.85';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.opacity = '1';
+              }}
+            >
+              Use this template
+            </button>
+          )}
 
-          {/* Version Switcher */}
-          <div style={{ marginRight: '16px' }}>
-            <VersionSwitcher onCreateVersion={onCreateVersion} />
-          </div>
+          {!isTemplate && (
+            <>
+              {/* About Button */}
+              <button
+                style={{
+                  backgroundColor: colors.buttonHover,
+                  color: colors.textPrimary,
+                  border: 'none',
+                  borderRadius: '16px',
+                  padding: '8px 16px',
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  outline: 'none',
+                  marginRight: '16px',
+                }}
+                onClick={handleAboutClick}
+                title="About this project"
+                onMouseEnter={(e) => {
+                  (e.target as HTMLElement).style.backgroundColor = colors.accent;
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+                }}
+              >
+                About
+              </button>
 
-          {/* Divider */}
-          <div style={{
-            width: '1px',
-            height: '32px',
-            backgroundColor: colors.border,
-            marginRight: '16px',
-          }} />
+              {/* Version Switcher */}
+              <div style={{ marginRight: '16px' }}>
+                <VersionSwitcher onCreateVersion={onCreateVersion} />
+              </div>
+
+              {/* Divider */}
+              <div style={{
+                width: '1px',
+                height: '32px',
+                backgroundColor: colors.border,
+                marginRight: '16px',
+              }} />
+            </>
+          )}
 
           {/* Cursor Tool */}
           <button
@@ -256,7 +306,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               }
             }}
           >
-            <Cursor size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+            <Cursor size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
 
           {/* Comment Tool */}
@@ -275,13 +325,13 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               }
             }}
           >
-            <ChatCircle size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+            <ChatCircle size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
 
           {/* Job Stories Tracking Tool */}
           <button
             style={buttonStyle(isJobStoriesTrackingEnabled)}
-            onClick={onToggleJobStoriesTracking}
+            onClick={handleJobStoriesClick}
             title="Job Stories Tracking"
             onMouseEnter={(e) => {
               if (!isJobStoriesTrackingEnabled) {
@@ -294,7 +344,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               }
             }}
           >
-            <UserList size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+            <UserList size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
 
           {/* Dismiss Button */}
@@ -312,7 +362,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               (e.target as HTMLElement).style.backgroundColor = 'transparent';
             }}
           >
-            <X size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+            <X size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
         </div>
       </div>
@@ -323,6 +373,19 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         onClose={() => setIsAboutFlyoutOpen(false)}
         projectMetadata={projectMetadata}
       />
+
+      {/* Create Project from Template Modal */}
+      {isTemplate && templateName && (
+        <CreateProjectModal
+          isOpen={isCreateProjectModalOpen}
+          onClose={() => setIsCreateProjectModalOpen(false)}
+          onSuccess={() => {
+            setIsCreateProjectModalOpen(false);
+          }}
+          templateName={templateName}
+          defaultProjectName={templateName}
+        />
+      )}
     </>
   );
 };
