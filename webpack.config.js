@@ -79,7 +79,7 @@ module.exports = {
     hot: true,
     liveReload: true,
     watchFiles: {
-      paths: ['src/**/*'],
+      paths: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.css'],
       options: {
         ignored: /node_modules/,
       },

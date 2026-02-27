@@ -11,6 +11,7 @@ import {
   CommentFormData,
 } from "../../types/comments";
 import { getTimeAgo } from "../../utils/dateUtils";
+import { getUserIdentity } from "../../utils/userIdentity";
 
 interface CommentThreadProps {
   thread: CommentThreadType;
@@ -101,22 +102,15 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   const [replyContent, setReplyContent] = useState("");
   const { colorMode } = useAppStore();
   
-  // Get current user from comment store for reply avatar
-  const getCurrentUser = () => {
-    // This should match the user from comment store
-    return {
-      name: 'Andre Del Rio',
-      color: '#ff6b6b'
-    };
-  };
-  
-  const currentUser = getCurrentUser();
-  const currentUserInitials = currentUser.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2); // Limit to first 2 characters
+  const currentUser = getUserIdentity();
+  const currentUserInitials = currentUser
+    ? currentUser.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "?";
 
   const handleSubmitReply = () => {
     if (replyContent.trim()) {
@@ -129,11 +123,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       onClose();
-    } else if (
-      e.key === "Enter" &&
-      (e.metaKey || e.ctrlKey) &&
-      replyContent.trim()
-    ) {
+    } else if (e.key === "Enter" && replyContent.trim()) {
       e.preventDefault();
       handleSubmitReply();
     }
@@ -246,7 +236,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             width: "24px",
             height: "24px",
             borderRadius: "50%",
-            backgroundColor: currentUser.color,
+            backgroundColor: currentUser?.color || "#0d99ff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
