@@ -1,14 +1,7 @@
 import { create } from 'zustand';
 import { CommentState, CommentThread, Comment, CommentPosition, CommentAuthor } from '../types/comments';
 import { getCurrentPage } from '../utils/pageUtils';
-
-// Mock current user - in real app this would come from auth
-const mockCurrentUser: CommentAuthor = {
-  id: 'user-1',
-  name: 'Andre Del Rio',
-  email: 'andre@example.com',
-  color: '#0d99ff',
-};
+import { getUserIdentity, updateUserName } from '../utils/userIdentity';
 
 interface CommentStore extends CommentState {
   // State
@@ -29,6 +22,7 @@ interface CommentStore extends CommentState {
   startCreating: (position: CommentPosition) => void;
   cancelCreating: () => void;
   toggleResolvedVisibility: () => void;
+  updateAuthorName: (newName: string) => void;
   
   // Computed/Derived state
   getVisibleThreads: () => CommentThread[];
@@ -41,7 +35,7 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
   activeThreadId: null,
   isCreatingComment: false,
   pendingPosition: null,
-  currentUser: mockCurrentUser,
+  currentUser: getUserIdentity(),
   showResolved: true,
   isLoading: false,
   currentVersion: '1.0',
@@ -125,6 +119,9 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
   },
 
   createThread: (position: CommentPosition, content: string) => {
+    const author = getUserIdentity();
+    if (!author) return;
+
     const { currentVersion } = get();
     const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const commentId = `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -133,7 +130,7 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
       id: commentId,
       threadId,
       content,
-      author: mockCurrentUser,
+      author,
       createdAt: new Date().toISOString(),
     };
 
@@ -162,6 +159,9 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
   },
 
   addComment: (threadId: string, content: string, parentId?: string) => {
+    const author = getUserIdentity();
+    if (!author) return;
+
     console.log('addComment called with:', { threadId, content, parentId });
     const commentId = `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -169,7 +169,7 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
       id: commentId,
       threadId,
       content,
-      author: mockCurrentUser,
+      author,
       createdAt: new Date().toISOString(),
       parentId,
     };
@@ -266,6 +266,26 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
 
   toggleResolvedVisibility: () => {
     set(state => ({ showResolved: !state.showResolved }));
+  },
+
+  updateAuthorName: (newName: string) => {
+    const updatedAuthor = updateUserName(newName);
+    const { threads } = get();
+    const updatedThreads: Record<string, CommentThread> = {};
+
+    for (const [id, thread] of Object.entries(threads)) {
+      updatedThreads[id] = {
+        ...thread,
+        comments: thread.comments.map(comment =>
+          comment.author.id === updatedAuthor.id
+            ? { ...comment, author: { ...comment.author, name: updatedAuthor.name, color: updatedAuthor.color } }
+            : comment
+        ),
+      };
+    }
+
+    set({ threads: updatedThreads, currentUser: updatedAuthor });
+    get().saveComments();
   },
 
   // Computed/Derived state

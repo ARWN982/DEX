@@ -309,24 +309,26 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
             <Cursor size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
 
-          {/* Comment Tool */}
-          <button
-            style={buttonStyle(isCommentingEnabled)}
-            onClick={handleCommentClick}
-            title="Comment tool"
-            onMouseEnter={(e) => {
-              if (!isCommentingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isCommentingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = 'transparent';
-              }
-            }}
-          >
-            <ChatCircle size={20} weight="fill" style={{ pointerEvents: 'none' }} />
-          </button>
+          {/* Comment Tool - hidden on templates */}
+          {!isTemplate && (
+            <button
+              style={buttonStyle(isCommentingEnabled)}
+              onClick={handleCommentClick}
+              title="Comment tool"
+              onMouseEnter={(e) => {
+                if (!isCommentingEnabled) {
+                  (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isCommentingEnabled) {
+                  (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              <ChatCircle size={20} weight="fill" style={{ pointerEvents: 'none' }} />
+            </button>
+          )}
 
           {/* Job Stories Tracking Tool */}
           <button

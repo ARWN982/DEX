@@ -48,7 +48,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
         borderRadius: '16px',
         backgroundColor: colors.secondary,
         color: colors.textSecondary,
-        fontSize: '14px',
+        fontSize: '11px',
       }}>
         Loading...
       </div>
@@ -70,7 +70,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '11px',
     fontWeight: '500',
     transition: 'all 0.2s ease',
     outline: 'none',
@@ -105,7 +105,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
     backgroundColor: 'transparent',
     color: colors.textPrimary,
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '11px',
     width: '100%',
     textAlign: 'left',
     transition: 'background-color 0.2s ease',
