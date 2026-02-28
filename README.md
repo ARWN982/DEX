@@ -17,9 +17,6 @@ Access a curated set of shared components—charts, panels, controls, grids, and
 #### 📚 Version History
 Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution.
 
-#### 📋 Job Stories
-Track job stories alongside your prototypes. Keep your design decisions grounded in user needs and maintain alignment with product goals.
-
 #### 📄 PRD Tracking
 Document and reference product requirements directly within your project. Keep specs, context, and design work together in one place.
 
@@ -133,7 +130,6 @@ vibe-kibana/
 │   │   │   │   ├── CreateProjectModal.tsx
 │   │   │   │   ├── CreateVersionModal.tsx
 │   │   │   │   ├── DesignerToolbar.tsx
-│   │   │   │   ├── JobStoriesFlyout.tsx
 │   │   │   │   ├── ProjectInfoFlyout.tsx
 │   │   │   │   └── VersionSwitcher.tsx
 │   │   │   └── shared/               # Shared UI components
@@ -159,8 +155,7 @@ vibe-kibana/
 │   │   │       ├── about.json        # Project metadata
 │   │   │       └── v1.0/             # Version folders
 │   │   │           ├── index.tsx     # Page component
-│   │   │           ├── comments.json # Comments data
-│   │   │           └── jobStories.json
+│   │   │           └── comments.json # Comments data
 │   │   ├── store/                    # Zustand state stores
 │   │   │   ├── useAppStore.ts
 │   │   │   ├── useCommentStore.ts
@@ -177,7 +172,6 @@ vibe-kibana/
 │       │   └── elasticsearch.ts      # ES client
 │       └── routes/                   # API routes
 │           ├── comments.ts
-│           ├── jobStories.ts
 │           ├── projects.ts
 │           └── versions.ts
 ├── dist/                             # Built assets (generated)

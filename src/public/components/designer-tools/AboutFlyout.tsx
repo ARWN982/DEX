@@ -35,7 +35,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
 
   if (!projectMetadata) return null;
 
-  // Flyout styles based on the reference image (copied exactly from JobStoriesFlyout)
+  // Flyout styles
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     top: 0,
@@ -54,7 +54,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     top: "16px",
     right: "16px",
     bottom: "16px",
-    width: "500px", // Smaller than job stories
+    width: "500px",
     backgroundColor: colorMode === "light" ? "#f8f9fa" : "#1a1a1a",
     borderRadius: "20px",
     boxShadow:

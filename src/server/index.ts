@@ -1,5 +1,6 @@
 import "tsconfig-paths/register";
 import path from "path";
+import basicAuth from "express-basic-auth";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -8,11 +9,8 @@ import express from "express";
 dotenv.config({ path: ".env.local" });
 // Import route modules
 import commentsRoutes from "./routes/comments";
-import documentsRoutes from "./routes/documents";
 import esqlQueryRoutes from "./routes/esqlQuery";
-import fieldsRoutes from "./routes/fields";
 import healthRoutes from "./routes/health";
-import jobStoriesRoutes from "./routes/jobStories";
 import projectMetadataRoutes from "./routes/projectMetadata";
 import projectsRoutes from "./routes/projects";
 import screenshotsRoutes from "./routes/screenshots";
@@ -24,14 +22,20 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+if (process.env.DEPLOY_PASSWORD) {
+  app.use(basicAuth({
+    users: { admin: process.env.DEPLOY_PASSWORD },
+    challenge: true,
+    realm: "Vibe Kibana",
+  }));
+}
+
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Register routes
 app.use("/api", healthRoutes);
-app.use("/api", documentsRoutes);
-app.use("/api", fieldsRoutes);
 app.use("/api", esqlQueryRoutes);
-app.use("/api/job-stories", jobStoriesRoutes);
 app.use("/api/project-metadata", projectMetadataRoutes);
 app.use("/api/template-metadata", templateMetadataRoutes);
 app.use("/api/projects", projectsRoutes);

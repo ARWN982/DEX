@@ -31,6 +31,8 @@ interface Template {
   };
 }
 
+const isProduction = process.env.VIBE_DEPLOY_MODE === 'production';
+
 const Homepage: React.FC = () => {
   const navigate = useNavigate();
   const { colorMode } = useAppStore();
@@ -117,8 +119,10 @@ const Homepage: React.FC = () => {
     loadProjects();
   }, []);
 
-  // Load template metadata
+  // Load template metadata (skip in production mode)
   useEffect(() => {
+    if (isProduction) return;
+
     const loadTemplateMetadata = async () => {
       try {
         const templatesWithMeta = await Promise.all(
@@ -441,7 +445,7 @@ const Homepage: React.FC = () => {
           }}
         >
           <h1 style={{ ...titleStyle, marginBottom: 0 }}>Your projects</h1>
-          {!loading && projects.length > 0 && (
+          {!isProduction && !loading && projects.length > 0 && (
             <button
               style={createButtonStyle}
               onClick={handleCreateProject}
@@ -621,26 +625,28 @@ const Homepage: React.FC = () => {
         ) : (
           <div style={emptyStateStyle}>
             <div style={emptyTextStyle}>
-              You haven't created any projects yet
+              {isProduction ? "No projects available" : "You haven't created any projects yet"}
             </div>
-            <button
-              style={createButtonStyle}
-              onClick={handleCreateProject}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              Create a project
-            </button>
+            {!isProduction && (
+              <button
+                style={createButtonStyle}
+                onClick={handleCreateProject}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
+                Create a project
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Templates section */}
-      <div style={sectionStyle}>
+      {/* Templates section (hidden in production mode) */}
+      {!isProduction && <div style={sectionStyle}>
         <h2 style={titleStyle}>Templates</h2>
         <div style={gridStyle}>
           {templatesWithMetadata.length > 0 ? templatesWithMetadata.map((template) => {
@@ -852,7 +858,7 @@ const Homepage: React.FC = () => {
             );
           })}
         </div>
-      </div>
+      </div>}
 
       {/* Project Info Flyout */}
       <ProjectInfoFlyout
@@ -866,17 +872,19 @@ const Homepage: React.FC = () => {
         onSave={handleSaveProjectMetadata}
       />
 
-      {/* Create Project Modal */}
-      <CreateProjectModal
-        isOpen={isCreateProjectModalOpen}
-        onClose={() => {
-          setIsCreateProjectModalOpen(false);
-          setCreateProjectFromTemplate(null);
-        }}
-        onSuccess={handleProjectCreated}
-        templateName={createProjectFromTemplate?.templateName}
-        defaultProjectName={createProjectFromTemplate?.defaultName}
-      />
+      {/* Create Project Modal (hidden in production mode) */}
+      {!isProduction && (
+        <CreateProjectModal
+          isOpen={isCreateProjectModalOpen}
+          onClose={() => {
+            setIsCreateProjectModalOpen(false);
+            setCreateProjectFromTemplate(null);
+          }}
+          onSuccess={handleProjectCreated}
+          templateName={createProjectFromTemplate?.templateName}
+          defaultProjectName={createProjectFromTemplate?.defaultName}
+        />
+      )}
     </div>
   );
 };

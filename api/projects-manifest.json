@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "projects": [
+    {
+      "name": "discover",
+      "displayName": "Discover",
+      "hasAbout": true,
+      "versions": [
+        "1.0"
+      ]
+    }
+  ]
+}

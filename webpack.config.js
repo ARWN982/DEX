@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
@@ -41,6 +42,12 @@ module.exports = {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.VIBE_DEPLOY_MODE': JSON.stringify(process.env.VIBE_DEPLOY_MODE || 'development'),
+      'process.env.VIBE_PUBLISH_MODE': JSON.stringify('false'),
+      'process.env.PUBLISH_VERSIONS': JSON.stringify('[]'),
+      'process.env.PUBLISH_PROJECT': JSON.stringify(''),
+    }),
     new HtmlWebpackPlugin({
       template: "./src/public/index.html",
       filename: "index.html",

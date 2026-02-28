@@ -58,10 +58,10 @@ interface CommentsData {
   };
 }
 
-// GET /api/comments?page=discover&version=1.0 - Read comments for a specific page and version
+// GET /api/comments?page=<project>&version=1.0 - Read comments for a specific page and version
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const pageId = req.query.page as string || 'discover';
+    const pageId = req.query.page as string || '';
     const versionId = req.query.version as string || '1.0';
     const commentsPath = getCommentsPath(pageId, versionId);
     
@@ -96,7 +96,7 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/comments?version=1.0 - Update comments for a specific version
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const pageId = req.query.page as string || 'discover';
+    const pageId = req.query.page as string || '';
     const versionId = req.query.version as string || '1.0';
     const comments: CommentThread[] = req.body;
     const commentsPath = getCommentsPath(pageId, versionId);

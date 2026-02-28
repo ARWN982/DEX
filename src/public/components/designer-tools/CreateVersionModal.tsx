@@ -306,7 +306,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   <span
                     style={{ color: colors.textSecondary, fontSize: "12px" }}
                   >
-                    Copy all comments and job stories from current version
+                    Copy all comments from current version
                   </span>
                 </label>
               </div>
@@ -327,7 +327,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                   <span
                     style={{ color: colors.textSecondary, fontSize: "12px" }}
                   >
-                    Begin with empty comments and job stories
+                    Begin with empty comments
                   </span>
                 </label>
               </div>

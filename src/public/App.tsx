@@ -4,7 +4,6 @@ import { Routes, Route, useLocation, useNavigate, useParams } from "react-router
 import {
   CommentingSystem,
   DesignerToolbar,
-  JobStoriesFlyout,
   CreateVersionModal,
   AssistantFlyout,
   KibanaHeader,
@@ -27,8 +26,6 @@ const App: React.FC = () => {
   const { colorMode, setColorMode } = useAppStore();
   const { currentVersion } = useVersionStore();
   const [isCommentingEnabled, setIsCommentingEnabled] = useState(false);
-  const [isJobStoriesTrackingEnabled, setIsJobStoriesTrackingEnabled] =
-    useState(false);
   const [showCreateVersionModal, setShowCreateVersionModal] = useState(false);
   const [isAssistantFlyoutOpen, setIsAssistantFlyoutOpen] = useState(false);
 
@@ -114,26 +111,10 @@ const App: React.FC = () => {
               );
               setIsCommentingEnabled(!isCommentingEnabled);
             }}
-            isJobStoriesTrackingEnabled={isJobStoriesTrackingEnabled}
-            onToggleJobStoriesTracking={() => {
-              console.log(
-                "Toggling job stories tracking from",
-                isJobStoriesTrackingEnabled,
-                "to",
-                !isJobStoriesTrackingEnabled
-              );
-              setIsJobStoriesTrackingEnabled(!isJobStoriesTrackingEnabled);
-            }}
             onCreateVersion={handleCreateVersion}
             projectName={getProjectNameFromPath(location.pathname) || undefined}
           />
         )}
-
-        {/* Job Stories Flyout */}
-        <JobStoriesFlyout
-          isOpen={isJobStoriesTrackingEnabled}
-          onClose={() => setIsJobStoriesTrackingEnabled(false)}
-        />
 
         {/* Create Version Modal */}
         <CreateVersionModal

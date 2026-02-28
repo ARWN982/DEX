@@ -286,9 +286,8 @@ export default ${componentName};
 
     await fs.writeFile(aboutPath, JSON.stringify(aboutData, null, 2), 'utf-8');
 
-    // Create initial comments.json and jobStories.json files
+    // Create initial comments.json file
     const commentsPath = path.join(versionDir, 'comments.json');
-    const jobStoriesPath = path.join(versionDir, 'jobStories.json');
 
     const commentsData = {
       comments: [],
@@ -299,16 +298,7 @@ export default ${componentName};
       },
     };
 
-    const jobStoriesData = {
-      stories: [],
-      metadata: {
-        versionId: '1.0',
-        lastUpdated: new Date().toISOString(),
-      },
-    };
-
     await fs.writeFile(commentsPath, JSON.stringify(commentsData, null, 2), 'utf-8');
-    await fs.writeFile(jobStoriesPath, JSON.stringify(jobStoriesData, null, 2), 'utf-8');
 
     console.log(`Created new project: ${normalizedName}`);
 

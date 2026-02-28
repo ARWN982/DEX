@@ -1,4 +1,4 @@
-import { Cursor, ChatCircle, UserList, X } from 'phosphor-react';
+import { Cursor, ChatCircle, X } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
@@ -11,17 +11,15 @@ import { VersionSwitcher } from './VersionSwitcher';
 interface DesignerToolbarProps {
   isCommentingEnabled: boolean;
   onToggleCommenting: () => void;
-  isJobStoriesTrackingEnabled: boolean;
-  onToggleJobStoriesTracking: () => void;
   onCreateVersion?: () => void;
   projectName?: string;
 }
 
+const isProduction = process.env.VIBE_DEPLOY_MODE === 'production';
+
 export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   isCommentingEnabled,
   onToggleCommenting,
-  isJobStoriesTrackingEnabled,
-  onToggleJobStoriesTracking,
   onCreateVersion,
   projectName,
 }) => {
@@ -150,13 +148,6 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
     }
   };
 
-  const handleJobStoriesClick = () => {
-    if (isCommentingEnabled) {
-      onToggleCommenting();
-    }
-    onToggleJobStoriesTracking();
-  };
-
   const handleDismiss = () => {
     setIsDismissed(true);
   };
@@ -211,7 +202,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
             Home
           </button>
 
-          {isTemplate && templateName && (
+          {!isProduction && isTemplate && templateName && (
             <button
               style={{
                 backgroundColor: colors.accent,
@@ -330,25 +321,6 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
             </button>
           )}
 
-          {/* Job Stories Tracking Tool */}
-          <button
-            style={buttonStyle(isJobStoriesTrackingEnabled)}
-            onClick={handleJobStoriesClick}
-            title="Job Stories Tracking"
-            onMouseEnter={(e) => {
-              if (!isJobStoriesTrackingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isJobStoriesTrackingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = 'transparent';
-              }
-            }}
-          >
-            <UserList size={20} weight="fill" style={{ pointerEvents: 'none' }} />
-          </button>
-
           {/* Dismiss Button */}
           <button
             style={{
@@ -376,8 +348,8 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         projectMetadata={projectMetadata}
       />
 
-      {/* Create Project from Template Modal */}
-      {isTemplate && templateName && (
+      {/* Create Project from Template Modal (hidden in production mode) */}
+      {!isProduction && isTemplate && templateName && (
         <CreateProjectModal
           isOpen={isCreateProjectModalOpen}
           onClose={() => setIsCreateProjectModalOpen(false)}

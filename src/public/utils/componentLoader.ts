@@ -1,6 +1,8 @@
 import React from "react";
 import { getCurrentPage } from './pageUtils';
 
+const isPublishMode = process.env.VIBE_PUBLISH_MODE === 'true';
+
 export interface PageComponent {
   [key: string]: React.ComponentType<any>;
 }
@@ -13,6 +15,16 @@ const getAvailableVersions = async (pageName?: string): Promise<string[]> => {
 
   if (cachedVersions[page]) {
     return cachedVersions[page];
+  }
+
+  if (isPublishMode) {
+    try {
+      const versions: string[] = JSON.parse(process.env.PUBLISH_VERSIONS || '[]');
+      cachedVersions[page] = versions;
+      return versions;
+    } catch {
+      return ['1.0'];
+    }
   }
 
   try {

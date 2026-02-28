@@ -220,17 +220,22 @@ router.post('/active', async (req: Request, res: Response) => {
   }
 });
 
+// Helper function to resolve the pages directory, preferring src/ for development
+function resolvePagesDir(): string {
+  const srcDir = path.join(__dirname, '../../../src/public/pages');
+  const distDir = path.join(__dirname, '../../public/pages');
+  try {
+    require('fs').accessSync(srcDir);
+    return srcDir;
+  } catch {
+    return distDir;
+  }
+}
+
 // Helper function to create version-specific files
 async function createVersionFiles(versionId: string, baseVersionId?: string | null, pageName?: string) {
   const targetPage = pageName || '';
-  
-  // Try dist/public/pages first (production), fall back to src/public/pages (development)
-  let pagesDir = path.join(__dirname, '../../public/pages');
-  try {
-    await fs.access(pagesDir);
-  } catch {
-    pagesDir = path.join(__dirname, '../../../src/public/pages');
-  }
+  const pagesDir = resolvePagesDir();
   
   const versionDir = path.join(pagesDir, targetPage, `v${versionId}`);
   
@@ -239,7 +244,6 @@ async function createVersionFiles(versionId: string, baseVersionId?: string | nu
     await fs.mkdir(versionDir, { recursive: true });
     
     const commentsFile = path.join(versionDir, 'comments.json');
-    const jobStoriesFile = path.join(versionDir, 'jobStories.json');
     
     // Create comments data
     let commentsData = {
@@ -267,31 +271,6 @@ async function createVersionFiles(versionId: string, baseVersionId?: string | nu
 
     await fs.writeFile(commentsFile, JSON.stringify(commentsData, null, 2));
     console.log(`Created comment file for ${targetPage} v${versionId}`);
-
-    // Create job stories data
-    let jobStoriesData = {
-      stories: [],
-      metadata: {
-        versionId,
-        lastUpdated: new Date().toISOString()
-      }
-    };
-
-    // If based on another version, copy its job stories
-    if (baseVersionId) {
-      try {
-        const baseVersionDir = path.join(pagesDir, targetPage, `v${baseVersionId}`);
-        const baseJobStoriesFile = path.join(baseVersionDir, 'jobStories.json');
-        const baseJobStoriesData = await fs.readFile(baseJobStoriesFile, 'utf8');
-        const baseJobStories = JSON.parse(baseJobStoriesData);
-        jobStoriesData.stories = baseJobStories.stories || [];
-        console.log(`Copied ${jobStoriesData.stories.length} job stories from ${targetPage} v${baseVersionId} to v${versionId}`);
-      } catch (error) {
-        console.log(`No base job stories file found for ${targetPage} v${baseVersionId}, starting with empty stories`);
-      }
-    }
-
-    await fs.writeFile(jobStoriesFile, JSON.stringify(jobStoriesData, null, 2));
 
     // Create version-specific page component directories and files
     await createVersionComponentFiles(versionId, baseVersionId, targetPage);
@@ -333,13 +312,7 @@ export default ${componentName};
 
 // Helper function to create version-specific component files
 async function createVersionComponentFiles(versionId: string, baseVersionId?: string | null, pageName?: string) {
-  // Try dist/public/pages first (production), fall back to src/public/pages (development)
-  let pagesDir = path.join(__dirname, '../../public/pages');
-  try {
-    await fs.access(pagesDir);
-  } catch {
-    pagesDir = path.join(__dirname, '../../../src/public/pages');
-  }
+  const pagesDir = resolvePagesDir();
   
   const targetPage = pageName || '';
   const pageNames = [targetPage]; // Only create version for the specific page

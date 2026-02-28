@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { getCurrentPage } from '../utils/pageUtils';
 
+const isPublishMode = process.env.VIBE_PUBLISH_MODE === 'true';
+
 export interface Version {
   id: string; // "1.0", "1.1", "2.0"
   name: string; // "Version 1.0", "Version 1.1"
@@ -32,14 +34,36 @@ interface VersionStore {
   getCurrentVersion: () => Version | undefined;
 }
 
+function getPublishVersions(): Version[] {
+  try {
+    const versionIds: string[] = JSON.parse(process.env.PUBLISH_VERSIONS || '[]');
+    return versionIds.map((id, i) => ({
+      id,
+      name: `Version ${id}`,
+      description: '',
+      createdAt: new Date().toISOString(),
+      basedOn: null,
+      isActive: i === versionIds.length - 1,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export const useVersionStore = create<VersionStore>((set, get) => ({
   // Initial state
   versions: [],
   currentVersion: '1.0',
   isLoading: false,
 
-  // Load versions from API
   loadVersions: async () => {
+    if (isPublishMode) {
+      const versions = getPublishVersions();
+      const latestVersion = versions.length > 0 ? versions[versions.length - 1].id : '1.0';
+      set({ versions, currentVersion: latestVersion, isLoading: false });
+      return;
+    }
+
     set({ isLoading: true });
     try {
       const currentPage = getCurrentPage();
@@ -61,8 +85,14 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
     }
   },
 
-  // Switch to a different version
   setActiveVersion: async (versionId: string) => {
+    if (isPublishMode) {
+      set({ currentVersion: versionId });
+      const { versions } = get();
+      set({ versions: versions.map(v => ({ ...v, isActive: v.id === versionId })) });
+      return;
+    }
+
     try {
       const currentPage = getCurrentPage();
       const response = await fetch('/api/versions/active', {
@@ -74,7 +104,6 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
       if (response.ok) {
         set({ currentVersion: versionId });
         
-        // Update versions array to reflect new active version
         const { versions } = get();
         const updatedVersions = versions.map(v => ({
           ...v,
@@ -89,8 +118,11 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
     }
   },
 
-  // Create a new version
   createVersion: async (options: CreateVersionOptions = {}) => {
+    if (isPublishMode) {
+      throw new Error('Cannot create versions in publish mode');
+    }
+
     const { 
       isMajorVersion = false, 
       baseVersionId, 
@@ -102,7 +134,6 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
       const { currentVersion } = get();
       const baseVersion = baseVersionId || currentVersion;
       
-      // Generate a suggested version ID, but let backend handle collisions
       const [major, minor] = currentVersion.split('.').map(Number);
       const suggestedVersionId = isMajorVersion ? `${major + 1}.0` : `${major}.${minor + 1}`;
 
@@ -121,7 +152,6 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
       if (response.ok) {
         const newVersion = await response.json();
         
-        // Add new version to store and make it active
         const { versions } = get();
         const updatedVersions = versions.map(v => ({ ...v, isActive: false }));
         updatedVersions.push({ ...newVersion, isActive: true });
@@ -142,7 +172,6 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
     }
   },
 
-  // Get current active version object
   getCurrentVersion: () => {
     const { versions, currentVersion } = get();
     return versions.find(v => v.id === currentVersion);
