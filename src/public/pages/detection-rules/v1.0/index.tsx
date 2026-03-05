@@ -28,6 +28,7 @@ import {
   EuiPopoverTitle,
   EuiSelectable,
   EuiPanel,
+  EuiCallOut,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -44,6 +45,8 @@ interface DetectionRule {
   notify: boolean;
   enabled: boolean;
   hasWarning: boolean;
+  alertsCount: string;
+  tagsCount: number;
 }
 
 const mockRules: DetectionRule[] = [
@@ -58,6 +61,8 @@ const mockRules: DetectionRule[] = [
     notify: true,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/1',
+    tagsCount: 7,
   },
   {
     id: '2',
@@ -70,6 +75,8 @@ const mockRules: DetectionRule[] = [
     notify: false,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/6',
+    tagsCount: 13,
   },
   {
     id: '3',
@@ -82,6 +89,8 @@ const mockRules: DetectionRule[] = [
     notify: true,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/6',
+    tagsCount: 14,
   },
   {
     id: '4',
@@ -94,6 +103,8 @@ const mockRules: DetectionRule[] = [
     notify: false,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/6',
+    tagsCount: 12,
   },
   {
     id: '5',
@@ -106,6 +117,8 @@ const mockRules: DetectionRule[] = [
     notify: true,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/5',
+    tagsCount: 8,
   },
   {
     id: '6',
@@ -118,6 +131,8 @@ const mockRules: DetectionRule[] = [
     notify: false,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/3',
+    tagsCount: 9,
   },
   {
     id: '7',
@@ -130,6 +145,8 @@ const mockRules: DetectionRule[] = [
     notify: true,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/4',
+    tagsCount: 11,
   },
   {
     id: '8',
@@ -142,6 +159,8 @@ const mockRules: DetectionRule[] = [
     notify: false,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/2',
+    tagsCount: 10,
   },
   {
     id: '9',
@@ -154,6 +173,8 @@ const mockRules: DetectionRule[] = [
     notify: true,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/7',
+    tagsCount: 15,
   },
   {
     id: '10',
@@ -166,6 +187,82 @@ const mockRules: DetectionRule[] = [
     notify: false,
     enabled: true,
     hasWarning: false,
+    alertsCount: '0/8',
+    tagsCount: 6,
+  },
+];
+
+interface MonitoringRule {
+  id: string;
+  name: string;
+  method: string;
+  ruleId: string;
+  status: string;
+  queryTimeMax: string;
+  gapDuration: string;
+  lastRunFP: string;
+  unifiedPageDuration: string;
+  lastResponse: 'Warning' | 'Failed' | 'Succeeded';
+  lastRun: string;
+  enabled: boolean;
+}
+
+const mockMonitoringRules: MonitoringRule[] = [
+  {
+    id: '1',
+    name: 'Unusual DNS Process of dns.exe',
+    method: 'Modified',
+    ruleId: '-8/0',
+    status: '-1.5',
+    queryTimeMax: '--',
+    gapDuration: '--',
+    lastRunFP: '--',
+    unifiedPageDuration: '--',
+    lastResponse: 'Warning',
+    lastRun: '5 minutes ago',
+    enabled: true,
+  },
+  {
+    id: '2',
+    name: 'System Shells via Services',
+    method: 'Modified',
+    ruleId: '-8/0',
+    status: '-1.5',
+    queryTimeMax: '--',
+    gapDuration: '--',
+    lastRunFP: '--',
+    unifiedPageDuration: '--',
+    lastResponse: 'Warning',
+    lastRun: '5 minutes ago',
+    enabled: true,
+  },
+  {
+    id: '3',
+    name: 'Web Shell Detection: Script Process Child of Common Web Processes',
+    method: 'Modified',
+    ruleId: '-8/0',
+    status: '-7.0',
+    queryTimeMax: '--',
+    gapDuration: '--',
+    lastRunFP: '--',
+    unifiedPageDuration: '--',
+    lastResponse: 'Warning',
+    lastRun: '5 minutes ago',
+    enabled: true,
+  },
+  {
+    id: '4',
+    name: 'UAC Bypass Attempt via Windows Directory Masquerading',
+    method: 'Modified',
+    ruleId: '-8/0',
+    status: '-1.4',
+    queryTimeMax: '--',
+    gapDuration: '--',
+    lastRunFP: '--',
+    unifiedPageDuration: '--',
+    lastResponse: 'Warning',
+    lastRun: '5 minutes ago',
+    enabled: true,
   },
 ];
 
@@ -174,7 +271,7 @@ const DetectionRulesPage: React.FC = () => {
   const [searchValue, setSearchValue] = useState('');
   const [selectedTab, setSelectedTab] = useState<'installed' | 'monitoring' | 'updates'>('installed');
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(10);
   
   // Filter popover states
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
@@ -227,14 +324,18 @@ const DetectionRulesPage: React.FC = () => {
     },
     {
       name: '',
-      width: '60px',
-      render: () => (
+      width: '140px',
+      render: (item: DetectionRule) => (
         <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
           <EuiFlexItem grow={false}>
-            <EuiIcon type="analyzeEvent" size="s" />
+            <EuiBadge color="hollow" iconType="analyzeEvent" iconSide="left">
+              {item.alertsCount}
+            </EuiBadge>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiIcon type="tag" size="s" />
+            <EuiBadge color="hollow" iconType="tag" iconSide="left">
+              {item.tagsCount}
+            </EuiBadge>
           </EuiFlexItem>
         </EuiFlexGroup>
       ),
@@ -367,6 +468,7 @@ const DetectionRulesPage: React.FC = () => {
     pageSize,
     totalItemCount: mockRules.length,
     pageSizeOptions: [10, 25, 50, 100],
+    showPerPageOptions: true,
   };
 
   const onTableChange = ({ page }: { page?: { index: number; size: number } }) => {
@@ -490,7 +592,10 @@ const DetectionRulesPage: React.FC = () => {
             <EuiTab
               key={tab.id}
               isSelected={selectedTab === tab.id}
-              onClick={() => setSelectedTab(tab.id)}
+              onClick={() => {
+                setSelectedTab(tab.id);
+                setPageIndex(0);
+              }}
             >
               {tab.label}
               <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
@@ -619,24 +724,321 @@ const DetectionRulesPage: React.FC = () => {
 
         {/* Table */}
         {selectedTab === 'installed' && (
-          <EuiBasicTable
-            items={mockRules.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)}
-            columns={columns}
-            itemId="id"
-            selection={{
-              selectable: () => true,
-              onSelectionChange: setSelectedItems,
-            }}
-            tableLayout="auto"
-            pagination={pagination}
-            onChange={onTableChange}
-          />
+          <>
+            {/* Table toolbar */}
+            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" color="subdued">
+                  Showing {pageIndex * pageSize + 1}-{Math.min((pageIndex + 1) * pageSize, mockRules.length)} of {mockRules.length} rules
+                </EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" color="subdued">
+                  Selected {selectedItems.length} rules
+                </EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="pagesSelect"
+                  onClick={() => setSelectedItems(mockRules)}
+                >
+                  Select all {mockRules.length} rules
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="arrowDown"
+                  iconSide="right"
+                >
+                  Bulk actions
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="refresh"
+                >
+                  Refresh
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+
+            <EuiSpacer size="s" />
+
+            <EuiBasicTable
+              items={mockRules.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)}
+              columns={columns}
+              itemId="id"
+              selection={{
+                selectable: () => true,
+                onSelectionChange: setSelectedItems,
+              }}
+              tableLayout="auto"
+              pagination={pagination}
+              onChange={onTableChange}
+            />
+          </>
         )}
 
         {selectedTab === 'monitoring' && (
-          <EuiText textAlign="center" color="subdued">
-            <p>No monitoring data available</p>
-          </EuiText>
+          <>
+            <EuiPanel hasShadow={false} hasBorder={true} color="plain" paddingSize="m">
+              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} justifyContent="spaceBetween">
+                <EuiFlexItem grow={false}>
+                  <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="s">
+                        <strong>Rules with gaps</strong>
+                      </EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiBadge color="success">0/0</EuiBadge>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type="iInCircle" size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="s">
+                        <strong>Auto gap fill status:</strong>
+                      </EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiBadge color="success">On</EuiBadge>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiPanel>
+
+            <EuiSpacer size="m" />
+
+            {/* Monitoring table toolbar */}
+            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" color="subdued">
+                  Showing {pageIndex * pageSize + 1}-{Math.min((pageIndex + 1) * pageSize, mockMonitoringRules.length)} of {mockMonitoringRules.length} rules
+                </EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" color="subdued">
+                  Selected {selectedItems.length} rules
+                </EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="pagesSelect"
+                  onClick={() => setSelectedItems(mockMonitoringRules as any)}
+                >
+                  Select all {mockMonitoringRules.length} rules
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="arrowDown"
+                  iconSide="right"
+                >
+                  Bulk actions
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs"
+                  iconType="refresh"
+                >
+                  Refresh
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+
+            <EuiSpacer size="s" />
+
+            <EuiBasicTable
+              items={mockMonitoringRules.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)}
+              columns={[
+                {
+                  field: 'name',
+                  name: 'Rule',
+                  width: '25%',
+                  sortable: true,
+                  render: (name: string) => (
+                    <EuiLink href="#">
+                      <EuiText size="s" style={{ fontWeight: 600 }}>
+                        {name}
+                      </EuiText>
+                    </EuiLink>
+                  ),
+                },
+                {
+                  field: 'method',
+                  name: 'Method',
+                  width: '100px',
+                  sortable: true,
+                  render: (method: string) => (
+                    <EuiText size="xs">{method}</EuiText>
+                  ),
+                },
+                {
+                  field: 'ruleId',
+                  name: (
+                    <span>
+                      Rule ID <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '80px',
+                  sortable: true,
+                  render: (ruleId: string) => (
+                    <EuiText size="xs">{ruleId}</EuiText>
+                  ),
+                },
+                {
+                  field: 'status',
+                  name: (
+                    <span>
+                      Status <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '80px',
+                  sortable: true,
+                  render: (status: string) => (
+                    <EuiText size="xs">{status}</EuiText>
+                  ),
+                },
+                {
+                  field: 'queryTimeMax',
+                  name: (
+                    <span>
+                      Query time max <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '120px',
+                  sortable: true,
+                  render: (queryTimeMax: string) => (
+                    <EuiText size="xs">{queryTimeMax}</EuiText>
+                  ),
+                },
+                {
+                  field: 'gapDuration',
+                  name: (
+                    <span>
+                      Gap till status <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '120px',
+                  sortable: true,
+                  render: (gapDuration: string) => (
+                    <EuiText size="xs">{gapDuration}</EuiText>
+                  ),
+                },
+                {
+                  field: 'lastRunFP',
+                  name: (
+                    <span>
+                      Last run FP <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '100px',
+                  sortable: true,
+                  render: (lastRunFP: string) => (
+                    <EuiText size="xs">{lastRunFP}</EuiText>
+                  ),
+                },
+                {
+                  field: 'unifiedPageDuration',
+                  name: (
+                    <span>
+                      Unified page duration <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '150px',
+                  sortable: true,
+                  render: (unifiedPageDuration: string) => (
+                    <EuiText size="xs">{unifiedPageDuration}</EuiText>
+                  ),
+                },
+                {
+                  field: 'lastResponse',
+                  name: (
+                    <span>
+                      Last response <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '140px',
+                  sortable: true,
+                  render: (lastResponse: 'Failed' | 'Succeeded' | 'Warning') => (
+                    <EuiHealth 
+                      color={lastResponse === 'Warning' ? 'warning' : lastResponse === 'Failed' ? 'danger' : 'success'} 
+                      style={{ fontSize: '12px', fontWeight: 500 }}
+                    >
+                      {lastResponse}
+                    </EuiHealth>
+                  ),
+                },
+                {
+                  field: 'lastRun',
+                  name: (
+                    <span>
+                      Last run <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '120px',
+                  sortable: true,
+                  render: (lastRun: string) => (
+                    <EuiText size="xs">{lastRun}</EuiText>
+                  ),
+                },
+                {
+                  field: 'enabled',
+                  name: (
+                    <span>
+                      Enabled <EuiIcon type="sortable" size="s" />
+                    </span>
+                  ),
+                  width: '80px',
+                  align: 'center',
+                  render: (enabled: boolean) => (
+                    <EuiSwitch
+                      compressed
+                      checked={enabled}
+                      onChange={() => {}}
+                      showLabel={false}
+                      label=""
+                    />
+                  ),
+                },
+                {
+                  name: '',
+                  width: '50px',
+                  align: 'center',
+                  render: () => (
+                    <EuiButtonIcon
+                      iconType="boxesHorizontal"
+                      aria-label="More actions"
+                      color="text"
+                      size="s"
+                    />
+                  ),
+                },
+              ]}
+              itemId="id"
+              tableLayout="auto"
+              pagination={{
+                pageIndex,
+                pageSize,
+                totalItemCount: mockMonitoringRules.length,
+                pageSizeOptions: [10, 25, 50, 100],
+                showPerPageOptions: true,
+              }}
+              onChange={onTableChange}
+            />
+          </>
         )}
 
         {selectedTab === 'updates' && (
