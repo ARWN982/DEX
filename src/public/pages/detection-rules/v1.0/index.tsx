@@ -33,164 +33,36 @@ import {
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
 import RulesSecondaryNav from './components/RulesSecondaryNav';
+import parsedRulesData from '../../../data/parsedDetectionRules.json';
 
 interface DetectionRule {
   id: string;
   name: string;
   riskScore: number;
-  severity: 'Low' | 'Medium' | 'High';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description?: string;
+  platform?: string;
+  ruleType?: string;
+  tags?: string[];
+  mitreTactics?: string[];
+  mitreTechniques?: Array<{ id: string; name: string }>;
   lastRun: string;
   lastResponse: 'Failed' | 'Succeeded';
   lastUpdated: string;
   notify: boolean;
   enabled: boolean;
-  hasWarning: boolean;
+  hasWarning?: boolean;
   alertsCount: string;
   tagsCount: number;
 }
 
-const mockRules: DetectionRule[] = [
-  {
-    id: '1',
-    name: 'Unusual Network Destination Domain Name',
-    riskScore: 50,
-    severity: 'High',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Failed',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: true,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/1',
-    tagsCount: 7,
-  },
-  {
-    id: '2',
-    name: 'Potential PowerShell HackTool Script by Author',
-    riskScore: 50,
-    severity: 'Low',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Succeeded',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: false,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/6',
-    tagsCount: 13,
-  },
-  {
-    id: '3',
-    name: 'Potential Widespread Malware Infection Across Multiple Hosts',
-    riskScore: 50,
-    severity: 'High',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Succeeded',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: true,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/6',
-    tagsCount: 14,
-  },
-  {
-    id: '4',
-    name: 'Route53 Resolver Query Log Configuration Deleted',
-    riskScore: 50,
-    severity: 'Medium',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Failed',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: false,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/6',
-    tagsCount: 12,
-  },
-  {
-    id: '5',
-    name: 'Potential File Download via a Headless Browser',
-    riskScore: 50,
-    severity: 'Low',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Succeeded',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: true,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/5',
-    tagsCount: 8,
-  },
-  {
-    id: '6',
-    name: 'EC2 AM Shared with Another Account',
-    riskScore: 50,
-    severity: 'Medium',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Failed',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: false,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/3',
-    tagsCount: 9,
-  },
-  {
-    id: '7',
-    name: 'Suspicious File Renamed via SMB',
-    riskScore: 50,
-    severity: 'Low',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Succeeded',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: true,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/4',
-    tagsCount: 11,
-  },
-  {
-    id: '8',
-    name: 'AWS EC2 Admin Credential Fetch via Assumed Role',
-    riskScore: 50,
-    severity: 'High',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Failed',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: false,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/2',
-    tagsCount: 10,
-  },
-  {
-    id: '9',
-    name: 'Unusual Execution via Microsoft Common Console File',
-    riskScore: 50,
-    severity: 'Medium',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Succeeded',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: true,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/7',
-    tagsCount: 15,
-  },
-  {
-    id: '10',
-    name: 'Unsigned DLL Loaded by a Trusted Process',
-    riskScore: 50,
-    severity: 'Low',
-    lastRun: '29 minutes ago',
-    lastResponse: 'Succeeded',
-    lastUpdated: 'Sep 25, 2024 @ 20:11:41.666',
-    notify: false,
-    enabled: true,
-    hasWarning: false,
-    alertsCount: '0/8',
-    tagsCount: 6,
-  },
-];
+// Process parsed rules to add alertsCount and tagsCount
+const mockRules: DetectionRule[] = (parsedRulesData as any[]).map((rule, index) => ({
+  ...rule,
+  alertsCount: `0/${Math.floor(Math.random() * 10) + 1}`,
+  tagsCount: rule.tags?.length || 0,
+  hasWarning: false,
+}));
 
 interface MonitoringRule {
   id: string;
@@ -207,64 +79,21 @@ interface MonitoringRule {
   enabled: boolean;
 }
 
-const mockMonitoringRules: MonitoringRule[] = [
-  {
-    id: '1',
-    name: 'Unusual DNS Process of dns.exe',
-    method: 'Modified',
-    ruleId: '-8/0',
-    status: '-1.5',
-    queryTimeMax: '--',
-    gapDuration: '--',
-    lastRunFP: '--',
-    unifiedPageDuration: '--',
-    lastResponse: 'Warning',
-    lastRun: '5 minutes ago',
-    enabled: true,
-  },
-  {
-    id: '2',
-    name: 'System Shells via Services',
-    method: 'Modified',
-    ruleId: '-8/0',
-    status: '-1.5',
-    queryTimeMax: '--',
-    gapDuration: '--',
-    lastRunFP: '--',
-    unifiedPageDuration: '--',
-    lastResponse: 'Warning',
-    lastRun: '5 minutes ago',
-    enabled: true,
-  },
-  {
-    id: '3',
-    name: 'Web Shell Detection: Script Process Child of Common Web Processes',
-    method: 'Modified',
-    ruleId: '-8/0',
-    status: '-7.0',
-    queryTimeMax: '--',
-    gapDuration: '--',
-    lastRunFP: '--',
-    unifiedPageDuration: '--',
-    lastResponse: 'Warning',
-    lastRun: '5 minutes ago',
-    enabled: true,
-  },
-  {
-    id: '4',
-    name: 'UAC Bypass Attempt via Windows Directory Masquerading',
-    method: 'Modified',
-    ruleId: '-8/0',
-    status: '-1.4',
-    queryTimeMax: '--',
-    gapDuration: '--',
-    lastRunFP: '--',
-    unifiedPageDuration: '--',
-    lastResponse: 'Warning',
-    lastRun: '5 minutes ago',
-    enabled: true,
-  },
-];
+// Convert detection rules to monitoring format
+const mockMonitoringRules: MonitoringRule[] = mockRules.map((rule) => ({
+  id: rule.id,
+  name: rule.name,
+  method: rule.ruleType === 'eql' ? 'EQL' : rule.ruleType === 'query' ? 'Query' : 'Modified',
+  ruleId: `-${Math.floor(Math.random() * 10)}/${Math.floor(Math.random() * 2)}`,
+  status: `-${(Math.random() * 10).toFixed(1)}`,
+  queryTimeMax: '--',
+  gapDuration: '--',
+  lastRunFP: '--',
+  unifiedPageDuration: '--',
+  lastResponse: rule.lastResponse === 'Failed' ? 'Failed' : Math.random() > 0.7 ? 'Warning' : 'Succeeded',
+  lastRun: rule.lastRun,
+  enabled: rule.enabled,
+}));
 
 const DetectionRulesPage: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<DetectionRule[]>([]);
@@ -298,10 +127,15 @@ const DetectionRulesPage: React.FC = () => {
       case 'medium':
         return 'warning';
       case 'high':
+      case 'critical':
         return 'danger';
       default:
         return 'success';
     }
+  };
+  
+  const capitalizeSeverity = (severity: string): string => {
+    return severity.charAt(0).toUpperCase() + severity.slice(1);
   };
 
   const columns: Array<EuiBasicTableColumn<DetectionRule>> = [
@@ -364,7 +198,7 @@ const DetectionRulesPage: React.FC = () => {
       sortable: true,
       render: (severity: string) => (
         <EuiHealth color={getSeverityColor(severity)} style={{ fontSize: '12px', fontWeight: 500 }}>
-          {severity}
+          {capitalizeSeverity(severity)}
         </EuiHealth>
       ),
     },
@@ -482,12 +316,12 @@ const DetectionRulesPage: React.FC = () => {
     {
       id: 'installed' as const,
       label: 'Installed Rules',
-      count: 188,
+      count: mockRules.length,
     },
     {
       id: 'monitoring' as const,
       label: 'Rule Monitoring',
-      count: 0,
+      count: mockMonitoringRules.length,
     },
     {
       id: 'updates' as const,

@@ -121,3 +121,6 @@ pids
 
 # Playwright MCP screenshots
 .playwright-mcp/
+
+# Elastic detection rules repository (cloned from GitHub)
+data/detection-rules/
