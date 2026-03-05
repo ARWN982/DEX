@@ -59,7 +59,7 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
         </EuiHeaderSectionItem>
       </EuiHeaderSection>
 
-      {/* Right Section: Search + Help + Confetti + AI Assistant + Avatar */}
+      {/* Right Section: Search + Help + Sparkles + Comment + AI Agent + Avatar */}
       <EuiHeaderSection side="right">
         <EuiHeaderSectionItem>
           <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
@@ -83,8 +83,17 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
             
             <EuiFlexItem grow={false}>
               <EuiButtonIcon
-                iconType="starFilled"
-                aria-label="Celebrate"
+                iconType="popper"
+                aria-label="What's new"
+                color="text"
+                size="s"
+              />
+            </EuiFlexItem>
+            
+            <EuiFlexItem grow={false}>
+              <EuiButtonIcon
+                iconType="discuss"
+                aria-label="Feedback"
                 color="text"
                 size="s"
               />
@@ -92,7 +101,7 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
             
             <EuiFlexItem grow={false}>
               <EuiButton
-                iconType="sparkles"
+                iconType="productAgent"
                 size="s"
                 style={{ 
                   backgroundColor: '#d9e8ff',
