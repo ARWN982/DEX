@@ -66,18 +66,10 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, custom
   );
 };
 
-// Colored Security Logo from Figma
+// Security Logo using EUI icon
 const SecurityLogo: React.FC = () => {
   return (
-    <img 
-      src="https://www.figma.com/api/mcp/asset/4388f75b-98c7-4899-95cf-e8fda0f74391"
-      alt="Security"
-      style={{
-        width: '20px',
-        height: '20px',
-        objectFit: 'contain'
-      }}
-    />
+    <EuiIcon type="logoSecurity" size="m" />
   );
 };
 
