@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+> **When should I use Vibe Kibana [(elastic/vibe-kibana)](https://github.com/elastic/vibe-kibana) vs Kibana [(elastic/kibana)](https://github.com/elastic/kibana)?**
+> 
+> - **Quick exploration of multiple directions** - If you haven't defined a direction yet and want to rapidly iterate through different approaches, start here.
+> 
+>   Once you've settled on a direction in elastic/vibe-kibana, **move to elastic/kibana to build your solution directly in the Kibana codebase.**
+> 
+> - **Brand new complex features** - If you're designing something that doesn't exist at all in Kibana today, Vibe Kibana lets you build and share it without navigating the full Kibana codebase.
+> - **Small, scoped changes** - If you're tweaking an existing page or component, you're encouraged to work directly in the [(elastic/kibana)](https://github.com/elastic/kibana) repo. It's the fastest path to production.
+
+
 # Vibe Kibana
 
 A prototyping tool to build coded prototypes of Kibana.
