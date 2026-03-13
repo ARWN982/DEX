@@ -202,25 +202,27 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
               </button>
             ))}
             
-            {/* Create new version button */}
-            <button
-              style={createButtonStyle}
-              onClick={handleCreateVersion}
-              onMouseEnter={(e) => {
-                Object.assign(e.currentTarget.style, {
-                  ...createButtonStyle,
-                  backgroundColor: colors.buttonHover,
-                });
-              }}
-              onMouseLeave={(e) => {
-                Object.assign(e.currentTarget.style, createButtonStyle);
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={16} />
-                <span>Create New Version</span>
-              </div>
-            </button>
+            {/* Create new version button - only in full app, not in published output */}
+            {onCreateVersion && (
+              <button
+                style={createButtonStyle}
+                onClick={handleCreateVersion}
+                onMouseEnter={(e) => {
+                  Object.assign(e.currentTarget.style, {
+                    ...createButtonStyle,
+                    backgroundColor: colors.buttonHover,
+                  });
+                }}
+                onMouseLeave={(e) => {
+                  Object.assign(e.currentTarget.style, createButtonStyle);
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Plus size={16} />
+                  <span>Create New Version</span>
+                </div>
+              </button>
+            )}
           </div>
         </>
       )}

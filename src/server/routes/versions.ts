@@ -193,15 +193,24 @@ router.post('/', async (req: Request, res: Response) => {
 router.post('/active', async (req: Request, res: Response) => {
   try {
     const { versionId, page } = req.body;
-    const pageName = page || 'esql-simple-mode';
+    const pageName = page || '';
     
     console.log('Setting active version to:', versionId);
 
-    // Load and update versions
-    const data = await fs.readFile(VERSIONS_PATH, 'utf8');
-    const versionsData: VersionsData = JSON.parse(data);
+    let versionsData: VersionsData;
+    try {
+      const data = await fs.readFile(VERSIONS_PATH, 'utf8');
+      versionsData = JSON.parse(data);
+    } catch {
+      versionsData = {
+        versions: [],
+        metadata: {
+          currentVersion: '1.0',
+          lastUpdated: new Date().toISOString()
+        }
+      };
+    }
 
-    // Update active version
     versionsData.versions = versionsData.versions.map(v => ({
       ...v,
       isActive: v.id === versionId
@@ -210,7 +219,7 @@ router.post('/active', async (req: Request, res: Response) => {
     versionsData.metadata.currentVersion = versionId;
     versionsData.metadata.lastUpdated = new Date().toISOString();
 
-    // Save updated versions
+    await fs.mkdir(path.dirname(VERSIONS_PATH), { recursive: true });
     await fs.writeFile(VERSIONS_PATH, JSON.stringify(versionsData, null, 2));
 
     res.json({ success: true, currentVersion: versionId });
