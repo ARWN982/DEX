@@ -15,6 +15,7 @@ import { useAppStore } from "./store/useAppStore";
 import { useVersionStore } from "./store/useVersionStore";
 import { VersionedComponentLoader } from "./utils/componentLoader";
 import { TemplateLoader } from "./utils/templateLoader";
+import RuleDetailsPage from "./pages/detection-rules/v1.0/rule-details";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -80,6 +81,12 @@ const App: React.FC = () => {
             <Route
               path="/templates/:templateName"
               element={<TemplateLoaderWithParams />}
+            />
+            
+            {/* Rule details route - must come before the catch-all */}
+            <Route
+              path="/detection-rules/:ruleId"
+              element={<RuleDetailsPage />}
             />
             
             {/* Dynamic project route - catches all project paths */}

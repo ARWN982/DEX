@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   EuiPage,
   EuiPageBody,
@@ -96,11 +97,13 @@ const mockMonitoringRules: MonitoringRule[] = mockRules.map((rule) => ({
 }));
 
 const DetectionRulesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedItems, setSelectedItems] = useState<DetectionRule[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [selectedTab, setSelectedTab] = useState<'installed' | 'monitoring' | 'updates'>('installed');
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [showDeprecatedCallout, setShowDeprecatedCallout] = useState(true);
   
   // Filter popover states
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
@@ -147,7 +150,7 @@ const DetectionRulesPage: React.FC = () => {
       render: (name: string, item: DetectionRule) => (
         <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
           <EuiFlexItem grow={false}>
-            <EuiLink href="#">
+            <EuiLink onClick={() => navigate(`/detection-rules/${item.id}`)}>
               <EuiText size="s" style={{ fontWeight: 600 }}>
                 {name}
               </EuiText>
@@ -315,17 +318,17 @@ const DetectionRulesPage: React.FC = () => {
   const tabs = [
     {
       id: 'installed' as const,
-      label: 'Installed Rules',
+      label: 'Installed rules',
       count: mockRules.length,
     },
     {
       id: 'monitoring' as const,
-      label: 'Rule Monitoring',
+      label: 'Rule monitoring',
       count: mockMonitoringRules.length,
     },
     {
       id: 'updates' as const,
-      label: 'Rule Updates',
+      label: 'Rule updates',
       count: 0,
     },
   ];
@@ -359,8 +362,13 @@ const DetectionRulesPage: React.FC = () => {
               }}
             >
               <RulesSecondaryNav 
-                selectedSection={selectedTab} 
-                onSectionChange={(section) => setSelectedTab(section as 'installed' | 'monitoring' | 'updates')}
+                selectedSection="installed"
+                onSectionChange={(section) => {
+                  // Keep on Detection rules (SIEM) section since all tabs are part of it
+                  if (section === 'installed') {
+                    setSelectedTab('installed');
+                  }
+                }}
               />
             </EuiPanel>
           </EuiFlexItem>
@@ -419,6 +427,36 @@ const DetectionRulesPage: React.FC = () => {
         </div>
 
         <EuiSpacer size="m" />
+
+        {/* Deprecated Rule Warning */}
+        {showDeprecatedCallout && (
+          <>
+            <EuiCallOut
+              title="1 installed rule has been deprecated and are no longer maintained"
+              color="warning"
+              iconType="warning"
+              onDismiss={() => setShowDeprecatedCallout(false)}
+            >
+              <EuiText size="s">
+                Delete the rule or duplicate it before deletion. This reminder will appear again in 7 days if dismissed.
+              </EuiText>
+              <EuiSpacer size="s" />
+              <EuiFlexGroup gutterSize="s" responsive={false}>
+                <EuiFlexItem grow={false}>
+                  <EuiButton color="warning" size="s">
+                    Delete rule
+                  </EuiButton>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty size="s">
+                    View rule
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiCallOut>
+            <EuiSpacer size="m" />
+          </>
+        )}
 
         {/* Tabs */}
         <EuiTabs size="l">
@@ -702,8 +740,8 @@ const DetectionRulesPage: React.FC = () => {
                   name: 'Rule',
                   width: '25%',
                   sortable: true,
-                  render: (name: string) => (
-                    <EuiLink href="#">
+                  render: (name: string, item: any) => (
+                    <EuiLink onClick={() => navigate(`/detection-rules/${item.id}`)}>
                       <EuiText size="s" style={{ fontWeight: 600 }}>
                         {name}
                       </EuiText>
