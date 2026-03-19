@@ -5,6 +5,8 @@ import {
   EuiPageBody,
   EuiButton,
   EuiButtonEmpty,
+  EuiButtonIcon,
+  EuiButtonGroup,
   EuiFlexGroup,
   EuiFlexItem,
   EuiSpacer,
@@ -21,6 +23,8 @@ import {
   EuiLink,
   EuiCode,
   EuiCodeBlock,
+  EuiDescriptionList,
+  EuiHorizontalRule,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -50,7 +54,8 @@ const RuleDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'exceptions' | 'execution'>('overview');
   const [isEnabled, setIsEnabled] = useState(true);
-  const [showWarning, setShowWarning] = useState(true);
+  const [showWarning, setShowWarning] = useState(false);
+  const [aboutViewToggle, setAboutViewToggle] = useState('details');
 
   // Find the rule from parsed data
   const rule = parsedRulesData.find((r: any) => r.id === ruleId) as DetectionRule | undefined;
@@ -184,25 +189,27 @@ const RuleDetailsPage: React.FC = () => {
 
                 {/* Metadata */}
                 <EuiSpacer size="s" />
-                <EuiFlexGroup gutterSize="m" responsive={false}>
+                <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center">
                   <EuiFlexItem grow={false}>
                     <EuiText size="s" color="subdued">
-                      Created by <strong>Elastic</strong> on {rule.lastUpdated}
+                      Created by <strong>22468f8712</strong> on Feb 3, 2026 @ 21:13:41.666
                     </EuiText>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <EuiText size="s" color="subdued">
-                      Updated by <strong>Elastic</strong> on {rule.lastUpdated}
+                      Updated by <strong>22468f8712</strong> on Mar 18, 2026 @ 21:14:34.586
                     </EuiText>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
                       <EuiFlexItem grow={false}>
-                        <EuiIcon type="clock" size="s" />
+                        <EuiHealth color="warning" style={{ fontSize: '12px' }}>
+                          warning
+                        </EuiHealth>
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>
                         <EuiText size="s" color="subdued">
-                          Last response: {rule.lastRun}
+                          at Mar 18, 2026 @ 21:14:17.686
                         </EuiText>
                       </EuiFlexItem>
                     </EuiFlexGroup>
@@ -210,7 +217,7 @@ const RuleDetailsPage: React.FC = () => {
                   <EuiFlexItem grow={false}>
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
                       <EuiFlexItem grow={false}>
-                        <EuiIcon type="bell" size="s" />
+                        <EuiIcon type="dot" size="s" color="subdued" />
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>
                         <EuiText size="s" color="subdued">
@@ -239,16 +246,16 @@ const RuleDetailsPage: React.FC = () => {
                 <EuiSpacer size="m" />
 
                 {/* Warning Callout */}
-                {showWarning && rule.lastResponse === 'Failed' && (
+                {showWarning && (
                   <>
                     <EuiCallOut
-                      title={`Warning at ${rule.lastRun}`}
+                      title="Warning at Mar 18, 2026 @ 21:14:17.686"
                       color="warning"
                       iconType="warning"
                       onDismiss={() => setShowWarning(false)}
                     >
                       <EuiText size="s">
-                        Unable to find warning reason for rule {rule.name}. This warning will persist until one of the following occurs: a matching index is created or the rule is disabled.
+                        Unable to find warning indices for rule {rule.name}. This warning will persist until one of the following occurs: a matching index is created or the rule is disabled.
                       </EuiText>
                       <EuiSpacer size="s" />
                       <EuiButtonEmpty size="xs" iconType="help">
@@ -261,214 +268,285 @@ const RuleDetailsPage: React.FC = () => {
 
                 {/* Main Content: About and Definition */}
                 {selectedTab === 'overview' && (
-                  <EuiFlexGroup gutterSize="m" alignItems="flexStart">
-                    {/* Left Column: About */}
+                  <EuiFlexGroup gutterSize="l" alignItems="stretch">
+                    {/* Left Column: About (60% width) */}
                     <EuiFlexItem grow={6}>
-                      <EuiTitle size="s">
-                        <h2>About</h2>
-                      </EuiTitle>
-                      <EuiSpacer size="m" />
+                      <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ height: '100%' }}>
+                        <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiTitle size="m">
+                              <h2>About</h2>
+                            </EuiTitle>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiButtonGroup
+                              legend="About view toggle"
+                              options={[
+                                { id: 'details', label: 'Details' },
+                                { id: 'investigation', label: 'Investigation guide' },
+                              ]}
+                              idSelected={aboutViewToggle}
+                              onChange={(id) => setAboutViewToggle(id)}
+                              buttonSize="s"
+                            />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
 
-                      {/* Description */}
-                      <EuiTitle size="xs">
-                        <h3>Description</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s">
-                        {rule.description || 'No description available.'}
-                      </EuiText>
+                        <EuiSpacer size="m" />
 
-                      <EuiSpacer size="m" />
-
-                      {/* Author */}
-                      <EuiTitle size="xs">
-                        <h3>Author</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s">Elastic</EuiText>
-
-                      <EuiSpacer size="m" />
-
-                      {/* Severity */}
-                      <EuiTitle size="xs">
-                        <h3>Severity</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiHealth color={getSeverityColor(rule.severity)}>
-                        {rule.severity.charAt(0).toUpperCase() + rule.severity.slice(1)}
-                      </EuiHealth>
-
-                      <EuiSpacer size="m" />
-
-                      {/* Risk score */}
-                      <EuiTitle size="xs">
-                        <h3>Risk score</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s">{rule.riskScore}</EuiText>
-
-                      <EuiSpacer size="m" />
-
-                      {/* MITRE ATT&CK */}
-                      {rule.mitreTactics && rule.mitreTactics.length > 0 && (
-                        <>
-                          <EuiTitle size="xs">
-                            <h3>MITRE ATT&CK</h3>
-                          </EuiTitle>
-                          <EuiSpacer size="s" />
-                          <EuiFlexGroup gutterSize="s" wrap>
-                            {rule.mitreTactics.map((tactic, idx) => (
-                              <EuiFlexItem grow={false} key={idx}>
-                                <EuiBadge color="hollow">{tactic}</EuiBadge>
-                              </EuiFlexItem>
-                            ))}
-                          </EuiFlexGroup>
-                          {rule.mitreTechniques && rule.mitreTechniques.length > 0 && (
-                            <>
-                              <EuiSpacer size="s" />
-                              <EuiFlexGroup gutterSize="s" wrap>
-                                {rule.mitreTechniques.map((technique, idx) => (
-                                  <EuiFlexItem grow={false} key={idx}>
-                                    <EuiBadge color="hollow">
-                                      {technique.id}: {technique.name}
-                                    </EuiBadge>
+                        <EuiDescriptionList
+                          type="column"
+                          style={{ rowGap: '24px', columnGap: '64px' }}
+                          listItems={[
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 4 }}>Description</EuiText>,
+                              description: <EuiText size="s">{rule.description || 'No description available.'}</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Author</EuiText>,
+                              description: <EuiText size="s">Elastic</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Severity</EuiText>,
+                              description: (
+                                <EuiHealth color={getSeverityColor(rule.severity)}>
+                                  {rule.severity.charAt(0).toUpperCase() + rule.severity.slice(1)}
+                                </EuiHealth>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Risk score</EuiText>,
+                              description: <EuiText size="s">{rule.riskScore}</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Reference URLs</EuiText>,
+                              description: (
+                                <ul style={{ paddingLeft: 20, margin: 0 }}>
+                                  <li>
+                                    <EuiLink href="#" external>
+                                      https://research.checkpoint.com/2020/resolving-your-way-into-domain-admin-exploiting-a-17-year-old-bug-in-windows-dns-servers/
+                                    </EuiLink>
+                                  </li>
+                                  <li>
+                                    <EuiLink href="#" external>
+                                      https://msrc-blog.microsoft.com/2020/07/14/july-2020-security-update-cve-2020-1350-vulnerability-in-windows-domain-name-system-dns-server/
+                                    </EuiLink>
+                                  </li>
+                                  <li>
+                                    <EuiLink href="#" external>
+                                      https://www.elastic.co/security-labs/detection-rules-for-sigred-vulnerability
+                                    </EuiLink>
+                                  </li>
+                                </ul>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>False positive examples</EuiText>,
+                              description: (
+                                <EuiText size="s">
+                                  <p>
+                                    Verified test sets will legitimately spawn when dns.exe service is in a occurring event. 
+                                    Denial of Service (DoS) attempts by intentionally crashing the service will also cause new/fault dns to spawn.
+                                  </p>
+                                </EuiText>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>License</EuiText>,
+                              description: <EuiText size="s">Elastic License v2</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>MITRE ATT&CK™</EuiText>,
+                              description: (
+                                <EuiFlexGroup direction="column" gutterSize="xs">
+                                  <EuiFlexItem>
+                                    <EuiLink href="#">Lateral Movement [TA0008]</EuiLink>
                                   </EuiFlexItem>
-                                ))}
-                              </EuiFlexGroup>
-                            </>
-                          )}
-                          <EuiSpacer size="m" />
-                        </>
-                      )}
-
-                      {/* Tags */}
-                      {rule.tags && rule.tags.length > 0 && (
-                        <>
-                          <EuiTitle size="xs">
-                            <h3>Tags</h3>
-                          </EuiTitle>
-                          <EuiSpacer size="s" />
-                          <EuiFlexGroup gutterSize="s" wrap>
-                            {rule.tags.map((tag, idx) => (
-                              <EuiFlexItem grow={false} key={idx}>
-                                <EuiBadge color="hollow">{tag}</EuiBadge>
-                              </EuiFlexItem>
-                            ))}
-                          </EuiFlexGroup>
-                          <EuiSpacer size="m" />
-                        </>
-                      )}
-
-                      {/* Reference URLs */}
-                      <EuiTitle size="xs">
-                        <h3>Reference URLs</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s" color="subdued">
-                        No reference URLs available
-                      </EuiText>
-
-                      <EuiSpacer size="m" />
-
-                      {/* False positive examples */}
-                      <EuiTitle size="xs">
-                        <h3>False positive examples</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s" color="subdued">
-                        No false positive examples documented
-                      </EuiText>
+                                  <EuiFlexItem style={{ paddingLeft: 16 }}>
+                                    <EuiLink href="#">Exploitation of Remote Services [T1210]</EuiLink>
+                                  </EuiFlexItem>
+                                </EuiFlexGroup>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Timestamp override</EuiText>,
+                              description: <EuiText size="s">event.ingested</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Max alerts per run</EuiText>,
+                              description: <EuiText size="s">100</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Tags</EuiText>,
+                                description: (
+                                  <EuiFlexGroup gutterSize="s" wrap>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Domain: Endpoint</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">OS: Windows</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Use Case: Threat Detection</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Tactic: Lateral Movement</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Resources: Investigation Guide</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: Elastic Defend</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: Windows Security Event Log</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: System</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: SentinelOne</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: Crowdstrike</EuiBadge>
+                                    </EuiFlexItem>
+                                  </EuiFlexGroup>
+                                ),
+                              },
+                            ]}
+                          />
+                      </EuiPanel>
                     </EuiFlexItem>
 
-                    {/* Right Column: Definition */}
+                    {/* Right Column: Definition & Schedule (40% width) */}
                     <EuiFlexItem grow={4}>
-                      <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
-                        <EuiFlexItem grow={false}>
-                          <EuiTitle size="s">
-                            <h2>Definition</h2>
-                          </EuiTitle>
+                      <EuiFlexGroup direction="column" gutterSize="m">
+                        {/* Definition Section */}
+                        <EuiFlexItem>
+                          <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m">
+                            <EuiTitle size="m">
+                              <h2>Definition</h2>
+                            </EuiTitle>
+                            <EuiSpacer size="m" />
+                            <EuiDescriptionList
+                              type="column"
+                              style={{ rowGap: '24px', columnGap: '64px' }}
+                              listItems={[
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Index patterns</EuiText>,
+                                description: (
+                                  <EuiFlexGroup gutterSize="s" wrap>
+                                    {['endgame-*', 'logs-crowdstrike.fdr*', 'logs-endpoint.events.process-*', 
+                                      'logs-m365_defender.event-*', 'logs-sentinel_one_cloud_funnel.*', 
+                                      'logs-system.security*', 'logs-windows.forwarded*', 
+                                      'logs-windows.sysmon_operational-*', 'winlogbeat-*'].map((pattern, idx) => (
+                                      <EuiFlexItem grow={false} key={idx}>
+                                        <EuiBadge color="hollow">{pattern}</EuiBadge>
+                                      </EuiFlexItem>
+                                    ))}
+                                  </EuiFlexGroup>
+                                ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>EQL query</EuiText>,
+                                  description: (
+                                    <EuiCodeBlock language="sql" fontSize="s" paddingSize="s" isCopyable>
+{`process where host.os.type == "windows" and event.type == "start"
+  and process.parent.name : "dns.exe" and
+  not process.executable :
+      ("?:\\\\Windows\\\\System32\\\\werfault.exe",
+       "?:\\\\Windows\\\\System32\\\\conhost.exe",
+       "?:\\\\Program Files\\\\BeyondTrust\\\\One2OneHost.exe*") and
+  /* Consisterthis specific exclusion as it uses NT Object paths */
+  (process.name : ("cmd.exe", "powershell.exe",
+                   "?:\\\\DeviceHarddiskVolume?\\\\Windows\\\\System32\\\\conhost.exe")
+   and
+   not process.parent.executable :
+       ("?:\\\\Program Files\\\\BeyondTrust\\\\One2OneHost.exe*"))`}
+                                    </EuiCodeBlock>
+                                  ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Rule type</EuiText>,
+                                  description: <EuiText size="s">Event Correlation</EuiText>,
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Related integrations</EuiText>,
+                                  description: (
+                                  <EuiFlexGroup direction="column" gutterSize="s">
+                                    {[
+                                      { name: 'CrowdStrike', status: 'Not installed', color: 'default' },
+                                      { name: 'Elastic Defend', status: 'Installed', color: 'success' },
+                                      { name: 'Microsoft Defender XDR', status: 'Not installed', color: 'default' },
+                                      { name: 'SentinelOne Cloud Funnel', status: 'Not installed', color: 'default' },
+                                      { name: 'Windows', status: 'Not installed', color: 'default' },
+                                    ].map((integration, idx) => (
+                                      <EuiFlexItem key={idx}>
+                                        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                                          <EuiFlexItem grow={false}>
+                                            <EuiLink href="#">{integration.name}</EuiLink>
+                                          </EuiFlexItem>
+                                          <EuiFlexItem grow={false}>
+                                            <EuiBadge color={integration.color as any}>{integration.status}</EuiBadge>
+                                          </EuiFlexItem>
+                                        </EuiFlexGroup>
+                                      </EuiFlexItem>
+                                    ))}
+                                  </EuiFlexGroup>
+                                ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Required fields</EuiText>,
+                                  description: (
+                                    <EuiFlexGroup direction="column" gutterSize="xs">
+                                      {['event.type', 'host.os.type', 'process.executable', 'process.name', 'process.parent.name'].map((field, idx) => (
+                                        <EuiFlexItem key={idx}>
+                                          <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                                            <EuiFlexItem grow={false}>
+                                              <EuiIcon type="tokenField" size="s" />
+                                            </EuiFlexItem>
+                                            <EuiFlexItem>
+                                              <EuiText size="s">{field}</EuiText>
+                                            </EuiFlexItem>
+                                          </EuiFlexGroup>
+                                        </EuiFlexItem>
+                                      ))}
+                                    </EuiFlexGroup>
+                                  ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Timeline template</EuiText>,
+                                  description: <EuiText size="s">None</EuiText>,
+                                },
+                            ]}
+                            />
+                          </EuiPanel>
                         </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiFlexGroup gutterSize="s" responsive={false}>
-                            <EuiFlexItem grow={false}>
-                              <EuiButton size="s" fill>
-                                Details
-                              </EuiButton>
-                            </EuiFlexItem>
-                            <EuiFlexItem grow={false}>
-                              <EuiButton size="s">
-                                Investigation guide
-                              </EuiButton>
-                            </EuiFlexItem>
-                          </EuiFlexGroup>
+
+                        {/* Schedule Section */}
+                        <EuiFlexItem>
+                          <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m">
+                            <EuiTitle size="m">
+                              <h2>Schedule</h2>
+                            </EuiTitle>
+                            <EuiSpacer size="m" />
+                            <EuiDescriptionList
+                              type="column"
+                              style={{ rowGap: '24px', columnGap: '64px' }}
+                              listItems={[
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Runs every</EuiText>,
+                                  description: <EuiText size="s">5m</EuiText>,
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Additional look-back time</EuiText>,
+                                  description: <EuiText size="s">4m</EuiText>,
+                                },
+                              ]}
+                            />
+                          </EuiPanel>
                         </EuiFlexItem>
                       </EuiFlexGroup>
-
-                      <EuiSpacer size="m" />
-
-                      {/* Index patterns */}
-                      <EuiTitle size="xs">
-                        <h3>Index patterns</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiPanel color="subdued" paddingSize="s">
-                        <EuiText size="s">
-                          <ul style={{ margin: 0, paddingLeft: 20 }}>
-                            <li>
-                              <EuiCode>logs-endpoint.events.process-*</EuiCode>
-                            </li>
-                            <li>
-                              <EuiCode>logs-system.security-*</EuiCode>
-                            </li>
-                            <li>
-                              <EuiCode>endgame-*</EuiCode>
-                            </li>
-                            <li>
-                              <EuiCode>winlogbeat-*</EuiCode>
-                            </li>
-                          </ul>
-                        </EuiText>
-                      </EuiPanel>
-
-                      <EuiSpacer size="m" />
-
-                      {/* Rule type */}
-                      <EuiTitle size="xs">
-                        <h3>Rule type</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s">
-                        {rule.ruleType ? rule.ruleType.toUpperCase() : 'Query'}
-                      </EuiText>
-
-                      <EuiSpacer size="m" />
-
-                      {/* Query */}
-                      <EuiTitle size="xs">
-                        <h3>{rule.ruleType === 'eql' ? 'EQL query' : 'Query'}</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiCodeBlock language="sql" fontSize="s" paddingSize="s">
-{rule.ruleType === 'eql' 
-  ? `sequence by host.id with maxspan=10s
-  [process where event.type == "start" and
-   process.name == "dns.exe" and
-   not process.parent.name == "svchost.exe"]`
-  : `event.type == "start" and
-process.name: "${rule.name.split(' ')[0].toLowerCase()}" and
-not process.parent.executable: *`}
-                      </EuiCodeBlock>
-
-                      <EuiSpacer size="m" />
-
-                      {/* Timeline template */}
-                      <EuiTitle size="xs">
-                        <h3>Timeline template</h3>
-                      </EuiTitle>
-                      <EuiSpacer size="s" />
-                      <EuiText size="s" color="subdued">
-                        None
-                      </EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
                 )}
