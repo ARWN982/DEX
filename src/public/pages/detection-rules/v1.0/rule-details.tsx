@@ -25,6 +25,8 @@ import {
   EuiCodeBlock,
   EuiDescriptionList,
   EuiHorizontalRule,
+  EuiBasicTable,
+  EuiTablePagination,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -52,10 +54,16 @@ interface DetectionRule {
 const RuleDetailsPage: React.FC = () => {
   const { ruleId } = useParams<{ ruleId: string }>();
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'exceptions' | 'execution'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'exceptions' | 'execution' | 'gaps'>('overview');
   const [isEnabled, setIsEnabled] = useState(true);
   const [showWarning, setShowWarning] = useState(false);
   const [aboutViewToggle, setAboutViewToggle] = useState('details');
+  const [executionPageIndex, setExecutionPageIndex] = useState(0);
+  const [executionPageSize, setExecutionPageSize] = useState(10);
+  const [gapFillPageIndex, setGapFillPageIndex] = useState(0);
+  const [gapFillPageSize, setGapFillPageSize] = useState(10);
+  const [showSourceEventRange, setShowSourceEventRange] = useState(true);
+  const [showMetricsColumns, setShowMetricsColumns] = useState(false);
 
   // Find the rule from parsed data
   const rule = parsedRulesData.find((r: any) => r.id === ruleId) as DetectionRule | undefined;
@@ -97,6 +105,7 @@ const RuleDetailsPage: React.FC = () => {
     { id: 'alerts' as const, label: 'Alerts' },
     { id: 'exceptions' as const, label: 'Rule exceptions' },
     { id: 'execution' as const, label: 'Execution results' },
+    { id: 'gaps' as const, label: 'Gaps' },
   ];
 
   return (
@@ -192,12 +201,12 @@ const RuleDetailsPage: React.FC = () => {
                 <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center">
                   <EuiFlexItem grow={false}>
                     <EuiText size="s" color="subdued">
-                      Created by <strong>22468f8712</strong> on Feb 3, 2025 @ 12:13:31.468
+                      <strong>Created by:</strong> 22468f8712 on Feb 3, 2025 @ 12:13:31.468
                     </EuiText>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <EuiText size="s" color="subdued">
-                      Updated by <strong>2236886732</strong> on Mar 18, 2026 @ 21:15:43.596
+                      <strong>Updated by:</strong> 2236886732 on Mar 18, 2026 @ 21:15:43.596
                     </EuiText>
                   </EuiFlexItem>
                 </EuiFlexGroup>
@@ -209,7 +218,7 @@ const RuleDetailsPage: React.FC = () => {
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
                       <EuiFlexItem grow={false}>
                         <EuiText size="s" color="subdued">
-                          Last response:
+                          <strong>Last response:</strong>
                         </EuiText>
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>
@@ -233,6 +242,18 @@ const RuleDetailsPage: React.FC = () => {
                         <EuiText size="s" color="subdued">
                           Notify when alerts generated
                         </EuiText>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                      <EuiFlexItem grow={false}>
+                        <EuiText size="s" color="subdued">
+                          <strong>Auto gap fill status:</strong>
+                        </EuiText>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiBadge color="success">ON</EuiBadge>
                       </EuiFlexItem>
                     </EuiFlexGroup>
                   </EuiFlexItem>
@@ -309,15 +330,15 @@ const RuleDetailsPage: React.FC = () => {
                           style={{ rowGap: '24px', columnGap: '64px' }}
                           listItems={[
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 4 }}>Description</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>Description</EuiText>,
                               description: <EuiText size="s">{rule.description || 'No description available.'}</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Author</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Author</EuiText>,
                               description: <EuiText size="s">Elastic</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Severity</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Severity</EuiText>,
                               description: (
                                 <EuiHealth color={getSeverityColor(rule.severity)}>
                                   {rule.severity.charAt(0).toUpperCase() + rule.severity.slice(1)}
@@ -325,11 +346,11 @@ const RuleDetailsPage: React.FC = () => {
                               ),
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Risk score</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Risk score</EuiText>,
                               description: <EuiText size="s">{rule.riskScore}</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Reference URLs</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Reference URLs</EuiText>,
                               description: (
                                 <ul style={{ margin: 0, paddingLeft: 0, listStylePosition: 'inside' }}>
                                   <li>
@@ -351,7 +372,7 @@ const RuleDetailsPage: React.FC = () => {
                               ),
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>False positive examples</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>False positive examples</EuiText>,
                               description: (
                                 <EuiText size="s">
                                   <p>
@@ -362,11 +383,11 @@ const RuleDetailsPage: React.FC = () => {
                               ),
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>License</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>License</EuiText>,
                               description: <EuiText size="s">Elastic License v2</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>MITRE ATT&CK™</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>MITRE ATT&CK™</EuiText>,
                               description: (
                                 <EuiFlexGroup direction="column" gutterSize="xs">
                                   <EuiFlexItem>
@@ -379,15 +400,15 @@ const RuleDetailsPage: React.FC = () => {
                               ),
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Timestamp override</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Timestamp override</EuiText>,
                               description: <EuiText size="s">event.ingested</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Max alerts per run</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Max alerts per run</EuiText>,
                               description: <EuiText size="s">100</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Tags</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Tags</EuiText>,
                                 description: (
                                   <EuiFlexGroup gutterSize="s" wrap>
                                     <EuiFlexItem grow={false}>
@@ -443,7 +464,7 @@ const RuleDetailsPage: React.FC = () => {
                               style={{ rowGap: '24px', columnGap: '64px' }}
                               listItems={[
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Index patterns</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Index patterns</EuiText>,
                                 description: (
                                   <EuiFlexGroup gutterSize="s" wrap>
                                     {['endgame-*', 'logs-crowdstrike.fdr*', 'logs-endpoint.events.process-*', 
@@ -458,7 +479,7 @@ const RuleDetailsPage: React.FC = () => {
                                 ),
                                 },
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>EQL query</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>EQL query</EuiText>,
                                   description: (
                                     <EuiText size="s" style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
 {`process where host.os.type == "windows" and event.type == "start"
@@ -477,11 +498,11 @@ const RuleDetailsPage: React.FC = () => {
                                   ),
                                 },
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Rule type</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Rule type</EuiText>,
                                   description: <EuiText size="s">Event Correlation</EuiText>,
                                 },
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Related integrations</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Related integrations</EuiText>,
                                   description: (
                                   <EuiFlexGroup direction="column" gutterSize="s">
                                     {[
@@ -506,7 +527,7 @@ const RuleDetailsPage: React.FC = () => {
                                 ),
                                 },
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Required fields</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Required fields</EuiText>,
                                   description: (
                                     <EuiFlexGroup direction="column" gutterSize="xs">
                                       {['event.type', 'host.os.type', 'process.executable', 'process.name', 'process.parent.name'].map((field, idx) => (
@@ -525,7 +546,7 @@ const RuleDetailsPage: React.FC = () => {
                                   ),
                                 },
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Timeline template</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Timeline template</EuiText>,
                                   description: <EuiText size="s">None</EuiText>,
                                 },
                             ]}
@@ -545,11 +566,11 @@ const RuleDetailsPage: React.FC = () => {
                               style={{ rowGap: '24px', columnGap: '64px' }}
                               listItems={[
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Runs every</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Runs every</EuiText>,
                                   description: <EuiText size="s">5m</EuiText>,
                                 },
                                 {
-                                  title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Additional look-back time</EuiText>,
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Additional look-back time</EuiText>,
                                   description: <EuiText size="s">4m</EuiText>,
                                 },
                               ]}
@@ -561,7 +582,269 @@ const RuleDetailsPage: React.FC = () => {
                   </EuiFlexGroup>
                 )}
 
-                {selectedTab !== 'overview' && (
+                {selectedTab === 'execution' && (
+                  <>
+                    {/* Execution log */}
+                    <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ borderRadius: '6px' }}>
+                      <EuiTitle size="m">
+                        <h2>Execution log</h2>
+                      </EuiTitle>
+                      <EuiSpacer size="m" />
+
+                      {/* Filters and controls */}
+                      <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiText size="s" color="subdued">
+                            Showing 40 rule executions
+                          </EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                            <EuiFlexItem grow={false}>
+                              <EuiSwitch
+                                label="Show source event time range"
+                                checked={showSourceEventRange}
+                                onChange={(e) => setShowSourceEventRange(e.target.checked)}
+                                compressed
+                              />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiSwitch
+                                label="Show metrics columns"
+                                checked={showMetricsColumns}
+                                onChange={(e) => setShowMetricsColumns(e.target.checked)}
+                                compressed
+                              />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiText size="xs" color="subdued">
+                                Updated 3 minutes ago
+                              </EuiText>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButtonIcon iconType="refresh" aria-label="Refresh" size="s" />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButton size="s" iconType="calendar">
+                                Last 90 days
+                              </EuiButton>
+                            </EuiFlexItem>
+                          </EuiFlexGroup>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+
+                      <EuiSpacer size="m" />
+
+                      <EuiBasicTable
+                      items={[
+                        { id: '1', status: 'succeeded', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', duration: '00:01:24', alertsCreated: 1, matchedEvents: 63, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '2', status: 'failed', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 2, matchedEvents: 36, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '3', status: 'succeeded', runType: 'Manual', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', duration: '00:01:24', alertsCreated: 0, matchedEvents: 244, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '4', status: 'failed', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 1, matchedEvents: 164, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '5', status: 'succeeded', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 0, matchedEvents: 64, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '6', status: 'succeeded', runType: 'Manual', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', duration: '00:01:24', alertsCreated: 3, matchedEvents: 46, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '7', status: 'failed', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 0, matchedEvents: 23, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '8', status: 'succeeded', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 0, matchedEvents: 145, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '9', status: 'succeeded', runType: 'Manual', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', duration: '00:01:24', alertsCreated: 4, matchedEvents: 31, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '10', status: 'error', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 0, matchedEvents: 153, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                      ].slice(executionPageIndex * executionPageSize, (executionPageIndex + 1) * executionPageSize)}
+                      columns={[
+                        {
+                          field: 'status',
+                          name: 'Status',
+                          width: '120px',
+                          truncateText: false,
+                          render: (status: string) => {
+                            const color = status === 'succeeded' ? 'success' : status === 'failed' ? 'danger' : 'warning';
+                            return (
+                              <div style={{ whiteSpace: 'nowrap' }}>
+                                <EuiHealth color={color}>{status.charAt(0).toUpperCase() + status.slice(1)}</EuiHealth>
+                              </div>
+                            );
+                          },
+                        },
+                        {
+                          field: 'runType',
+                          name: 'Run type',
+                          width: '110px',
+                        },
+                        {
+                          field: 'timestamp',
+                          name: 'Timestamp',
+                          width: '200px',
+                          truncateText: false,
+                          render: (timestamp: string) => (
+                            <div style={{ whiteSpace: 'nowrap' }}>{timestamp}</div>
+                          ),
+                        },
+                        ...(showSourceEventRange ? [{
+                          field: 'sourceEventRange',
+                          name: 'Source event time range',
+                          width: '280px',
+                        }] : []),
+                        {
+                          field: 'duration',
+                          name: 'Duration',
+                          width: '100px',
+                        },
+                        {
+                          field: 'alertsCreated',
+                          name: 'Alerts created',
+                          width: '120px',
+                        },
+                        {
+                          field: 'matchedEvents',
+                          name: 'Matched events',
+                          width: '130px',
+                        },
+                        {
+                          field: 'message',
+                          name: 'Message',
+                          truncateText: true,
+                        },
+                        {
+                          name: 'Action',
+                          width: '100px',
+                          render: () => (
+                            <EuiLink href="#">View details</EuiLink>
+                          ),
+                        },
+                      ]}
+                      pagination={{
+                        pageIndex: executionPageIndex,
+                        pageSize: executionPageSize,
+                        totalItemCount: 40,
+                        pageSizeOptions: [10, 25, 50],
+                        showPerPageOptions: true,
+                      }}
+                      onChange={({ page }: any) => {
+                        if (page) {
+                          setExecutionPageIndex(page.index);
+                          setExecutionPageSize(page.size);
+                        }
+                      }}
+                    />
+                    </EuiPanel>
+
+                    <EuiSpacer size="l" />
+
+                    {/* Manual/Gap fill tasks */}
+                    <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ borderRadius: '6px' }}>
+                      <EuiTitle size="m">
+                        <h2>Manual/Gap fill tasks</h2>
+                      </EuiTitle>
+                      <EuiSpacer size="m" />
+
+                      <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiText size="s" color="subdued">
+                            Showing 20 execution tasks
+                          </EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                            <EuiFlexItem grow={false}>
+                              <EuiText size="xs" color="subdued">
+                                Updated 3 minutes ago
+                              </EuiText>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButtonIcon iconType="refresh" aria-label="Refresh" size="s" />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButton size="s" iconType="calendar">
+                                Last 90 days
+                              </EuiButton>
+                            </EuiFlexItem>
+                          </EuiFlexGroup>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+
+                      <EuiSpacer size="m" />
+
+                      <EuiBasicTable
+                      items={[
+                        { id: '1', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'John@doe.com', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 10, completed: 10, totalTasks: 25 },
+                        { id: '2', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'Auto gap fill', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 1, completed: 1, totalTasks: 2 },
+                        { id: '3', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'Auto gap fill', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 0, completed: 0, totalTasks: 1 },
+                        { id: '4', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'Auto gap fill', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 0, completed: 0, totalTasks: 1 },
+                      ].slice(gapFillPageIndex * gapFillPageSize, (gapFillPageIndex + 1) * gapFillPageSize)}
+                      columns={[
+                        {
+                          field: 'status',
+                          name: 'Status',
+                          width: '120px',
+                          render: (status: string) => (
+                            <EuiHealth color="primary">In progress</EuiHealth>
+                          ),
+                        },
+                        {
+                          field: 'createdAt',
+                          name: 'Created at',
+                          width: '180px',
+                        },
+                        {
+                          field: 'createdBy',
+                          name: 'Created by',
+                          width: '150px',
+                        },
+                        {
+                          field: 'sourceEventRange',
+                          name: 'Source event time range',
+                          width: '280px',
+                        },
+                        {
+                          field: 'errors',
+                          name: 'Errors',
+                          width: '80px',
+                        },
+                        {
+                          field: 'pending',
+                          name: 'Pending',
+                          width: '80px',
+                        },
+                        {
+                          field: 'running',
+                          name: 'Running',
+                          width: '80px',
+                        },
+                        {
+                          field: 'completed',
+                          name: 'Completed',
+                          width: '100px',
+                        },
+                        {
+                          field: 'totalTasks',
+                          name: 'Total tasks',
+                          width: '100px',
+                        },
+                        {
+                          name: 'Action',
+                          width: '80px',
+                          render: () => (
+                            <EuiLink href="#">Stop</EuiLink>
+                          ),
+                        },
+                      ]}
+                      pagination={{
+                        pageIndex: gapFillPageIndex,
+                        pageSize: gapFillPageSize,
+                        totalItemCount: 20,
+                        pageSizeOptions: [10, 25, 50],
+                        showPerPageOptions: true,
+                      }}
+                      onChange={({ page }: any) => {
+                        if (page) {
+                          setGapFillPageIndex(page.index);
+                          setGapFillPageSize(page.size);
+                        }
+                      }}
+                    />
+                    </EuiPanel>
+                  </>
+                )}
+
+                {selectedTab !== 'overview' && selectedTab !== 'execution' && (
                   <EuiText textAlign="center" color="subdued">
                     <p>No {selectedTab} data available</p>
                   </EuiText>

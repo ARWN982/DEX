@@ -443,14 +443,14 @@ const DetectionRulesPage: React.FC = () => {
               <EuiSpacer size="s" />
               <EuiFlexGroup gutterSize="s" responsive={false}>
                 <EuiFlexItem grow={false}>
-                  <EuiButton color="warning" size="s">
+                  <EuiButton color="warning" fill size="s">
                     Delete rule
                   </EuiButton>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty size="s">
+                  <EuiButton color="warning" size="s">
                     View rule
-                  </EuiButtonEmpty>
+                  </EuiButton>
                 </EuiFlexItem>
               </EuiFlexGroup>
             </EuiCallOut>
