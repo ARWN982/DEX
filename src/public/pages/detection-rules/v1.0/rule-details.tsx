@@ -187,21 +187,31 @@ const RuleDetailsPage: React.FC = () => {
                   </EuiFlexItem>
                 </EuiFlexGroup>
 
-                {/* Metadata */}
+                {/* Metadata - Row 1 */}
                 <EuiSpacer size="s" />
                 <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center">
                   <EuiFlexItem grow={false}>
                     <EuiText size="s" color="subdued">
-                      Created by <strong>22468f8712</strong> on Feb 3, 2026 @ 21:13:41.666
+                      Created by <strong>22468f8712</strong> on Feb 3, 2025 @ 12:13:31.468
                     </EuiText>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <EuiText size="s" color="subdued">
-                      Updated by <strong>22468f8712</strong> on Mar 18, 2026 @ 21:14:34.586
+                      Updated by <strong>2236886732</strong> on Mar 18, 2026 @ 21:15:43.596
                     </EuiText>
                   </EuiFlexItem>
+                </EuiFlexGroup>
+
+                {/* Metadata - Row 2 */}
+                <EuiSpacer size="xs" />
+                <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center">
                   <EuiFlexItem grow={false}>
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                      <EuiFlexItem grow={false}>
+                        <EuiText size="s" color="subdued">
+                          Last response:
+                        </EuiText>
+                      </EuiFlexItem>
                       <EuiFlexItem grow={false}>
                         <EuiHealth color="warning" style={{ fontSize: '12px' }}>
                           warning
@@ -321,7 +331,7 @@ const RuleDetailsPage: React.FC = () => {
                             {
                               title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>Reference URLs</EuiText>,
                               description: (
-                                <ul style={{ paddingLeft: 20, margin: 0 }}>
+                                <ul style={{ margin: 0, paddingLeft: 0, listStylePosition: 'inside' }}>
                                   <li>
                                     <EuiLink href="#" external>
                                       https://research.checkpoint.com/2020/resolving-your-way-into-domain-admin-exploiting-a-17-year-old-bug-in-windows-dns-servers/
@@ -450,20 +460,20 @@ const RuleDetailsPage: React.FC = () => {
                                 {
                                   title: <EuiText size="s" style={{ fontWeight: 'semibold', marginBottom: 12 }}>EQL query</EuiText>,
                                   description: (
-                                    <EuiCodeBlock language="sql" fontSize="s" paddingSize="s" isCopyable>
+                                    <EuiText size="s" style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
 {`process where host.os.type == "windows" and event.type == "start"
   and process.parent.name : "dns.exe" and
   not process.executable :
-      ("?:\\\\Windows\\\\System32\\\\werfault.exe",
-       "?:\\\\Windows\\\\System32\\\\conhost.exe",
-       "?:\\\\Program Files\\\\BeyondTrust\\\\One2OneHost.exe*") and
+      ("?:\\Windows\\System32\\werfault.exe",
+       "?:\\Windows\\System32\\conhost.exe",
+       "?:\\Program Files\\BeyondTrust\\One2OneHost.exe*") and
   /* Consisterthis specific exclusion as it uses NT Object paths */
   (process.name : ("cmd.exe", "powershell.exe",
-                   "?:\\\\DeviceHarddiskVolume?\\\\Windows\\\\System32\\\\conhost.exe")
+                   "?:\\DeviceHarddiskVolume?\\Windows\\System32\\conhost.exe")
    and
    not process.parent.executable :
-       ("?:\\\\Program Files\\\\BeyondTrust\\\\One2OneHost.exe*"))`}
-                                    </EuiCodeBlock>
+       ("?:\\Program Files\\BeyondTrust\\One2OneHost.exe*"))`}
+                                    </EuiText>
                                   ),
                                 },
                                 {
