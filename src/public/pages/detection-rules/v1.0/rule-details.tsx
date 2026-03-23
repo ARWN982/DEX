@@ -1043,7 +1043,7 @@ const RuleDetailsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Execution Flow */}
+                {/* Execution Logs */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
                   <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
                     <EuiFlexItem grow={false}>
@@ -1054,63 +1054,85 @@ const RuleDetailsPage: React.FC = () => {
                     </EuiFlexItem>
                   </EuiFlexGroup>
                   <div style={{ paddingBottom: 12 }}>
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: 6,
+                      padding: '12px',
+                      background: '#f5f7fa',
+                      border: '1px solid #d3dae6',
+                      borderRadius: 8,
+                    }}>
                       {[
-                        { label: 'Start rule execution', count: null },
-                        { label: 'Query Elasticsearch', count: '12443 events' },
-                        { label: 'Process results', count: null },
-                        { label: 'Generate alerts', count: '2 alerts' },
-                        { label: 'Index alerts', count: null },
-                        { label: 'Completed', count: null },
-                      ].map((step, index) => (
-                        <div key={index}>
-                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                            <EuiFlexItem grow={false}>
-                              <EuiIcon type="check" color="success" size="s" />
-                            </EuiFlexItem>
-                            <EuiFlexItem>
-                              <EuiText size="s">{step.label}</EuiText>
-                            </EuiFlexItem>
-                            {step.count && (
-                              <EuiFlexItem grow={false}>
-                                <EuiLink href="#" style={{ fontSize: 12 }}>{step.count}</EuiLink>
-                              </EuiFlexItem>
-                            )}
-                          </EuiFlexGroup>
-                          {index < 5 && <EuiSpacer size="xs" />}
+                        { duration: 'Mar 5 @ 2026 19:36:41.095', message: 'Start rule execution', icon: 'warning', iconColor: 'warning', status: 'success' },
+                        { duration: '3m 124 ms', message: 'Query Elasticsearch', icon: 'layers', iconColor: 'primary', status: 'success' },
+                        { duration: '124 ms', message: 'Process results', icon: 'bullseye', iconColor: 'primary', status: 'success' },
+                        { duration: '25 ms', message: 'Generate alerts', icon: 'console', iconColor: 'primary', status: 'success' },
+                        { duration: '5 m', message: 'Index alerts', icon: 'layers', iconColor: 'primary', status: 'success' },
+                        { duration: '234 ms', message: 'Completed', icon: 'layers', iconColor: 'primary', status: 'success' },
+                      ].map((row, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '10px 14px',
+                            background: '#fff',
+                            border: '1px solid #d3dae6',
+                            borderRadius: 10,
+                            minHeight: 48,
+                          }}
+                        >
+                          <EuiIcon
+                            type="check"
+                            size="s"
+                            color="success"
+                            style={{ flexShrink: 0 }}
+                          />
+                          <EuiIcon
+                            type={row.icon}
+                            size="s"
+                            color={row.iconColor as any}
+                            style={{ flexShrink: 0 }}
+                          />
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 500, lineHeight: '20px', color: '#1a1c21', minWidth: 0 }}>
+                            {row.message}
+                          </span>
+                          <span style={{ fontSize: 12, color: '#98a2b3', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                            {row.duration}
+                          </span>
+                          <EuiIcon type="arrowDown" size="s" color="subdued" style={{ flexShrink: 0 }} />
                         </div>
                       ))}
-                    </EuiPanel>
+                    </div>
                   </div>
                 </div>
 
-                {/* Execution Logs */}
+                {/* Execution Flow */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
                   <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
                     <EuiFlexItem grow={false}>
                       <EuiIcon type="arrowDown" size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
-                      <EuiText size="s" style={{ fontWeight: 700 }}>Execution Logs</EuiText>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Logs</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
                   <div style={{ paddingBottom: 12 }}>
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
-                      <EuiLink href="#" style={{ fontSize: 12 }}>
-                        ▶ View full logs
-                      </EuiLink>
-                      <EuiSpacer size="s" />
+                    <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ borderRadius: 6, overflow: 'hidden' }}>
                       <EuiBasicTable
                         items={[
                           { time: '17:05:09.901', level: 'DEBUG', message: 'Starting Signal Rule execution' },
                           { time: '17:05:09.906', level: 'DEBUG', message: 'Interval: 5m' },
-                          { time: '17:05:09.907', level: 'INFO', message: 'Changing rule status to "running"' },
-                          { time: '17:05:09.908', level: 'WARN', message: 'No index matching logs-endpoint.alerts-*' },
-                          { time: '17:05:09.910', level: 'WARN', message: 'Changing rule status to "partial failure"' },
-                          { time: '17:05:09.911', level: 'DEBUG', message: 'id:4848 0' },
+                          { time: '17:05:09.907', level: 'INFO',  message: 'Changing rule status to "running"' },
+                          { time: '17:05:09.908', level: 'WARN',  message: 'No index matching logs-endpoint.alerts-*' },
+                          { time: '17:05:09.910', level: 'WARN',  message: 'Changing rule status to "partial failure"' },
+                          { time: '17:05:09.911', level: 'DEBUG', message: 'totalHits: 0' },
+                          { time: '17:05:09.912', level: 'DEBUG', message: 'completed bulk index of 0' },
                         ]}
                         columns={[
-                          { field: 'time', name: 'Time', width: '110px' },
+                          { field: 'time', name: 'Time', width: '120px' },
                           { field: 'level', name: 'Level', width: '80px' },
                           { field: 'message', name: 'Message', truncateText: true },
                         ]}
