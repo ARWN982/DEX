@@ -918,8 +918,10 @@ const RuleDetailsPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {/* Full header - scrolls naturally */}
               <div style={{ padding: '28px 16px 16px 16px', background: '#fff', position: 'relative' }}>
-                {/* Close button */}
-                <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                {/* Top-right action icons */}
+                <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <EuiButtonIcon iconType="discuss" aria-label="Comment" color="text" size="s" />
+                  <EuiButtonIcon iconType="share" aria-label="Share" color="text" size="s" />
                   <EuiButtonIcon
                     iconType="cross"
                     aria-label="Close flyout"
@@ -928,6 +930,7 @@ const RuleDetailsPage: React.FC = () => {
                     onClick={() => setIsFlyoutVisible(false)}
                   />
                 </div>
+
                 <EuiTitle size="s">
                   <h2 id="executionDetailsFlyoutTitle" style={{ 
                     color: '#1a1c21',
@@ -942,19 +945,17 @@ const RuleDetailsPage: React.FC = () => {
                   Aug 11, 2026 @11:51:07
                 </EuiText>
 
-                {/* Info panel */}
+                {/* Info panel — 2 columns only */}
                 <EuiPanel 
                   hasBorder 
                   hasShadow={false} 
                   paddingSize="m" 
                   style={{ marginTop: 12, borderRadius: 4 }}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }}>
                     {[
                       { label: 'Status', content: <EuiHealth color="success">Succeeded</EuiHealth> },
                       { label: 'Run type', content: <EuiText size="s">Scheduled</EuiText> },
-                      { label: 'Duration', content: <EuiText size="s">00:01:24</EuiText> },
-                      { label: 'Alerts created', content: <EuiText size="s" style={{ fontWeight: 700 }}>2</EuiText> },
                     ].map((item, idx, arr) => (
                       <div
                         key={item.label}
@@ -964,7 +965,7 @@ const RuleDetailsPage: React.FC = () => {
                           borderRight: idx < arr.length - 1 ? '1px solid #d3dae6' : 'none',
                         }}
                       >
-                        <EuiText size="xs" color="subdued" style={{ fontWeight: 500 }}>
+                        <EuiText size="xs" color="subdued" style={{ fontWeight: 600 }}>
                           {item.label}
                         </EuiText>
                         <EuiSpacer size="xs" />
@@ -973,33 +974,132 @@ const RuleDetailsPage: React.FC = () => {
                     ))}
                   </div>
                 </EuiPanel>
-
               </div>
 
               {/* Body section with accordions */}
               <div style={{ padding: '8px 16px 24px', background: '#fff', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {/* Execution summary accordion - using custom styling */}
+                {/* Execution summary */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type="arrowDown" size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Execution summary</EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={true} />
+                    <EuiFlexItem grow={false}>
+                      <EuiButtonIcon iconType="boxesHorizontal" aria-label="More options" color="text" size="xs" />
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  <div style={{ paddingBottom: 12 }}>
+                    {/* Blue-tinted AI summary panel */}
+                    <div style={{
+                      border: '1px solid #c5cae8',
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      background: '#f0f2fc',
+                    }}>
+                      {/* Summary text */}
+                      <div style={{ padding: '12px 16px' }}>
+                        <EuiText size="s">
+                          <p style={{ lineHeight: '20px', color: '#343741', margin: 0 }}>
+                            This rule executed successfully but encountered a configuration issue. The query returned 0 
+                            matching events because no indices matched the rule's index pattern (logs-endpoint.alerts-*). As a 
+                            result, no alerts were generated.
+                          </p>
+                        </EuiText>
+                      </div>
+
+                      <EuiHorizontalRule margin="none" />
+
+                      {/* Recommended actions */}
+                      <div style={{ padding: '12px 16px' }}>
+                        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiIcon type="document" size="s" color="primary" />
+                          </EuiFlexItem>
+                          <EuiFlexItem>
+                            <EuiText size="s" style={{ fontWeight: 700 }}>Recommended actions</EuiText>
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                        <EuiSpacer size="s" />
+                        <EuiText size="s">
+                          <ul style={{ margin: 0, paddingLeft: 20 }}>
+                            <li>Verify that the index pattern is correct.</li>
+                            <li>Confirm that data is being ingested into the expected indices.</li>
+                            <li>If Endpoint Security was recently deployed, alerts may appear once data is available.</li>
+                          </ul>
+                        </EuiText>
+                      </div>
+
+                      <EuiHorizontalRule margin="none" />
+
+                      {/* AI footer */}
+                      <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <EuiText size="xs" color="subdued">
+                          Generated by AI on mmm dd, yyyy at hh:mm
+                        </EuiText>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <EuiButtonIcon iconType="refresh" aria-label="Regenerate" color="primary" size="xs" />
+                          <EuiButtonIcon iconType="copy" aria-label="Copy" color="primary" size="xs" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Message */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
                   <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
                     <EuiFlexItem grow={false}>
                       <EuiIcon type="arrowDown" size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
-                      <EuiText size="s" style={{ fontWeight: 700 }}>Execution summary</EuiText>
-                    </EuiFlexItem>
-                    <EuiFlexItem grow={false}>
-                      <EuiIcon type="sparkles" size="s" />
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Message</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
                   <div style={{ paddingBottom: 12 }}>
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
-                      <EuiText size="xs">
-                        <p style={{ lineHeight: '20px', color: '#343741' }}>
-                          This rule executed successfully but encountered a configuration issue. The query returned 0 
-                          matching events because no indices matched the rule's "logs-endpoint.events.*". As a 
-                          result, no alerts were created, even though data may exist.
-                        </p>
-                      </EuiText>
+                    <EuiCodeBlock language="text" fontSize="s" paddingSize="m" isCopyable={false}>
+                      Rule executed successfully
+                    </EuiCodeBlock>
+                  </div>
+                </div>
+
+                {/* Alerts */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type="arrowDown" size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Alerts</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  <div style={{ paddingBottom: 12 }}>
+                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 4 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                        {[
+                          { label: 'Alerts created', value: '5' },
+                          { label: 'Candidate alerts', value: '5' },
+                        ].map((item, idx, arr) => (
+                          <div
+                            key={item.label}
+                            style={{
+                              paddingRight: idx < arr.length - 1 ? 16 : 0,
+                              paddingLeft: idx > 0 ? 16 : 0,
+                              borderRight: idx < arr.length - 1 ? '1px solid #d3dae6' : 'none',
+                            }}
+                          >
+                            <EuiText size="s" style={{ fontWeight: 600 }}>{item.label}</EuiText>
+                            <EuiSpacer size="xs" />
+                            <EuiText size="m" style={{ fontWeight: 700 }}>{item.value}</EuiText>
+                          </div>
+                        ))}
+                      </div>
                     </EuiPanel>
                   </div>
                 </div>
@@ -1088,12 +1188,6 @@ const RuleDetailsPage: React.FC = () => {
                             type="check"
                             size="s"
                             color="success"
-                            style={{ flexShrink: 0 }}
-                          />
-                          <EuiIcon
-                            type={row.icon}
-                            size="s"
-                            color={row.iconColor as any}
                             style={{ flexShrink: 0 }}
                           />
                           <span style={{ flex: 1, fontSize: 12, fontWeight: 500, lineHeight: '20px', color: '#1a1c21', minWidth: 0 }}>
