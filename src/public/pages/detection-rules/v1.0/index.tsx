@@ -32,6 +32,8 @@ import {
   EuiCallOut,
   EuiAccordion,
   EuiHorizontalRule,
+  EuiCheckbox,
+  EuiFacetButton,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -107,6 +109,110 @@ const DetectionRulesPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [showDeprecatedCallout, setShowDeprecatedCallout] = useState(true);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
+  const [openFilters, setOpenFilters] = useState<Record<string, boolean>>({});
+
+  const toggleFilterOpen = (filterId: string) => {
+    setOpenFilters((prev) => ({ ...prev, [filterId]: !prev[filterId] }));
+  };
+
+  const toggleFilterOption = (filterId: string, option: string) => {
+    setSelectedFilters((prev) => {
+      const current = prev[filterId] || [];
+      const updated = current.includes(option)
+        ? current.filter((o) => o !== option)
+        : [...current, option];
+      return { ...prev, [filterId]: updated };
+    });
+    // Reset pagination when filters change
+    setPageIndex(0);
+  };
+
+  // Map rule type display names to ruleType field values
+  const ruleTypeMap: Record<string, string[]> = {
+    'ES|QL': ['esql'],
+    'Custom query': ['query'],
+    'Threshold': ['threshold'],
+    'Event correlation': ['eql'],
+    'Indicator match': ['threat_match'],
+    'New terms': ['new_terms'],
+    'Machine learning': ['machine_learning'],
+  };
+
+  // Apply all active filters to mockRules
+  const filteredRules = mockRules.filter((rule) => {
+    const sel = selectedFilters;
+
+    // Rule type
+    if (sel['rule-type']?.length) {
+      const matchedTypes = sel['rule-type'].flatMap((o) => ruleTypeMap[o] || [o.toLowerCase()]);
+      if (!matchedTypes.some((t) => rule.ruleType?.toLowerCase().includes(t))) return false;
+    }
+
+    // Severity
+    if (sel['severity']?.length) {
+      const severityMatch = sel['severity'].map((s) => s.toLowerCase());
+      if (!severityMatch.includes(rule.severity?.toLowerCase())) return false;
+    }
+
+    // Last response
+    if (sel['last-response']?.length) {
+      if (!sel['last-response'].includes(rule.lastResponse)) return false;
+    }
+
+    // Status
+    if (sel['status']?.length) {
+      const wantEnabled = sel['status'].includes('Enabled');
+      const wantDisabled = sel['status'].includes('Disabled');
+      if (wantEnabled && !wantDisabled && !rule.enabled) return false;
+      if (wantDisabled && !wantEnabled && rule.enabled) return false;
+    }
+
+    // MITRE ATT&CK tactic
+    if (sel['mitre-tactic']?.length) {
+      const tacticMatches = sel['mitre-tactic'].some((tactic) =>
+        rule.mitreTactics?.some((t) => t.toLowerCase().includes(tactic.toLowerCase()))
+      );
+      if (!tacticMatches) return false;
+    }
+
+    // Tags (Domain: X, OS: X etc.)
+    if (sel['tags']?.length) {
+      const tagMatches = sel['tags'].some((tag) =>
+        rule.tags?.some((t) => t.toLowerCase().includes(tag.toLowerCase()))
+      );
+      if (!tagMatches) return false;
+    }
+
+    // Use cases (tags prefixed with "Use Case:")
+    if (sel['use-cases']?.length) {
+      const ucMatches = sel['use-cases'].some((uc) =>
+        rule.tags?.some((t) => t.toLowerCase().includes(uc.toLowerCase()))
+      );
+      if (!ucMatches) return false;
+    }
+
+    // Data source (tags prefixed with "Data Source:")
+    if (sel['data-source']?.length) {
+      const dsMatches = sel['data-source'].some((ds) =>
+        rule.tags?.some((t) => t.toLowerCase().includes(ds.toLowerCase()))
+      );
+      if (!dsMatches) return false;
+    }
+
+    // Rule category (Elastic / Custom based on tags)
+    if (sel['rule-category']?.length) {
+      const isElastic = rule.tags?.some((t) => t.toLowerCase().includes('elastic'));
+      const isCustom = !isElastic;
+      const wantElastic = sel['rule-category'].some((c) => c.toLowerCase().includes('elastic'));
+      const wantCustom = sel['rule-category'].includes('Custom');
+      if (wantElastic && !isElastic) return false;
+      if (wantCustom && !isCustom) return false;
+    }
+
+    return true;
+  });
   
   // Filter popover states
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
@@ -306,7 +412,7 @@ const DetectionRulesPage: React.FC = () => {
   const pagination = {
     pageIndex,
     pageSize,
-    totalItemCount: mockRules.length,
+    totalItemCount: filteredRules.length,
     pageSizeOptions: [10, 25, 50, 100],
     showPerPageOptions: true,
   };
@@ -517,63 +623,103 @@ const DetectionRulesPage: React.FC = () => {
               </div>
 
               {/* Filter accordions */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
                 {[
-                  { id: 'rule-category', label: 'Rule category', count: 3 },
-                  { id: 'rule-type', label: 'Rule type', count: 7 },
-                  { id: 'data-source', label: 'Data source', count: 13 },
-                  { id: 'mitre-tactic', label: 'MITRE ATT&CK tactic', count: 14 },
-                  { id: 'use-cases', label: 'Use cases', count: 6 },
-                  { id: 'tags', label: 'Tags', count: 8 },
-                  { id: 'status', label: 'Status', count: 2 },
-                  { id: 'last-response', label: 'Last response', count: 3 },
-                  { id: 'severity', label: 'Severity', count: 3 },
-                ].map((filter) => (
-                  <EuiAccordion
-                    key={filter.id}
-                    id={filter.id}
-                    buttonContent={
-                      <span style={{ fontSize: 14 }}>{filter.label}</span>
-                    }
-                    buttonProps={{
-                      style: {
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }
-                    }}
-                    extraAction={
-                      <EuiBadge color="hollow">{filter.count}</EuiBadge>
-                    }
-                    paddingSize="none"
-                  >
-                    <div style={{ padding: '6px 8px 6px 24px' }}>
-                      <EuiText size="xs" color="subdued">No options selected</EuiText>
+                  {
+                    id: 'rule-category', label: 'Rule category', count: 3,
+                    options: ['Elastic', 'Elastic modified', 'Custom'],
+                  },
+                  {
+                    id: 'rule-type', label: 'Rule type', count: 7,
+                    options: ['ES|QL', 'Custom query', 'Threshold', 'Event correlation', 'Indicator match', 'New terms', 'Machine learning'],
+                  },
+                  {
+                    id: 'data-source', label: 'Data source', count: 13,
+                    options: ['Active Directory', 'Amazon Web Services', 'Auditd Manager', 'AWS', 'AWS IAM', 'Crowdstrike', 'Elastic Defend', 'Elastic Endgame', 'Github', 'Microsoft Defender for Endpoint', 'Okta', 'PowerShell Logs', 'SentinelOne', 'Sysmon', 'System', 'Windows Security Event Logs'],
+                  },
+                  {
+                    id: 'mitre-tactic', label: 'MITRE ATT&CK tactic', count: 14,
+                    options: ['Initial Access', 'Persistence', 'Defense Evasion', 'Discovery', 'Collection', 'Impact', 'Reconnaissance', 'Credential Dumping', 'Remote Services', 'Supply Chain Compromise', 'Application Layer Protocol', 'Information Discovery', 'User Execution', 'Phishing', 'Cloud Service Provider', 'Access Token Manipulation'],
+                  },
+                  {
+                    id: 'use-cases', label: 'Use cases', count: 6,
+                    options: ['Active Directory Monitoring', 'Identity and Access Audit', 'Lateral Movement Detection', 'Log Auditing', 'Threat Detection', 'Vulnerability'],
+                  },
+                  {
+                    id: 'tags', label: 'Tags', count: 8,
+                    options: ['Domain: Cloud', 'Domain: Endpoint', 'OS: Linux', 'OS: Windows', 'Promotion: External Alerts', 'Resources: Investigation Guide', 'Threat: Lightning Framework', 'Threat: Orbit'],
+                  },
+                  {
+                    id: 'status', label: 'Status', count: 2,
+                    options: ['Enabled', 'Disabled'],
+                  },
+                  {
+                    id: 'last-response', label: 'Last response', count: 3,
+                    options: ['Succeeded', 'Warning', 'Failed'],
+                  },
+                  {
+                    id: 'severity', label: 'Severity', count: 3,
+                    options: ['Low', 'Medium', 'High'],
+                  },
+                ].map((filter) => {
+                  const selected = selectedFilters[filter.id] || [];
+                  const badgeCount = selected.length > 0 ? selected.length : filter.count;
+                  const isOpen = !!openFilters[filter.id];
+
+                  return (
+                    <div key={filter.id}>
+                      <EuiFacetButton
+                        quantity={badgeCount}
+                        isSelected={selected.length > 0}
+                        onClick={() => toggleFilterOpen(filter.id)}
+                        style={{ width: '100%', paddingRight: 0 }}
+                        icon={
+                          <EuiIcon
+                            type={isOpen ? 'arrowDown' : 'arrowRight'}
+                            size="s"
+                          />
+                        }
+                      >
+                        {filter.label}
+                      </EuiFacetButton>
+
+                      {isOpen && (
+                        <div style={{ paddingTop: 4, paddingBottom: 4, paddingLeft: 24, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {filter.options.map((option) => (
+                            <EuiCheckbox
+                              key={option}
+                              id={`${filter.id}-${option}`}
+                              label={<EuiText size="xs">{option}</EuiText>}
+                              checked={selected.includes(option)}
+                              onChange={() => toggleFilterOption(filter.id, option)}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </EuiAccordion>
-                ))}
+                  );
+                })}
               </div>
             </EuiFlexItem>
           )}
 
           {/* Table + search area */}
           <EuiFlexItem style={{ paddingLeft: isFilterPanelOpen ? 16 : 0, minWidth: 0, alignSelf: 'flex-start', width: '100%' }}>
-            {/* Collapse toggle when panel is closed */}
-            {!isFilterPanelOpen && (
-              <div style={{ marginBottom: 8 }}>
-                <EuiButtonIcon
-                  iconType="transitionLeftIn"
-                  aria-label="Expand filters"
-                  color="text"
-                  size="xs"
-                  display="empty"
-                  onClick={() => setIsFilterPanelOpen(true)}
-                />
-              </div>
-            )}
 
-            {/* Search Bar and Filters - Single Row */}
+            {/* Search Bar row — expand button sits inline when panel is collapsed */}
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+              {!isFilterPanelOpen && (
+                <EuiFlexItem grow={false}>
+                  <EuiButtonIcon
+                    iconType="transitionLeftIn"
+                    aria-label="Expand filters"
+                    color="text"
+                    size="s"
+                    display="base"
+                    onClick={() => setIsFilterPanelOpen(true)}
+                  />
+                </EuiFlexItem>
+              )}
               <EuiFlexItem grow={true}>
                 <EuiFieldSearch
                   placeholder='Rule name, index pattern (e.g., "filebeat-*"), or MITRE ATT&CK tactic or technique'
@@ -595,7 +741,7 @@ const DetectionRulesPage: React.FC = () => {
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
               <EuiFlexItem grow={false}>
                 <EuiText size="s" color="subdued">
-                  Showing {pageIndex * pageSize + 1}-{Math.min((pageIndex + 1) * pageSize, mockRules.length)} of {mockRules.length} rules
+                  Showing {pageIndex * pageSize + 1}-{Math.min((pageIndex + 1) * pageSize, filteredRules.length)} of {filteredRules.length} rules
                 </EuiText>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
@@ -607,9 +753,9 @@ const DetectionRulesPage: React.FC = () => {
                 <EuiButtonEmpty
                   size="xs"
                   iconType="pagesSelect"
-                  onClick={() => setSelectedItems(mockRules)}
+                  onClick={() => setSelectedItems(filteredRules)}
                 >
-                  Select all {mockRules.length} rules
+                  Select all {filteredRules.length} rules
                 </EuiButtonEmpty>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
@@ -634,7 +780,7 @@ const DetectionRulesPage: React.FC = () => {
             <EuiSpacer size="s" />
 
             <EuiBasicTable
-              items={mockRules.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)}
+              items={filteredRules.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)}
               columns={columns}
               itemId="id"
               selection={{
