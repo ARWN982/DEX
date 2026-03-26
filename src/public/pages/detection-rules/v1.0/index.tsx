@@ -30,6 +30,8 @@ import {
   EuiSelectable,
   EuiPanel,
   EuiCallOut,
+  EuiAccordion,
+  EuiHorizontalRule,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -104,6 +106,7 @@ const DetectionRulesPage: React.FC = () => {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [showDeprecatedCallout, setShowDeprecatedCallout] = useState(true);
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
   
   // Filter popover states
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
@@ -384,7 +387,7 @@ const DetectionRulesPage: React.FC = () => {
                 minHeight: 'calc(100vh - 64px)'
               }}
             >
-              <div style={{ padding: '24px' }}>
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 64px)' }}>
         {/* Page Header */}
         <div style={{ marginLeft: '-24px', marginRight: '-24px', paddingLeft: '24px', paddingRight: '24px' }}>
           <EuiPageHeader
@@ -479,125 +482,116 @@ const DetectionRulesPage: React.FC = () => {
 
         <EuiSpacer size="m" />
 
-        {/* Search Bar and Filters - Single Row */}
-        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-          {/* Search Bar - grows to fill space */}
-          <EuiFlexItem grow={10}>
-            <EuiFieldSearch
-              placeholder='Rule name, index pattern (e.g., "filebeat-*"), or MITRE ATT&CK tactic or technique (e.g., "Def'
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              isClearable={true}
-              fullWidth
-            />
-          </EuiFlexItem>
+        {/* Main content: Filter panel + Table */}
+        <EuiFlexGroup gutterSize="none" alignItems="stretch" responsive={false} style={{ flex: 1 }}>
 
-          {/* Tags Filter */}
-          <EuiFlexItem grow={false}>
-            <EuiFilterGroup>
-              <EuiPopover
-                button={
-                  <EuiFilterButton
-                    iconType="arrowDown"
-                    iconSide="right"
-                    onClick={() => setIsTagsPopoverOpen(!isTagsPopoverOpen)}
-                    isSelected={isTagsPopoverOpen}
-                    numFilters={46}
-                    hasActiveFilters={false}
+          {/* Facet Filter Panel */}
+          {isFilterPanelOpen && (
+            <EuiFlexItem grow={false} style={{
+              width: 236,
+              flexShrink: 0,
+              borderRight: '1px solid #d3dae6',
+              paddingRight: 16,
+              paddingTop: 4,
+            }}>
+              {/* Filters header */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 12,
+              }}>
+                <EuiButtonIcon
+                  iconType="transitionLeftOut"
+                  aria-label="Collapse filters"
+                  color="text"
+                  size="s"
+                  display="base"
+                  onClick={() => setIsFilterPanelOpen(false)}
+                  style={{ flexShrink: 0 }}
+                />
+                <EuiText size="s" style={{ fontWeight: 700, flex: 1 }}>Filters</EuiText>
+                <EuiButtonEmpty size="xs" flush="right" color="primary">
+                  Clear
+                </EuiButtonEmpty>
+              </div>
+
+              {/* Filter accordions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {[
+                  { id: 'rule-category', label: 'Rule category', count: 3 },
+                  { id: 'rule-type', label: 'Rule type', count: 7 },
+                  { id: 'data-source', label: 'Data source', count: 13 },
+                  { id: 'mitre-tactic', label: 'MITRE ATT&CK tactic', count: 14 },
+                  { id: 'use-cases', label: 'Use cases', count: 6 },
+                  { id: 'tags', label: 'Tags', count: 8 },
+                  { id: 'status', label: 'Status', count: 2 },
+                  { id: 'last-response', label: 'Last response', count: 3 },
+                  { id: 'severity', label: 'Severity', count: 3 },
+                ].map((filter) => (
+                  <EuiAccordion
+                    key={filter.id}
+                    id={filter.id}
+                    buttonContent={
+                      <span style={{ fontSize: 14 }}>{filter.label}</span>
+                    }
+                    buttonProps={{
+                      style: {
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                      }
+                    }}
+                    extraAction={
+                      <EuiBadge color="hollow">{filter.count}</EuiBadge>
+                    }
+                    paddingSize="none"
                   >
-                    Tags
-                  </EuiFilterButton>
-                }
-                isOpen={isTagsPopoverOpen}
-                closePopover={() => setIsTagsPopoverOpen(false)}
-                panelPaddingSize="none"
-              >
-                <EuiSelectable
-                  searchable
-                  searchProps={{
-                    placeholder: 'Filter tags',
-                    compressed: true,
-                  }}
-                  options={tagsOptions}
-                  onChange={(newOptions) => setTagsOptions(newOptions)}
-                >
-                  {(list, search) => (
-                    <div style={{ width: 300 }}>
-                      <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
-                      {list}
+                    <div style={{ padding: '6px 8px 6px 24px' }}>
+                      <EuiText size="xs" color="subdued">No options selected</EuiText>
                     </div>
-                  )}
-                </EuiSelectable>
-              </EuiPopover>
-            </EuiFilterGroup>
-          </EuiFlexItem>
+                  </EuiAccordion>
+                ))}
+              </div>
+            </EuiFlexItem>
+          )}
 
-          {/* Last Response Filter */}
-          <EuiFlexItem grow={false}>
-            <EuiFilterGroup>
-              <EuiPopover
-                button={
-                  <EuiFilterButton
-                    iconType="arrowDown"
-                    iconSide="right"
-                    onClick={() => setIsResponsePopoverOpen(!isResponsePopoverOpen)}
-                    isSelected={isResponsePopoverOpen}
-                    numActiveFilters={3}
-                    hasActiveFilters={true}
-                  >
-                    Last response
-                  </EuiFilterButton>
-                }
-                isOpen={isResponsePopoverOpen}
-                closePopover={() => setIsResponsePopoverOpen(false)}
-                panelPaddingSize="none"
-              >
-                <EuiSelectable
-                  allowExclusions
-                  options={responseOptions}
-                  onChange={(newOptions) => setResponseOptions(newOptions)}
-                >
-                  {(list) => (
-                    <div style={{ width: 240 }}>
-                      {list}
-                    </div>
-                  )}
-                </EuiSelectable>
-              </EuiPopover>
-            </EuiFilterGroup>
-          </EuiFlexItem>
+          {/* Table + search area */}
+          <EuiFlexItem style={{ paddingLeft: isFilterPanelOpen ? 16 : 0, minWidth: 0, alignSelf: 'flex-start', width: '100%' }}>
+            {/* Collapse toggle when panel is closed */}
+            {!isFilterPanelOpen && (
+              <div style={{ marginBottom: 8 }}>
+                <EuiButtonIcon
+                  iconType="transitionLeftIn"
+                  aria-label="Expand filters"
+                  color="text"
+                  size="xs"
+                  display="empty"
+                  onClick={() => setIsFilterPanelOpen(true)}
+                />
+              </div>
+            )}
 
-          {/* Elastic rules / Custom rules - Button Group */}
-          <EuiFlexItem grow={false}>
-            <EuiFilterGroup>
-              <EuiFilterButton hasActiveFilters={true} withNext>
-                Elastic rules (128)
-              </EuiFilterButton>
-              <EuiFilterButton hasActiveFilters={false}>
-                Custom rules (2)
-              </EuiFilterButton>
-            </EuiFilterGroup>
-          </EuiFlexItem>
+            {/* Search Bar and Filters - Single Row */}
+            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={true}>
+                <EuiFieldSearch
+                  placeholder='Rule name, index pattern (e.g., "filebeat-*"), or MITRE ATT&CK tactic or technique'
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  isClearable={true}
+                  fullWidth
+                />
+              </EuiFlexItem>
 
-          {/* Enabled / Disabled rules - Button Group */}
-          <EuiFlexItem grow={false}>
-            <EuiFilterGroup>
-              <EuiFilterButton hasActiveFilters={false} withNext>
-                Enabled rules
-              </EuiFilterButton>
-              <EuiFilterButton hasActiveFilters={false}>
-                Disabled rules
-              </EuiFilterButton>
-            </EuiFilterGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
+            </EuiFlexGroup>
 
-        <EuiSpacer size="m" />
+            <EuiSpacer size="m" />
 
-        {/* Table */}
-        {selectedTab === 'installed' && (
-          <>
-            {/* Table toolbar */}
+            {/* Table */}
+            {selectedTab === 'installed' && (
+            <>
+              {/* Table toolbar */}
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
               <EuiFlexItem grow={false}>
                 <EuiText size="s" color="subdued">
@@ -654,7 +648,7 @@ const DetectionRulesPage: React.FC = () => {
           </>
         )}
 
-        {selectedTab === 'monitoring' && (
+            {selectedTab === 'monitoring' && (
           <>
             <EuiPanel hasShadow={false} hasBorder={true} color="plain" paddingSize="m">
               <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} justifyContent="spaceBetween">
@@ -913,11 +907,14 @@ const DetectionRulesPage: React.FC = () => {
           </>
         )}
 
-        {selectedTab === 'updates' && (
-          <EuiText textAlign="center" color="subdued">
-            <p>No updates available</p>
-          </EuiText>
-        )}
+            {selectedTab === 'updates' && (
+              <EuiText textAlign="center" color="subdued">
+                <p>No updates available</p>
+              </EuiText>
+            )}
+
+          </EuiFlexItem>
+        </EuiFlexGroup>
               </div>
             </EuiPanel>
           </EuiFlexItem>
