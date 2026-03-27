@@ -526,7 +526,7 @@ const DetectionRulesPage: React.FC = () => {
                   </EuiButtonEmpty>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
-                  <EuiButton iconType="plusInCircle" fill size="s">
+                  <EuiButton iconType="plusInCircle" fill size="s" onClick={() => navigate('/detection-rules/create')}>
                     Create new rule
                   </EuiButton>
                 </EuiFlexItem>
