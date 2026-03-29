@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import express, { Router } from 'express';
 import { chromium } from 'playwright';
+import matter from 'gray-matter';
 
 const router: Router = express.Router();
 
@@ -117,40 +118,55 @@ router.post('/screenshots/:projectName', async (req, res) => {
       console.log(`Screenshot saved to ${thumbnailPath}`);
 
       // Update project metadata to include thumbnail info
-      const metadataPath = path.join(process.cwd(), 'src', 'public', 'pages', projectName, 'about.json');
-      let metadata: any = {};
+      const projectDir = path.join(process.cwd(), 'src', 'public', 'pages', projectName);
+      const mdPath = path.join(projectDir, 'about.md');
+      const jsonPath = path.join(projectDir, 'about.json');
+
+      let frontmatter: Record<string, any> = {
+        projectName,
+        designer: '',
+        pm: '',
+        prdLink: '',
+        githubIssueLink: '',
+        breadcrumb: '',
+      };
+      let bodyMarkdown = '';
+
+      // Read existing about.md or about.json
       try {
-        const existingMetadata = await fs.readFile(metadataPath, 'utf-8');
-        metadata = JSON.parse(existingMetadata);
-      } catch (error) {
-        // File doesn't exist or is invalid, start with default metadata
-        console.log(`Creating new metadata file for ${projectName}`);
-        metadata = {
-          projectName: projectName,
-          designer: '',
-          pm: '',
-          briefDescription: '',
-          prdLink: '',
-          githubIssueLink: '',
-          breadcrumb: '',
-        };
+        const raw = await fs.readFile(mdPath, 'utf-8');
+        const parsed = matter(raw);
+        frontmatter = { ...frontmatter, ...parsed.data };
+        bodyMarkdown = parsed.content.trim();
+      } catch {
+        try {
+          const raw = await fs.readFile(jsonPath, 'utf-8');
+          const json = JSON.parse(raw);
+          frontmatter = { ...frontmatter, ...json };
+          bodyMarkdown = json.briefDescription || '';
+          delete frontmatter.briefDescription;
+        } catch {
+          console.log(`Creating new metadata file for ${projectName}`);
+        }
       }
 
-      // Update thumbnail info
-      metadata.thumbnail = {
+      frontmatter.thumbnail = {
         filename: thumbnailFilename,
         version: targetVersion,
         createdAt: new Date().toISOString(),
         url: `/thumbnails/${thumbnailFilename}`
       };
 
-      // Save updated metadata
-      await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+      // Always write as about.md
+      await fs.writeFile(mdPath, matter.stringify(bodyMarkdown, frontmatter), 'utf-8');
+
+      // Clean up legacy about.json
+      try { await fs.unlink(jsonPath); } catch {}
 
       res.json({
         success: true,
         message: `Screenshot taken for ${projectName} version ${targetVersion}`,
-        thumbnail: metadata.thumbnail
+        thumbnail: frontmatter.thumbnail
       });
 
     } finally {

@@ -19,7 +19,7 @@ export interface ProjectMetadata {
   projectName: string;
   designer: string;
   pm: string;
-  briefDescription: string;
+  bodyMarkdown: string;
   prdLink: string;
   githubIssueLink: string;
   breadcrumb: string;
@@ -50,7 +50,7 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
     projectName: '',
     designer: '',
     pm: '',
-    briefDescription: '',
+    bodyMarkdown: '',
     prdLink: '',
     githubIssueLink: '',
     breadcrumb: '',
@@ -120,13 +120,13 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
             />
           </EuiFormRow>
 
-          <EuiFormRow label="Brief description" fullWidth>
+          <EuiFormRow label="Description (Markdown supported)" fullWidth>
             <EuiTextArea
               fullWidth
-              value={formData.briefDescription}
-              onChange={(e) => handleInputChange('briefDescription', e.target.value)}
-              placeholder="Enter project description"
-              rows={3}
+              value={formData.bodyMarkdown}
+              onChange={(e) => handleInputChange('bodyMarkdown', e.target.value)}
+              placeholder="Describe this project — Markdown is supported"
+              rows={5}
             />
           </EuiFormRow>
 

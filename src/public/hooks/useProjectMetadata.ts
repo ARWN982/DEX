@@ -4,7 +4,7 @@ export interface ProjectMetadata {
   projectName: string;
   designer: string;
   pm: string;
-  briefDescription: string;
+  bodyMarkdown: string;
   prdLink: string;
   githubIssueLink: string;
   breadcrumb: string;
@@ -49,7 +49,7 @@ export const useProjectMetadata = (projectName: string | null) => {
           projectName,
           designer: '',
           pm: '',
-          briefDescription: '',
+          bodyMarkdown: '',
           prdLink: '',
           githubIssueLink: '',
           breadcrumb: projectName,

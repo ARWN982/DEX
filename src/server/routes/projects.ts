@@ -1,6 +1,7 @@
 import { Router, type Router as RouterType, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import matter from 'gray-matter';
 
 const router: RouterType = Router();
 
@@ -40,14 +41,18 @@ router.get('/', async (req: Request, res: Response) => {
         const projectName = entry.name;
         const projectPath = path.join(pagesDir, projectName);
 
-        // Check if it has an about.json file
-        const aboutPath = path.join(projectPath, 'about.json');
+        // Check if it has an about file (about.md or legacy about.json)
         let hasAbout = false;
         try {
-          await fs.access(aboutPath);
+          await fs.access(path.join(projectPath, 'about.md'));
           hasAbout = true;
         } catch {
-          hasAbout = false;
+          try {
+            await fs.access(path.join(projectPath, 'about.json'));
+            hasAbout = true;
+          } catch {
+            hasAbout = false;
+          }
         }
 
         // Find all version folders (v1.0, v1.1, etc.)
@@ -146,7 +151,7 @@ router.post('/', async (req: Request, res: Response) => {
     const projectDir = path.join(pagesDir, normalizedName);
     const versionDir = path.join(projectDir, 'v1.0');
     const indexPath = path.join(versionDir, 'index.tsx');
-    const aboutPath = path.join(projectDir, 'about.json');
+    const aboutPath = path.join(projectDir, 'about.md');
 
     // Check if project already exists
     try {
@@ -273,18 +278,17 @@ export default ${componentName};
       await fs.writeFile(indexPath, indexContent, 'utf-8');
     }
 
-    // Create about.json metadata file
-    const aboutData = {
+    // Create about.md metadata file with YAML frontmatter
+    const frontmatter = {
       projectName: normalizedName,
       designer: '',
       pm: '',
-      briefDescription: description || '',
       prdLink: '',
       githubIssueLink: '',
       breadcrumb: '',
     };
-
-    await fs.writeFile(aboutPath, JSON.stringify(aboutData, null, 2), 'utf-8');
+    const aboutContent = matter.stringify(description || '', frontmatter);
+    await fs.writeFile(aboutPath, aboutContent, 'utf-8');
 
     // Create initial comments.json file
     const commentsPath = path.join(versionDir, 'comments.json');

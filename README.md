@@ -26,10 +26,7 @@ Quickly spin up new projects using pre-built templates. Each template comes with
 Access a curated set of shared components—charts, panels, controls, grids, and more—all built with Elastic UI. These components are ready to use and customize, helping you maintain consistency across your prototypes.
 
 #### 📚 Version History
-Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution.
-
-#### 📄 PRD Tracking
-Document and reference product requirements directly within your project. Keep specs, context, and design work together in one place.
+Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution. Each version can include a `notes.md` file to describe what changed — these notes are rendered in the About flyout.
 
 #### ⚡ Auto-reload Development
 Hot reloading for both frontend and backend during development. See your changes instantly without manual refreshes.
@@ -163,10 +160,11 @@ vibe-kibana/
 │   │   ├── pages/                    # Project pages (auto-discovered)
 │   │   │   ├── Homepage.tsx
 │   │   │   └── [project-name]/       # Each project folder
-│   │   │       ├── about.json        # Project metadata
+│   │   │       ├── about.md          # Project metadata (YAML frontmatter + Markdown description)
 │   │   │       └── v1.0/             # Version folders
 │   │   │           ├── index.tsx     # Page component
-│   │   │           └── comments.json # Comments data
+│   │   │           ├── comments.json # Comments data
+│   │   │           └── notes.md      # Version notes (optional, Markdown)
 │   │   ├── store/                    # Zustand state stores
 │   │   │   ├── useAppStore.ts
 │   │   │   ├── useCommentStore.ts

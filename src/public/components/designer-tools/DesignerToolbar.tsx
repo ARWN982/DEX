@@ -2,6 +2,7 @@ import { Cursor, ChatCircle, X } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
+import { useVersionStore } from '../../store/useVersionStore';
 import { getToolbarColors, createBoxShadow } from '../../styles/designToolsColors';
 import { AboutFlyout, type ProjectMetadata } from './AboutFlyout';
 import { CreateProjectModal } from './CreateProjectModal';
@@ -35,6 +36,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   const [isDismissed, setIsDismissed] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { colorMode } = useAppStore();
+  const { currentVersion } = useVersionStore();
   const navigate = useNavigate();
 
   const handleMouseEnter = () => {
@@ -107,12 +109,12 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
     outline: 'none',
   });
 
-  // Load project metadata when projectName changes
+  // Re-fetch metadata when the flyout opens or the project changes
   useEffect(() => {
-    if (projectName) {
+    if (projectName && isAboutFlyoutOpen) {
       loadProjectMetadata();
     }
-  }, [projectName]);
+  }, [projectName, isAboutFlyoutOpen]);
 
   const loadProjectMetadata = async () => {
     if (!projectName) return;
@@ -159,6 +161,8 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         isOpen={isAboutFlyoutOpen}
         onClose={() => setIsAboutFlyoutOpen(false)}
         projectMetadata={projectMetadata}
+        currentVersion={currentVersion}
+        projectName={projectName}
       />
     );
   }
@@ -346,6 +350,8 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         isOpen={isAboutFlyoutOpen}
         onClose={() => setIsAboutFlyoutOpen(false)}
         projectMetadata={projectMetadata}
+        currentVersion={currentVersion}
+        projectName={projectName}
       />
 
       {/* Create Project from Template Modal (hidden in production mode) */}

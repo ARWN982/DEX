@@ -114,10 +114,35 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/versions/notes - Get notes.md for a specific version
+router.get('/notes', async (req: Request, res: Response) => {
+  try {
+    const pageName = req.query.page as string || '';
+    const versionId = req.query.version as string || '';
+
+    if (!pageName || !versionId) {
+      return res.json({ markdown: '' });
+    }
+
+    const pagesDir = resolvePagesDir();
+    const notesPath = path.join(pagesDir, pageName, `v${versionId}`, 'notes.md');
+
+    try {
+      const content = await fs.readFile(notesPath, 'utf8');
+      res.json({ markdown: content });
+    } catch {
+      res.json({ markdown: '' });
+    }
+  } catch (error) {
+    console.error('Error reading version notes:', error);
+    res.status(500).json({ error: 'Failed to read version notes' });
+  }
+});
+
 // POST /api/versions - Create new version
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { versionId, baseVersionId, description, page } = req.body;
+    const { versionId, baseVersionId, description, page, copyComments } = req.body;
     const pageName = page || 'esql-simple-mode';
     
     console.log('Creating version:', versionId, 'based on:', baseVersionId);
@@ -180,7 +205,8 @@ router.post('/', async (req: Request, res: Response) => {
     await fs.writeFile(VERSIONS_PATH, JSON.stringify(versionsData, null, 2));
 
     // Create version-specific data files
-    await createVersionFiles(finalVersionId, baseVersionId, pageName);
+    const shouldCopyComments = baseVersionId ? (copyComments !== false) : false;
+    await createVersionFiles(finalVersionId, baseVersionId, pageName, shouldCopyComments);
 
     res.json(newVersion);
   } catch (error) {
@@ -242,7 +268,7 @@ function resolvePagesDir(): string {
 }
 
 // Helper function to create version-specific files
-async function createVersionFiles(versionId: string, baseVersionId?: string | null, pageName?: string) {
+async function createVersionFiles(versionId: string, baseVersionId?: string | null, pageName?: string, copyComments: boolean = true) {
   const targetPage = pageName || '';
   const pagesDir = resolvePagesDir();
   
@@ -255,7 +281,7 @@ async function createVersionFiles(versionId: string, baseVersionId?: string | nu
     const commentsFile = path.join(versionDir, 'comments.json');
     
     // Create comments data
-    let commentsData = {
+    let commentsData: { comments: any[]; metadata: any } = {
       comments: [],
       metadata: {
         versionId,
@@ -264,8 +290,7 @@ async function createVersionFiles(versionId: string, baseVersionId?: string | nu
       }
     };
 
-    // If based on another version, copy its comments
-    if (baseVersionId) {
+    if (baseVersionId && copyComments) {
       try {
         const baseVersionDir = path.join(pagesDir, targetPage, `v${baseVersionId}`);
         const baseCommentsFile = path.join(baseVersionDir, 'comments.json');

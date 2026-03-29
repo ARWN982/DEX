@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getCurrentPage } from '../utils/pageUtils';
+import { invalidateVersionCacheForPage } from '../utils/componentLoader';
 
 const isPublishMode = process.env.VIBE_PUBLISH_MODE === 'true';
 
@@ -16,6 +17,7 @@ export interface CreateVersionOptions {
   isMajorVersion?: boolean; // Default: false
   baseVersionId?: string; // Default: current active version
   startFromScratch?: boolean; // Default: false
+  copyComments?: boolean; // Default: false — only relevant when not starting from scratch
   description?: string;
 }
 
@@ -50,6 +52,17 @@ function getPublishVersions(): Version[] {
   }
 }
 
+function getHighestVersion(versions: Version[]): string {
+  if (versions.length === 0) return '1.0';
+  return versions
+    .map(v => v.id)
+    .sort((a, b) => {
+      const [aMaj, aMin] = a.split('.').map(Number);
+      const [bMaj, bMin] = b.split('.').map(Number);
+      return aMaj !== bMaj ? bMaj - aMaj : bMin - aMin;
+    })[0];
+}
+
 export const useVersionStore = create<VersionStore>((set, get) => ({
   // Initial state
   versions: [],
@@ -64,6 +77,7 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
       return;
     }
 
+    const isFirstLoad = get().versions.length === 0;
     set({ isLoading: true });
     try {
       const currentPage = getCurrentPage();
@@ -72,7 +86,9 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
         const data = await response.json();
         set({ 
           versions: data.versions,
-          currentVersion: data.currentVersion || '1.0',
+          currentVersion: isFirstLoad
+            ? (data.currentVersion || '1.0')
+            : get().currentVersion,
           isLoading: false 
         });
       } else {
@@ -127,14 +143,16 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
       isMajorVersion = false, 
       baseVersionId, 
       startFromScratch = false,
+      copyComments = false,
       description 
     } = options;
 
     try {
-      const { currentVersion } = get();
+      const { currentVersion, versions } = get();
       const baseVersion = baseVersionId || currentVersion;
       
-      const [major, minor] = currentVersion.split('.').map(Number);
+      const highest = getHighestVersion(versions);
+      const [major, minor] = highest.split('.').map(Number);
       const suggestedVersionId = isMajorVersion ? `${major + 1}.0` : `${major}.${minor + 1}`;
 
       const currentPage = getCurrentPage();
@@ -146,12 +164,15 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
           baseVersionId: startFromScratch ? null : baseVersion,
           description,
           page: currentPage,
+          copyComments: startFromScratch ? false : copyComments,
         }),
       });
 
       if (response.ok) {
         const newVersion = await response.json();
-        
+
+        invalidateVersionCacheForPage(currentPage);
+
         const { versions } = get();
         const updatedVersions = versions.map(v => ({ ...v, isActive: false }));
         updatedVersions.push({ ...newVersion, isActive: true });

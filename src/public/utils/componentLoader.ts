@@ -1,5 +1,6 @@
 import React from "react";
 import { getCurrentPage } from './pageUtils';
+import { VersionRouteLoading } from '../components/shared/VersionRouteLoading';
 
 const isPublishMode = process.env.VIBE_PUBLISH_MODE === 'true';
 
@@ -39,6 +40,15 @@ const getAvailableVersions = async (pageName?: string): Promise<string[]> => {
     cachedVersions[page] = fallback;
     return fallback;
   }
+};
+
+/**
+ * Clears the cached version list for a page so the next
+ * getAvailableVersions call fetches fresh data from the server.
+ */
+export const invalidateVersionCacheForPage = (pageName?: string): void => {
+  const page = pageName || getCurrentPage();
+  delete cachedVersions[page];
 };
 
 // Import the component registry
@@ -185,8 +195,12 @@ export const VersionedComponentLoader: React.FC<{
     React.useState<React.ComponentType<any> | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  
-  // Store onComponentLoaded in a ref to ensure it's available in useEffect
+
+  // Track whether we've ever loaded a component so we can keep it
+  // visible during subsequent version transitions instead of flashing
+  // a spinner.
+  const componentRef = React.useRef<React.ComponentType<any> | null>(null);
+
   const onComponentLoadedRef = React.useRef(onComponentLoaded);
   React.useEffect(() => {
     onComponentLoadedRef.current = onComponentLoaded;
@@ -196,7 +210,11 @@ export const VersionedComponentLoader: React.FC<{
     let mounted = true;
 
     const loadComponent = async () => {
-      setLoading(true);
+      // Only show the spinner if nothing is on screen yet.
+      // When switching between versions, keep the current component visible.
+      if (!componentRef.current) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -204,8 +222,8 @@ export const VersionedComponentLoader: React.FC<{
 
         if (mounted) {
           if (LoadedComponent) {
+            componentRef.current = LoadedComponent;
             setComponent(() => LoadedComponent);
-            // Notify parent if component is loaded (for header visibility)
             if (onComponentLoadedRef.current) {
               onComponentLoadedRef.current(LoadedComponent);
             }
@@ -234,11 +252,11 @@ export const VersionedComponentLoader: React.FC<{
     };
   }, [pageName, version]);
 
-  if (loading) {
+  if (loading && !Component) {
     if (LoadingComponent) {
       return React.createElement(LoadingComponent);
     }
-    return React.createElement("div", {}, `Loading ${pageName} v${version}...`);
+    return React.createElement(VersionRouteLoading, { pageName });
   }
 
   if (error || !Component) {

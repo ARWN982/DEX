@@ -14,20 +14,29 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   onClose,
 }) => {
   const { colorMode } = useAppStore();
-  const { getCurrentVersion, createVersion } = useVersionStore();
+  const { getCurrentVersion, createVersion, versions } = useVersionStore();
   const colors = getToolbarColors(colorMode);
 
   const [isMajorVersion, setIsMajorVersion] = useState(false);
   const [startFromScratch, setStartFromScratch] = useState(false);
+  const [copyComments, setCopyComments] = useState(false);
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const currentVersion = getCurrentVersion();
 
-  // Calculate what the next version number will be
+  // Calculate what the next version number will be based on the highest existing version
   const getNextVersionNumber = () => {
-    const current = currentVersion?.id || "1.0";
-    const [major, minor] = current.split(".").map(Number);
+    const highest = versions.length > 0
+      ? versions
+          .map((v) => v.id)
+          .sort((a, b) => {
+            const [aMaj, aMin] = a.split(".").map(Number);
+            const [bMaj, bMin] = b.split(".").map(Number);
+            return aMaj !== bMaj ? bMaj - aMaj : bMin - aMin;
+          })[0]
+      : "1.0";
+    const [major, minor] = highest.split(".").map(Number);
 
     if (isMajorVersion) {
       return `${major + 1}.0`;
@@ -45,12 +54,14 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
       await createVersion({
         isMajorVersion,
         startFromScratch,
+        copyComments: startFromScratch ? false : copyComments,
         description: description.trim() || undefined,
       });
 
       // Reset form and close modal
       setIsMajorVersion(false);
       setStartFromScratch(false);
+      setCopyComments(false);
       setDescription("");
       onClose();
     } catch (error) {
@@ -65,6 +76,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
       // Reset form state when closing
       setIsMajorVersion(false);
       setStartFromScratch(false);
+      setCopyComments(false);
       setDescription("");
       onClose();
     }
@@ -302,14 +314,28 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 <label htmlFor="basedOnCurrent" style={radioLabelStyle}>
                   Based on{" "}
                   <strong>Version {currentVersion?.id || "1.0"}</strong>
-                  <br />
-                  <span
-                    style={{ color: colors.textSecondary, fontSize: "12px" }}
-                  >
-                    Copy all comments from current version
-                  </span>
                 </label>
               </div>
+
+              {/* Copy comments checkbox — only visible when based on existing */}
+              {!startFromScratch && (
+                <div style={{ ...checkboxContainerStyle, marginLeft: "24px" }}>
+                  <input
+                    type="checkbox"
+                    id="copyComments"
+                    checked={copyComments}
+                    onChange={(e) => setCopyComments(e.target.checked)}
+                    style={checkboxStyle}
+                    disabled={isCreating}
+                  />
+                  <label
+                    htmlFor="copyComments"
+                    style={{ fontSize: "13px", color: colors.textSecondary }}
+                  >
+                    Copy comments from current version
+                  </label>
+                </div>
+              )}
 
               <div style={radioContainerStyle}>
                 <input

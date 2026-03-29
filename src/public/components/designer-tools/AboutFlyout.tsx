@@ -1,6 +1,7 @@
-import { EuiDescriptionList } from "@elastic/eui";
+import { EuiLoadingSpinner } from "@elastic/eui";
 import { X } from "phosphor-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useAppStore } from "../../store/useAppStore";
 import { getDesignUIColors } from "../../styles/designToolsColors";
 
@@ -8,7 +9,7 @@ export interface ProjectMetadata {
   projectName: string;
   designer: string;
   pm: string;
-  briefDescription: string;
+  bodyMarkdown: string;
   prdLink: string;
   githubIssueLink: string;
   breadcrumb: string;
@@ -18,24 +19,53 @@ interface AboutFlyoutProps {
   isOpen: boolean;
   onClose: () => void;
   projectMetadata: ProjectMetadata | null;
+  currentVersion?: string;
+  projectName?: string;
 }
 
 export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   isOpen,
   onClose,
   projectMetadata,
+  currentVersion,
+  projectName,
 }) => {
   const { colorMode } = useAppStore();
   const colors = getDesignUIColors(colorMode);
+  const [versionNotes, setVersionNotes] = useState("");
+  const [notesLoading, setNotesLoading] = useState(false);
 
-  // Only render when open to prevent shadow visibility issues
-  if (!isOpen) {
-    return null;
-  }
+  useEffect(() => {
+    if (!isOpen || !projectName || !currentVersion) {
+      setVersionNotes("");
+      return;
+    }
 
+    let cancelled = false;
+    setNotesLoading(true);
+
+    fetch(`/api/versions/notes?page=${projectName}&version=${currentVersion}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) setVersionNotes(data.markdown || "");
+      })
+      .catch(() => {
+        if (!cancelled) setVersionNotes("");
+      })
+      .finally(() => {
+        if (!cancelled) setNotesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, projectName, currentVersion]);
+
+  if (!isOpen) return null;
   if (!projectMetadata) return null;
 
-  // Flyout styles
+  const isDark = colorMode !== "light";
+
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     top: 0,
@@ -44,7 +74,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     bottom: 0,
     backgroundColor: "rgba(128, 128, 128, 0.1)",
     zIndex: 2000,
-    opacity: isOpen ? 1 : 0,
+    opacity: 1,
     transition: "opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)",
     backdropFilter: "blur(1px)",
   };
@@ -55,24 +85,21 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     right: "16px",
     bottom: "16px",
     width: "500px",
-    backgroundColor: colorMode === "light" ? "#f8f9fa" : "#1a1a1a",
+    backgroundColor: isDark ? "#1a1a1a" : "#f8f9fa",
     borderRadius: "20px",
-    boxShadow:
-      colorMode === "light"
-        ? "0 32px 64px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08)"
-        : "0 32px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+    boxShadow: isDark
+      ? "0 32px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05)"
+      : "0 32px 64px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08)",
     zIndex: 2001,
     display: "flex",
     flexDirection: "column",
-    transform: isOpen ? "translateX(0)" : "translateX(100%)",
+    transform: "translateX(0)",
     transition: "transform 0.4s cubic-bezier(0.23, 1, 0.32, 1)",
   };
 
   const headerStyle: React.CSSProperties = {
     padding: "24px 24px 16px 24px",
-    borderBottom: `1px solid ${
-      colorMode === "light" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)"
-    }`,
+    borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -81,7 +108,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   const titleStyle: React.CSSProperties = {
     fontSize: "18px",
     fontWeight: "600",
-    color: colorMode === "light" ? "#1a1a1a" : "#ffffff",
+    color: isDark ? "#ffffff" : "#1a1a1a",
     margin: 0,
   };
 
@@ -90,9 +117,8 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     height: "32px",
     borderRadius: "16px",
     border: "none",
-    backgroundColor:
-      colorMode === "light" ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.1)",
-    color: colorMode === "light" ? "#1a1a1a" : "#ffffff",
+    backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+    color: isDark ? "#ffffff" : "#1a1a1a",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
@@ -107,30 +133,26 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     overflow: "auto",
   };
 
-  const sectionStyle: React.CSSProperties = {
-    marginBottom: "24px",
+  const dividerStyle: React.CSSProperties = {
+    height: "1px",
+    backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
+    margin: "24px 0",
   };
 
-  const headingStyle: React.CSSProperties = {
-    fontSize: "16px",
+  const sectionLabelStyle: React.CSSProperties = {
+    fontSize: "11px",
     fontWeight: "600",
-    color: colorMode === "light" ? "#1a1a1a" : "#ffffff",
-    marginBottom: "12px",
-    margin: 0,
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: "14px",
-    fontWeight: "600",
-    color: colorMode === "light" ? "#1a1a1a" : "#ffffff",
+    letterSpacing: "0.05em",
+    textTransform: "uppercase" as const,
+    color: isDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.45)",
     marginBottom: "4px",
   };
 
-  const valueStyle: React.CSSProperties = {
+  const fieldValueStyle: React.CSSProperties = {
     fontSize: "14px",
-    color:
-      colorMode === "light" ? "rgba(0, 0, 0, 0.7)" : "rgba(255, 255, 255, 0.7)",
-    marginBottom: "12px",
+    lineHeight: "1.5",
+    color: isDark ? "rgba(255, 255, 255, 0.8)" : "rgba(0, 0, 0, 0.75)",
+    marginBottom: "16px",
   };
 
   const linkStyle: React.CSSProperties = {
@@ -143,14 +165,17 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     marginBottom: "8px",
   };
 
+  const markdownContainerStyle: React.CSSProperties = {
+    fontSize: "14px",
+    lineHeight: "1.6",
+    color: isDark ? "rgba(255, 255, 255, 0.8)" : "rgba(0, 0, 0, 0.75)",
+  };
+
   return (
     <>
-      {/* Overlay */}
       <div style={overlayStyle} onClick={onClose} data-exclude-comments />
 
-      {/* Flyout */}
       <div style={flyoutStyle} data-exclude-comments>
-        {/* Header */}
         <div style={headerStyle}>
           <div>
             <h2 style={titleStyle}>{projectMetadata.projectName}</h2>
@@ -159,90 +184,170 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
             style={closeButtonStyle}
             onClick={onClose}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.backgroundColor =
-                colorMode === "light"
-                  ? "rgba(0, 0, 0, 0.15)"
-                  : "rgba(255, 255, 255, 0.15)";
+              (e.target as HTMLElement).style.backgroundColor = isDark
+                ? "rgba(255, 255, 255, 0.15)"
+                : "rgba(0, 0, 0, 0.15)";
             }}
             onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.backgroundColor =
-                colorMode === "light"
-                  ? "rgba(0, 0, 0, 0.1)"
-                  : "rgba(255, 255, 255, 0.1)";
+              (e.target as HTMLElement).style.backgroundColor = isDark
+                ? "rgba(255, 255, 255, 0.1)"
+                : "rgba(0, 0, 0, 0.1)";
             }}
           >
             <X size={16} weight="bold" />
           </button>
         </div>
 
-        {/* Content */}
         <div style={contentStyle}>
+          {/* ── Project Info ── */}
           <style>
             {`
-              .about-flyout-description-list-title {
-                font-size: 14px !important;
-                font-weight: 600 !important;
+              .about-flyout-markdown p { margin: 0 0 8px 0; }
+              .about-flyout-markdown p:last-child { margin-bottom: 0; }
+              .about-flyout-markdown h1,
+              .about-flyout-markdown h2,
+              .about-flyout-markdown h3 {
+                margin: 16px 0 8px 0;
+                font-weight: 600;
+                color: ${isDark ? "#fff" : "#1a1a1a"};
+              }
+              .about-flyout-markdown h1 { font-size: 18px; }
+              .about-flyout-markdown h2 { font-size: 16px; }
+              .about-flyout-markdown h3 { font-size: 14px; }
+              .about-flyout-markdown ul,
+              .about-flyout-markdown ol { padding-left: 20px; margin: 8px 0; }
+              .about-flyout-markdown li { margin-bottom: 4px; }
+              .about-flyout-markdown code {
+                background: ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"};
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 13px;
+              }
+              .about-flyout-markdown pre {
+                background: ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"};
+                padding: 12px;
+                border-radius: 8px;
+                overflow-x: auto;
+                margin: 8px 0;
+              }
+              .about-flyout-markdown pre code {
+                background: none;
+                padding: 0;
+              }
+              .about-flyout-markdown a {
+                color: ${colors.link};
+              }
+              .about-flyout-markdown blockquote {
+                border-left: 3px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"};
+                margin: 8px 0;
+                padding: 4px 12px;
+                color: ${isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"};
               }
             `}
           </style>
-          <EuiDescriptionList
-            type="row"
-            align="left"
-            className="about-flyout-description-list"
-            titleProps={{ className: "about-flyout-description-list-title" }}
-            listItems={[
-              {
-                title: "Designer",
-                description: projectMetadata.designer || "Not specified",
-              },
-              {
-                title: "Product Manager",
-                description: projectMetadata.pm || "Not specified",
-              },
-              ...(projectMetadata.briefDescription
-                ? [
-                  {
-                    title: "Description",
-                    description: projectMetadata.briefDescription,
-                  },
-                ]
-                : []),
-              ...(projectMetadata.prdLink
-                ? [
-                  {
-                    title: "PRD",
-                    description: (
-                      <a
-                        href={projectMetadata.prdLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={linkStyle}
-                      >
-                          Open PRD
-                      </a>
-                    ),
-                  },
-                ]
-                : []),
-              ...(projectMetadata.githubIssueLink
-                ? [
-                  {
-                    title: "GitHub Issue",
-                    description: (
-                      <a
-                        href={projectMetadata.githubIssueLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={linkStyle}
-                      >
-                          Open Issue
-                      </a>
-                    ),
-                  },
-                ]
-                : []),
-            ]}
-          />
+
+          {projectMetadata.designer && (
+            <>
+              <div style={sectionLabelStyle}>Designer</div>
+              <div style={fieldValueStyle}>{projectMetadata.designer}</div>
+            </>
+          )}
+
+          {projectMetadata.pm && (
+            <>
+              <div style={sectionLabelStyle}>Product Manager</div>
+              <div style={fieldValueStyle}>{projectMetadata.pm}</div>
+            </>
+          )}
+
+          {projectMetadata.prdLink && (
+            <>
+              <div style={sectionLabelStyle}>PRD</div>
+              <div style={fieldValueStyle}>
+                <a
+                  href={projectMetadata.prdLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={linkStyle}
+                >
+                  Open PRD
+                </a>
+              </div>
+            </>
+          )}
+
+          {projectMetadata.githubIssueLink && (
+            <>
+              <div style={sectionLabelStyle}>GitHub Issue</div>
+              <div style={fieldValueStyle}>
+                <a
+                  href={projectMetadata.githubIssueLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={linkStyle}
+                >
+                  Open Issue
+                </a>
+              </div>
+            </>
+          )}
+
+          {/* ── Project Description (Markdown) ── */}
+          {projectMetadata.bodyMarkdown && (
+            <>
+              <div style={dividerStyle} />
+              <div style={{ ...sectionLabelStyle, marginBottom: "12px" }}>Project Description</div>
+              <div
+                className="about-flyout-markdown"
+                style={markdownContainerStyle}
+              >
+                <ReactMarkdown>{projectMetadata.bodyMarkdown}</ReactMarkdown>
+              </div>
+            </>
+          )}
+
+          {/* ── Version Notes (Markdown) ── */}
+          {currentVersion && (
+            <>
+              <div style={dividerStyle} />
+              <div style={{ ...sectionLabelStyle, marginBottom: "12px" }}>
+                Version {currentVersion} Notes
+              </div>
+              {notesLoading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+                  <EuiLoadingSpinner size="m" />
+                </div>
+              ) : versionNotes ? (
+                <div
+                  className="about-flyout-markdown"
+                  style={markdownContainerStyle}
+                >
+                  <ReactMarkdown>{versionNotes}</ReactMarkdown>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    fontSize: "13px",
+                    color: isDark
+                      ? "rgba(255, 255, 255, 0.4)"
+                      : "rgba(0, 0, 0, 0.4)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No notes for this version yet. Add a{" "}
+                  <code style={{
+                    background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                  }}>
+                    notes.md
+                  </code>{" "}
+                  file in the version folder to add notes.
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </>
