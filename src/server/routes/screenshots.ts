@@ -84,7 +84,7 @@ router.post('/screenshots/:projectName', async (req, res) => {
 
       // Navigate to the project page
       // Projects are served by the frontend (webpack dev server), not the backend
-      const frontendPort = process.env.FRONTEND_PORT || '3002';
+      const frontendPort = process.env.FRONTEND_PORT || '3001';
       const baseUrl = `http://localhost:${frontendPort}`;
       
       const projectUrl = `${baseUrl}/${projectName}`;
@@ -217,8 +217,8 @@ router.post('/screenshots/templates/:templateName', async (req, res) => {
       });
 
       // Navigate to the template page
-      // Use the frontend port (3002) for templates since they're served by webpack dev server
-      const frontendPort = process.env.FRONTEND_PORT || '3002';
+      // Use the frontend port (3001) for templates since they're served by webpack dev server
+      const frontendPort = process.env.FRONTEND_PORT || '3001';
       const baseUrl = `http://localhost:${frontendPort}`;
       
       // Templates are accessed via /templates/discover, /templates/dashboards, etc.
