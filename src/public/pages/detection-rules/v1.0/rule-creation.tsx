@@ -159,7 +159,7 @@ const RuleCreationPage: React.FC = () => {
               style={{ borderRadius: 8, height: '100%', overflowY: 'auto' }}
             >
               <div style={{ padding: 24 }}>
-                {/* Back button + title */}
+                {/* Back button */}
                 <EuiButtonEmpty
                   iconType="arrowLeft"
                   size="s"
@@ -169,12 +169,39 @@ const RuleCreationPage: React.FC = () => {
                   Rules
                 </EuiButtonEmpty>
 
-                <EuiTitle size="l"><h1>Detection rule creation</h1></EuiTitle>
+                {/* Title row — same gutterSize/structure as two-column layout below */}
+                <EuiFlexGroup gutterSize="l" alignItems="center" responsive={false}>
+                  <EuiFlexItem style={{ maxWidth: '50%' }}>
+                    <EuiTitle size="l"><h1>Detection rule creation</h1></EuiTitle>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false} style={{ width: 468, display: 'flex', justifyContent: 'flex-end' }}>
+                    <span>
+                      <EuiButton
+                        iconType="productAgent"
+                        color="primary"
+                        size="m"
+                        style={{
+                          background: '#e8f0fe',
+                          borderColor: 'transparent',
+                          color: '#1a56db',
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                          width: 'auto',
+                          minWidth: 'unset',
+                        }}
+                      >
+                        Add to chat
+                      </EuiButton>
+                    </span>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+
                 <EuiSpacer size="l" />
 
                 {/* Two-column layout: forms left, preview right */}
                 <EuiFlexGroup gutterSize="l" alignItems="flexStart" responsive={false}>
-                <EuiFlexItem>
+                <EuiFlexItem style={{ maxWidth: '50%' }}>
                 {/* LEFT COLUMN — all form sections */}
 
         {/* ── SECTION 1: Rule logic ── */}
@@ -740,7 +767,7 @@ const RuleCreationPage: React.FC = () => {
                 </EuiFlexItem>
 
                 {/* RIGHT COLUMN — Rule Preview (sticky) */}
-                <EuiFlexItem grow={false} style={{ width: 360, flexShrink: 0 }}>
+                <EuiFlexItem grow={false} style={{ width: 468, flexShrink: 0 }}>
                   <div style={{ position: 'sticky', top: 0 }}>
                     <EuiPanel hasBorder hasShadow={false} paddingSize="none">
                       {/* Preview header */}
