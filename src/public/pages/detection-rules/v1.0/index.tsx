@@ -427,6 +427,22 @@ const DetectionRulesPage: React.FC = () => {
     }
   };
 
+  const barHeights = [24, 15, 25, 27, 23, 18, 28, 30, 26, 24, 25, 15, 28, 30, 22, 24, 15, 18, 28, 30];
+  const BarChartPlaceholder = (
+    <div style={{ padding: 20 }}>
+      <svg width="100%" height="60" viewBox="0 0 200 60" preserveAspectRatio="none" style={{ display: 'block' }}>
+        {[0, 15, 30].map((v) => (
+          <line key={v} x1={0} y1={60 - v * 2} x2={200} y2={60 - v * 2} stroke="#d3dae6" strokeWidth="0.5" strokeDasharray="3,3" />
+        ))}
+        {barHeights.map((h, i) => {
+          const bH = (h / 32) * 55;
+          const x = i * 10 + 1;
+          return <rect key={i} x={x} y={60 - bH} width={8} height={bH} fill="#c5cdd9" rx={1} />;
+        })}
+      </svg>
+    </div>
+  );
+
   const tabs = [
     {
       id: 'installed' as const,
@@ -583,79 +599,78 @@ const DetectionRulesPage: React.FC = () => {
           {aiSectionOpen && (
             <div style={{ padding: '0 16px 16px' }}>
               <EuiFlexGroup gutterSize="m" responsive={false}>
-                {/* Card 1 — Alert/Critical */}
+                {/* Card 1 — High false positive rules */}
                 <EuiFlexItem>
                   <EuiPanel hasBorder={false} hasShadow={false} paddingSize="m" style={{ borderRadius: 8, background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(197,205,232,0.6)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <EuiFlexGroup gutterSize="xs" responsive={false} style={{ marginBottom: 8 }}>
-                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="alert">Alert</EuiBadge></EuiFlexItem>
-                        <EuiFlexItem grow={false}><EuiBadge color="danger">Critical</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="sparkles">AI suggestion</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="warning">High noise</EuiBadge></EuiFlexItem>
                       </EuiFlexGroup>
                       <EuiText size="s">
-                        <p>Critical alert detected on <EuiLink href="#"><strong>srv-core01</strong></EuiLink>.<br />
-                        A high-risk executable was detected with 7 related alerts and a high-severity rule match. Indicates a likely compromise requiring immediate investigation.</p>
-                        <p><strong>Investigate and isolate the host.</strong></p>
+                        <p><strong>7 rules have a high false positive count.</strong><br />
+                        These rules are generating excessive noise and reducing SOC efficiency. The AI Agent can analyse patterns and automatically tune thresholds to suppress false positives.</p>
                       </EuiText>
                     </div>
-                    <EuiButtonEmpty size="xs" iconType="popout" iconSide="right" color="primary" flush="left" style={{ marginTop: 8 }}>
-                      Open flyout
+                    <EuiButtonEmpty size="xs" iconType="discuss" iconSide="left" color="primary" flush="left" style={{ marginTop: 8 }}>
+                      Auto-tune with Agent
                     </EuiButtonEmpty>
                   </EuiPanel>
                 </EuiFlexItem>
 
-                {/* Card 2 — Rule */}
+                {/* Card 2 — Rules with errors */}
                 <EuiFlexItem>
                   <EuiPanel hasBorder={false} hasShadow={false} paddingSize="m" style={{ borderRadius: 8, background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(197,205,232,0.6)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <EuiFlexGroup gutterSize="xs" responsive={false} style={{ marginBottom: 8 }}>
-                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="indexSettings">Rule</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="alert">Errors</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="danger">Action needed</EuiBadge></EuiFlexItem>
                       </EuiFlexGroup>
                       <EuiText size="s">
-                        <p>Noisy rule triggered — <EuiLink href="#"><strong>Suspicious Login Pattern</strong></EuiLink>.<br />
-                        Fired 45 times this week with a hi gh false-positive rate. May indicate rule misconfiguration or excess noise affecting triage accuracy.</p>
-                        <p><strong>Review and tune rule conditions.</strong></p>
+                        <p><strong>3 rules have execution errors.</strong><br />
+                        These rules are failing silently and may be leaving gaps in your detection coverage. Let the Agent explain each error and suggest targeted fixes.</p>
                       </EuiText>
                     </div>
-                    <EuiButtonEmpty size="xs" iconType="arrowRight" iconSide="right" color="primary" flush="left" style={{ marginTop: 8 }}>
-                      Tune rule
+                    <EuiButtonEmpty size="xs" iconType="discuss" iconSide="left" color="primary" flush="left" style={{ marginTop: 8 }}>
+                      Explain and fix with Agent
                     </EuiButtonEmpty>
                   </EuiPanel>
                 </EuiFlexItem>
 
-                {/* Card 3 — Attack */}
+                {/* Card 3 — Rules needing updates */}
                 <EuiFlexItem>
                   <EuiPanel hasBorder={false} hasShadow={false} paddingSize="m" style={{ borderRadius: 8, background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(197,205,232,0.6)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <EuiFlexGroup gutterSize="xs" responsive={false} style={{ marginBottom: 8 }}>
-                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="securitySignal">Attack</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="refresh">Updates</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="primary">5 available</EuiBadge></EuiFlexItem>
                       </EuiFlexGroup>
                       <EuiText size="s">
-                        <p>Potential attack chain detected on <EuiLink href="#"><strong>srv-core01</strong></EuiLink>.<br />
-                        Correlated alerts suggest possible lateral movement across hosts. Indicates early signs of coordinated activity.</p>
-                        <p><strong>Review user activity and validate privileged actions.</strong></p>
+                        <p><strong>5 Elastic prebuilt rules have new versions available.</strong><br />
+                        Staying up to date ensures coverage against the latest threat intelligence and MITRE ATT&CK techniques. Review what's changed before applying.</p>
                       </EuiText>
                     </div>
-                    <EuiButtonEmpty size="xs" iconType="popout" iconSide="right" color="primary" flush="left" style={{ marginTop: 8 }}>
-                      Open flyout
+                    <EuiButtonEmpty size="xs" iconType="discuss" iconSide="left" color="primary" flush="left" style={{ marginTop: 8 }}>
+                      Review updates with Agent
                     </EuiButtonEmpty>
                   </EuiPanel>
                 </EuiFlexItem>
 
-                {/* Card 4 — Attack */}
+                {/* Card 4 — Slow running rules */}
                 <EuiFlexItem>
                   <EuiPanel hasBorder={false} hasShadow={false} paddingSize="m" style={{ borderRadius: 8, background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(197,205,232,0.6)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <EuiFlexGroup gutterSize="xs" responsive={false} style={{ marginBottom: 8 }}>
-                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="securitySignal">Attack</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="hollow" iconType="clock">Performance</EuiBadge></EuiFlexItem>
+                        <EuiFlexItem grow={false}><EuiBadge color="warning">Slow</EuiBadge></EuiFlexItem>
                       </EuiFlexGroup>
                       <EuiText size="s">
-                        <p>Potential attack chain detected on <EuiLink href="#"><strong>srv-core01</strong></EuiLink>.<br />
-                        Correlated alerts suggest possible lateral movement across hosts. Indicates early signs of coordinated activity.</p>
-                        <p><strong>Review user activity and validate privileged actions.</strong></p>
+                        <p><strong>10 rules are running slower than expected.</strong><br />
+                        Long execution times can delay alerting and indicate inefficient queries or index pattern mismatches. The Agent can identify bottlenecks and optimise rule logic.</p>
                       </EuiText>
                     </div>
-                    <EuiButtonEmpty size="xs" iconType="popout" iconSide="right" color="primary" flush="left" style={{ marginTop: 8 }}>
-                      Open flyout
+                    <EuiButtonEmpty size="xs" iconType="discuss" iconSide="left" color="primary" flush="left" style={{ marginTop: 8 }}>
+                      Optimise with Agent
                     </EuiButtonEmpty>
                   </EuiPanel>
                 </EuiFlexItem>
@@ -683,102 +698,54 @@ const DetectionRulesPage: React.FC = () => {
           <EuiSpacer size="m" />
 
           <EuiFlexGroup gutterSize="m" responsive={false}>
-            {/* Card 1 — Insights */}
+            {/* Card 1 — Bar chart */}
             <EuiFlexItem>
-              <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
+              <EuiPanel hasBorder hasShadow={false} paddingSize="none">
+                <div style={{ padding: '16px 16px 0 16px' }}>
+                <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false} gutterSize="none">
                   <EuiFlexItem grow={false}>
-                    <EuiText size="s" style={{ fontWeight: 700 }}>XXXXXX</EuiText>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false}>
-                    <EuiFlexGroup gutterSize="xs" responsive={false}>
-                      <EuiFlexItem grow={false}>
-                        <EuiButtonIcon iconType="arrowLeft" aria-label="Previous" size="xs" color="text" />
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiButtonIcon iconType="arrowRight" aria-label="Next" size="xs" color="text" />
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-
-                <EuiSpacer size="s" />
-
-                <EuiFlexGroup gutterSize="m" responsive={false}>
-                  <EuiFlexItem>
-                    <EuiPanel color="subdued" hasBorder={false} hasShadow={false} paddingSize="s" style={{ borderRadius: 6, border: '1px solid #d3dae6' }}>
-                      <EuiText size="s" style={{ fontWeight: 700 }}>False positive reduction.</EuiText>
-                      <EuiText size="xs" color="subdued">3 rules have marked false positive alerts.</EuiText>
-                    </EuiPanel>
-                  </EuiFlexItem>
-                  <EuiFlexItem>
-                    <EuiPanel color="plain" hasBorder={false} hasShadow={false} paddingSize="s" style={{ borderRadius: 6, border: '1px solid #d3dae6' }}>
-                      <EuiText size="s" style={{ fontWeight: 700 }}>Resolve errors.</EuiText>
-                      <EuiText size="xs" color="subdued">You have multiple rule and action errors.</EuiText>
-                    </EuiPanel>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-              </EuiPanel>
-            </EuiFlexItem>
-
-            {/* Card 2 — Updates & Coverage */}
-            <EuiFlexItem>
-              <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                <EuiText size="s" style={{ fontWeight: 700, marginBottom: 12 }}>XXXXX</EuiText>
-
-                <EuiFlexGroup gutterSize="xl" alignItems="center" justifyContent="center" responsive={false}>
-                  {/* 17 available updates */}
-                  <EuiFlexItem grow={false} style={{ textAlign: 'center' }}>
-                    <EuiIcon type="download" size="xl" color="subdued" />
-                    <EuiSpacer size="xs" />
-                    <EuiText size="s" style={{ fontWeight: 700 }}>17 available updates</EuiText>
-                  </EuiFlexItem>
-
-                  {/* 95% run coverage donut */}
-                  <EuiFlexItem grow={false} style={{ textAlign: 'center' }}>
-                    <svg width="60" height="60" viewBox="0 0 60 60">
-                      <circle cx="30" cy="30" r="22" fill="none" stroke="#d3dae6" strokeWidth="10" />
-                      <circle cx="30" cy="30" r="22" fill="none" stroke="#54b399" strokeWidth="10"
-                        strokeDasharray={`${0.95 * 2 * Math.PI * 22} ${2 * Math.PI * 22}`}
-                        strokeDashoffset={2 * Math.PI * 22 * 0.25}
-                        strokeLinecap="round"
-                      />
-                      <circle cx="30" cy="30" r="22" fill="none" stroke="#e7664c" strokeWidth="10"
-                        strokeDasharray={`${0.05 * 2 * Math.PI * 22} ${2 * Math.PI * 22}`}
-                        strokeDashoffset={2 * Math.PI * 22 * (0.25 - 0.95)}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <EuiSpacer size="xs" />
-                    <EuiText size="s" style={{ fontWeight: 700 }}>95% run coverage</EuiText>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-              </EuiPanel>
-            </EuiFlexItem>
-
-            {/* Card 3 — Large donut */}
-            <EuiFlexItem>
-              <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
-                  <EuiFlexItem grow={false}>
-                    <EuiText size="s" style={{ fontWeight: 700 }}>XXXX</EuiText>
+                    <EuiText size="xs" style={{ fontWeight: 700 }}>XXXXXX</EuiText>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="primary" />
                   </EuiFlexItem>
                 </EuiFlexGroup>
-
-                <EuiSpacer size="m" />
-
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <svg width="100" height="100" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="38" fill="none" stroke="#d3dae6" strokeWidth="16" />
-                    <circle cx="50" cy="50" r="38" fill="none" stroke="#d3dae6" strokeWidth="16"
-                      strokeDasharray={`${0.6 * 2 * Math.PI * 38} ${2 * Math.PI * 38}`}
-                      strokeDashoffset={2 * Math.PI * 38 * 0.25}
-                    />
-                  </svg>
                 </div>
+                {BarChartPlaceholder}
+              </EuiPanel>
+            </EuiFlexItem>
+
+            {/* Card 2 — Bar chart */}
+            <EuiFlexItem>
+              <EuiPanel hasBorder hasShadow={false} paddingSize="none">
+                <div style={{ padding: '16px 16px 0 16px' }}>
+                  <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false} gutterSize="none">
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="xs" style={{ fontWeight: 700 }}>XXXXX</EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="primary" />
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </div>
+                {BarChartPlaceholder}
+              </EuiPanel>
+            </EuiFlexItem>
+
+            {/* Card 3 — Bar chart placeholder */}
+            <EuiFlexItem>
+              <EuiPanel hasBorder hasShadow={false} paddingSize="none">
+                <div style={{ padding: '16px 16px 0 16px' }}>
+                  <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false} gutterSize="none">
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="xs" style={{ fontWeight: 700 }}>XXXX</EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="primary" />
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </div>
+                {BarChartPlaceholder}
               </EuiPanel>
             </EuiFlexItem>
           </EuiFlexGroup>

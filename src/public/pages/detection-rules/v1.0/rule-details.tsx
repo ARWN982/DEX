@@ -274,196 +274,162 @@ const RuleDetailsPage: React.FC = () => {
                     {/* LEFT: main content */}
                     <EuiFlexItem style={{ paddingRight: 24, maxWidth: '50%' }}>
 
-                      {/* Alert activity + Alerts charts row */}
-                      <EuiFlexGroup gutterSize="m" responsive={false}>
-                        {/* Alert activity */}
-                        <EuiFlexItem grow={false} style={{ minWidth: 220 }}>
-                          <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                            <EuiText size="s" style={{ fontWeight: 700 }}>Alert activity</EuiText>
-                            <EuiText size="xs" color="subdued">Last 30 days</EuiText>
-                            <EuiSpacer size="m" />
-                            <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
-                              <EuiFlexItem>
-                                <EuiText style={{ fontSize: 28, fontWeight: 700, color: '#bd271e' }}>23138</EuiText>
-                                <EuiText size="xs" color="subdued">Active</EuiText>
-                              </EuiFlexItem>
-                              <EuiFlexItem grow={false}>
-                                <Sparkline color="#e7664c" up={false} />
-                              </EuiFlexItem>
-                            </EuiFlexGroup>
-                            <EuiSpacer size="s" />
-                            <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
-                              <EuiFlexItem>
-                                <EuiText style={{ fontSize: 28, fontWeight: 700, color: '#017d73' }}>63365</EuiText>
-                                <EuiText size="xs" color="subdued">Recovered</EuiText>
-                              </EuiFlexItem>
-                              <EuiFlexItem grow={false}>
-                                <Sparkline color="#54b399" up />
-                              </EuiFlexItem>
-                            </EuiFlexGroup>
-                          </EuiPanel>
+                      {/* Date range selector */}
+                      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiButtonIcon iconType="calendar" aria-label="Calendar" size="s" display="base" />
                         </EuiFlexItem>
-
-                        {/* Alerts chart */}
                         <EuiFlexItem>
-                          <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ height: '100%' }}>
-                            <EuiText size="s" style={{ fontWeight: 700 }}>Alerts</EuiText>
-                            <EuiSpacer size="s" />
-                            <AlertsChart />
-                            <EuiSpacer size="xs" />
-                            <EuiFlexGroup gutterSize="m" responsive={false}>
-                              <EuiFlexItem grow={false}>
-                                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#54b399' }} /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="xs">Active</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                              </EuiFlexItem>
-                              <EuiFlexItem grow={false}>
-                                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#d6bf57' }} /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="xs">Recovered</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                              </EuiFlexItem>
-                              <EuiFlexItem grow={false}>
-                                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#e7664c' }} /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="xs">Failed</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                              </EuiFlexItem>
-                            </EuiFlexGroup>
-                          </EuiPanel>
+                          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d3dae6', borderRadius: 4, padding: '4px 12px', background: '#fff', gap: 8 }}>
+                            <EuiText size="s">11/07/2020 1:44 AM</EuiText>
+                            <EuiIcon type="arrowRight" size="s" color="subdued" />
+                            <EuiText size="s">11/07/2020 1:45 AM</EuiText>
+                          </div>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiButton size="s" fill iconType="refresh">Refresh</EuiButton>
                         </EuiFlexItem>
                       </EuiFlexGroup>
 
                       <EuiSpacer size="m" />
 
-                      {/* Last response + Execution breakdown row */}
+                      {/* AI-generated summary accordion */}
+                      <div style={{ background: 'linear-gradient(to right, #D9E8FF 17%, #ECE2FE 83%)', borderRadius: 6, border: '1px solid #c5cde8', overflow: 'hidden' }}>
+                        <EuiAccordion
+                          id="ai-summary"
+                          buttonContent={
+                            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                              <EuiFlexItem grow={false}>
+                                <EuiText size="s" style={{ fontWeight: 600 }}>AI-generated summary</EuiText>
+                              </EuiFlexItem>
+                              <EuiFlexItem grow={false}>
+                                <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
+                              </EuiFlexItem>
+                            </EuiFlexGroup>
+                          }
+                          paddingSize="m"
+                        >
+                          <EuiText size="s" color="subdued">
+                            This rule is detecting suspicious process activity related to DNS server exploitation. It has a low false positive rate and is currently generating alerts for lateral movement behaviour on Windows endpoints.
+                          </EuiText>
+                        </EuiAccordion>
+                      </div>
+
+                      <EuiSpacer size="m" />
+
+                      {/* 5 stats row */}
+                      <EuiPanel hasBorder hasShadow={false} paddingSize="none">
+                        <EuiFlexGroup gutterSize="none" responsive={false}>
+                          {[
+                            { title: 'Alert yield', description: '0.02%', color: undefined },
+                            { title: 'Failure rate', description: '0.4%', color: undefined },
+                            { title: 'Gaps', description: '13 min', color: '#bd271e' },
+                            { title: 'Suppression rate', description: '99.8%', color: undefined },
+                            { title: 'Unique entities', description: '14 hosts', color: undefined },
+                          ].map(({ title, description, color }, i, arr) => (
+                            <EuiFlexItem key={title} style={{ padding: '12px 16px', borderRight: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
+                              <EuiText size="xs" color="subdued" style={{ marginBottom: 4 }}>{title}</EuiText>
+                              <EuiText style={{ fontSize: 20, fontWeight: 700, color: color || 'inherit' }}>{description}</EuiText>
+                            </EuiFlexItem>
+                          ))}
+                        </EuiFlexGroup>
+                      </EuiPanel>
+
+                      <EuiSpacer size="m" />
+
+                      {/* Last response + Alerts over time */}
+                      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
                       <EuiFlexGroup gutterSize="m" responsive={false}>
                         {/* Last response */}
-                        <EuiFlexItem grow={false} style={{ minWidth: 220 }}>
-                          <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                            <EuiText size="s" style={{ fontWeight: 700 }}>Last response</EuiText>
-                            <EuiSpacer size="s" />
-                            <EuiHealth color="danger">failed</EuiHealth>
-                            <EuiSpacer size="m" />
-                            <EuiPanel color="danger" hasBorder={false} hasShadow={false} paddingSize="s" style={{ borderLeft: '3px solid #bd271e', background: '#fff0ee', borderRadius: 4 }}>
-                              <EuiText size="xs" style={{ fontWeight: 600, marginBottom: 4 }}>Reason</EuiText>
-                              <EuiText size="xs">
-                                Query timeout after 30s while evaluating ESQL on index logs-*.
-                              </EuiText>
-                            </EuiPanel>
-                            <EuiSpacer size="s" />
-                            <EuiButtonEmpty size="xs" iconType="questionInCircle" color="primary" flush="left">
-                              How to fix
-                            </EuiButtonEmpty>
-                          </EuiPanel>
+                        <EuiFlexItem grow={false} style={{ minWidth: 200 }}>
+                          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 6 }}>Last response</EuiText>
+                          <EuiHealth color="danger" style={{ fontSize: 12 }}>Failed at Jan 14, 2026 @ 19:13:10</EuiHealth>
+                          <EuiSpacer size="s" />
+                          <div style={{ border: '1px solid #f86b63', borderRadius: 4, padding: 10, background: '#fff8f7' }}>
+                            <EuiText size="xs" style={{ fontWeight: 700, marginBottom: 4 }}>Reason</EuiText>
+                            <EuiText size="xs">Query timeout after 30s while evaluating ESQL on index logs-*.</EuiText>
+                          </div>
                         </EuiFlexItem>
 
-                        {/* Execution breakdown */}
+                        {/* Alerts over time */}
                         <EuiFlexItem>
-                          <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ height: '100%' }}>
-                            <EuiText size="s" style={{ fontWeight: 700 }}>Execution breakdown over time</EuiText>
-                            <EuiSpacer size="s" />
-                            <BarChart />
-                            <EuiSpacer size="xs" />
-                            <EuiFlexGroup gutterSize="m" responsive={false}>
-                              <EuiFlexItem grow={false}>
-                                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><div style={{ width: 10, height: 10, background: '#54b399' }} /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="xs">Succeeded</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                              </EuiFlexItem>
-                              <EuiFlexItem grow={false}>
-                                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><div style={{ width: 10, height: 10, background: '#d6bf57' }} /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="xs">Warning</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                              </EuiFlexItem>
-                              <EuiFlexItem grow={false}>
-                                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><div style={{ width: 10, height: 10, background: '#e7664c' }} /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="xs">Failed</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                              </EuiFlexItem>
-                            </EuiFlexGroup>
-                          </EuiPanel>
+                          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 6 }}>Alerts over time</EuiText>
+                          <AlertsChart />
                         </EuiFlexItem>
                       </EuiFlexGroup>
+                      </EuiPanel>
 
                       <EuiSpacer size="m" />
 
-                      {/* Exceptions accordion */}
+                      {/* Exceptions */}
                       <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                        <EuiAccordion id="exceptions-accordion" buttonContent={<EuiText size="s" style={{ fontWeight: 700 }}>Exceptions</EuiText>} initialIsOpen>
-                          <EuiSpacer size="s" />
-                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                            <EuiFlexItem grow={false}>
-                              <EuiText size="s">Error count threshold</EuiText>
-                            </EuiFlexItem>
-                            <EuiFlexItem grow={false}>
-                              <EuiBadge color="primary">current</EuiBadge>
-                            </EuiFlexItem>
-                          </EuiFlexGroup>
+                      <EuiAccordion
+                        id="exceptions-accordion"
+                        buttonContent={<EuiText size="s" style={{ fontWeight: 700 }}>Exceptions</EuiText>}
+                        paddingSize="none"
+                      >
+                        <EuiSpacer size="s" />
+                        <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}
+                          style={{ border: '1px solid #d3dae6', borderRadius: 4, padding: '8px 12px', background: '#f5f7fa' }}>
+                          <EuiFlexItem>
+                            <EuiText size="s">Exception/list name here</EuiText>
+                            <EuiText size="xs" color="subdued">
+                              <code>Effective_process.name</code>
+                              <EuiBadge color="primary" style={{ margin: '0 2px' }}>MATCHES</EuiBadge>
+                              <code>CompatTelRunner.exe</code>
+                            </EuiText>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
                         </EuiAccordion>
                       </EuiPanel>
 
                       <EuiSpacer size="m" />
 
-                      {/* Artifacts accordion */}
+                      {/* Artifacts */}
                       <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-                        <EuiAccordion id="artifacts-accordion" buttonContent={<EuiText size="s" style={{ fontWeight: 700 }}>Artifacts</EuiText>} initialIsOpen>
-                          <EuiSpacer size="s" />
-                          <EuiFlexGroup gutterSize="xl" alignItems="flexStart" responsive={false}>
-                            {/* Dashboards */}
-                            <EuiFlexItem>
-                              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                                <EuiFlexItem grow={false}>
-                                  <EuiIcon type="dashboardApp" size="s" />
-                                </EuiFlexItem>
-                                <EuiFlexItem>
-                                  <EuiText size="s" style={{ fontWeight: 600 }}>Dashboards</EuiText>
-                                </EuiFlexItem>
-                                <EuiFlexItem grow={false}>
-                                  <EuiButtonIcon iconType="plusInCircle" aria-label="Add dashboard" size="xs" />
-                                </EuiFlexItem>
-                              </EuiFlexGroup>
-                              <EuiSpacer size="s" />
-                              {['[Metrics MySQL] Database Overview', '[Logs MySQL] Overview', '[Elastic Agent] CloudWatch Input Metrics'].map((d, i) => (
-                                <EuiFlexGroup key={i} gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 6 }}>
-                                  <EuiFlexItem>
-                                    <EuiLink href="#"><EuiText size="s">{d}</EuiText></EuiLink>
-                                  </EuiFlexItem>
-                                  <EuiFlexItem grow={false}>
-                                    <EuiButtonIcon iconType="popout" aria-label="Open" size="xs" color="text" />
-                                  </EuiFlexItem>
-                                  <EuiFlexItem grow={false}>
-                                    <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" />
-                                  </EuiFlexItem>
-                                </EuiFlexGroup>
-                              ))}
-                            </EuiFlexItem>
+                      <EuiAccordion
+                        id="artifacts-accordion"
+                        buttonContent={<EuiText size="s" style={{ fontWeight: 700 }}>Artifacts</EuiText>}
+                        initialIsOpen
+                        paddingSize="none"
+                      >
+                        <EuiSpacer size="s" />
 
-                            {/* Notification policies */}
-                            <EuiFlexItem>
-                              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                                <EuiFlexItem grow={false}>
-                                  <EuiIcon type="bell" size="s" />
-                                </EuiFlexItem>
-                                <EuiFlexItem>
-                                  <EuiText size="s" style={{ fontWeight: 600 }}>Notification policies</EuiText>
-                                </EuiFlexItem>
-                                <EuiFlexItem grow={false}>
-                                  <EuiLink href="#"><EuiText size="s">Open Notification policies</EuiText></EuiLink>
-                                </EuiFlexItem>
-                              </EuiFlexGroup>
-                              <EuiSpacer size="s" />
-                              <EuiText style={{ fontSize: 40, fontWeight: 700, lineHeight: 1 }}>5</EuiText>
-                              <EuiText size="xs">Notification policies</EuiText>
-                              <EuiSpacer size="xs" />
-                              <EuiText size="xs" color="subdued">3 are matching criteria and 2 are catch-all</EuiText>
-                            </EuiFlexItem>
+                        {/* Dashboards */}
+                        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 8 }}>
+                          <EuiFlexItem grow={false}><EuiIcon type="dashboardApp" size="s" /></EuiFlexItem>
+                          <EuiFlexItem><EuiText size="s" style={{ fontWeight: 600 }}>Dashboards</EuiText></EuiFlexItem>
+                          <EuiFlexItem grow={false}><EuiButtonIcon iconType="plusInCircle" aria-label="Add" size="xs" /></EuiFlexItem>
+                        </EuiFlexGroup>
+                        {['[Metrics MySQL] Database Overview', '[Logs MySQL] Overview', '[Elastic Agent] CloudWatch Input Metrics'].map((d, i) => (
+                          <EuiFlexGroup key={i} gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 6, paddingLeft: 20 }}>
+                            <EuiFlexItem><EuiLink href="#"><EuiText size="s">{d}</EuiText></EuiLink></EuiFlexItem>
+                            <EuiFlexItem grow={false}><EuiButtonIcon iconType="popout" aria-label="Open" size="xs" color="text" /></EuiFlexItem>
+                            <EuiFlexItem grow={false}><EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" /></EuiFlexItem>
                           </EuiFlexGroup>
-                        </EuiAccordion>
+                        ))}
+
+                        <EuiSpacer size="m" />
+                        <EuiHorizontalRule margin="none" />
+                        <EuiSpacer size="m" />
+
+                        {/* Cases */}
+                        <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                              <EuiFlexItem grow={false}><EuiIcon type="casesApp" size="s" /></EuiFlexItem>
+                              <EuiFlexItem><EuiText size="s" style={{ fontWeight: 600 }}>Cases</EuiText></EuiFlexItem>
+                            </EuiFlexGroup>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}><EuiLink href="#"><EuiText size="s">View cases</EuiText></EuiLink></EuiFlexItem>
+                        </EuiFlexGroup>
+                        <EuiSpacer size="xs" />
+                        <EuiText style={{ fontSize: 28, fontWeight: 700, paddingLeft: 4 }}>5</EuiText>
+                        <EuiText size="xs" color="subdued" style={{ paddingLeft: 4 }}>Active cases</EuiText>
+                      </EuiAccordion>
                       </EuiPanel>
 
                     </EuiFlexItem>
