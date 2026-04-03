@@ -8,11 +8,6 @@ interface VersionRouteLoadingProps {
 export const VersionRouteLoading: React.FC<VersionRouteLoadingProps> = ({
   pageName,
 }) => {
-  const displayName = pageName
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-
   return (
     <div
       style={{
@@ -24,7 +19,7 @@ export const VersionRouteLoading: React.FC<VersionRouteLoadingProps> = ({
     >
       <EuiEmptyPrompt
         icon={<EuiLoadingSpinner size="xl" />}
-        title={<h2>Loading {displayName}</h2>}
+        title={<h2>Loading {pageName}</h2>}
         body={<p>This should only take a moment.</p>}
       />
     </div>

@@ -107,6 +107,33 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
       }
     }
 
+    // Detect pre-aggregated multi-bucket data (e.g., STATS message_count = COUNT(*) BY log.level)
+    // Each doc has a numeric value field and a string category field (plus optional "aggregation" flag)
+    const dataKeys = Object.keys(logs[0]).filter((k) => k !== "aggregation");
+    if (logs.length > 1 && dataKeys.length === 2) {
+      const numericKey = dataKeys.find((k) => typeof logs[0][k] === "number");
+      const categoryKey = dataKeys.find((k) => typeof logs[0][k] === "string");
+
+      if (numericKey && categoryKey) {
+        const aggData: DataPoint[] = logs.map((row) => ({
+          x: String(row[categoryKey]),
+          y: row[numericKey] as number,
+        }));
+
+        const aggTitle = numericKey
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        return {
+          histogramData: aggData,
+          axisTitle: aggTitle,
+          valueFormatter: (d: any) => new Intl.NumberFormat("en-US").format(d),
+          scaleType: ScaleType.Ordinal,
+          isSingleMetric: false,
+        };
+      }
+    }
+
     // Data is already filtered by time range in the data generator
     // No need to filter here - just use logs directly
     const filteredLogs = logs;

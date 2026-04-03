@@ -210,11 +210,9 @@ export const VersionedComponentLoader: React.FC<{
     let mounted = true;
 
     const loadComponent = async () => {
-      // Only show the spinner if nothing is on screen yet.
-      // When switching between versions, keep the current component visible.
-      if (!componentRef.current) {
-        setLoading(true);
-      }
+      componentRef.current = null;
+      setComponent(null);
+      setLoading(true);
       setError(null);
 
       try {

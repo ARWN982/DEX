@@ -1,8 +1,20 @@
+import { EuiCheckbox, EuiRadio } from "@elastic/eui";
 import { X } from "phosphor-react";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { useVersionStore } from "../../store/useVersionStore";
 import { getToolbarColors } from "../../styles/designToolsColors";
+import { getComponentFromRegistry } from "../../utils/componentRegistry";
+import { getCurrentPage } from "../../utils/pageUtils";
+
+const AnimatedDots: React.FC = () => {
+  const [dotCount, setDotCount] = useState(1);
+  useEffect(() => {
+    const timer = setInterval(() => setDotCount((c) => (c % 3) + 1), 400);
+    return () => clearInterval(timer);
+  }, []);
+  return <span style={{ display: "inline-block", minWidth: "1em", textAlign: "left" }}>{".".repeat(dotCount)}</span>;
+};
 
 interface CreateVersionModalProps {
   isOpen: boolean;
@@ -22,10 +34,10 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   const [copyComments, setCopyComments] = useState(false);
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const lockedVersionRef = useRef<string | null>(null);
 
   const currentVersion = getCurrentVersion();
 
-  // Calculate what the next version number will be based on the highest existing version
   const getNextVersionNumber = () => {
     const highest = versions.length > 0
       ? versions
@@ -45,27 +57,40 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     }
   };
 
-  const nextVersionNumber = getNextVersionNumber();
-  const versionTypeText = isMajorVersion ? "Major Version" : "Minor Version";
+  const nextVersionNumber = lockedVersionRef.current ?? getNextVersionNumber();
 
   const handleCreate = async () => {
+    lockedVersionRef.current = getNextVersionNumber();
     setIsCreating(true);
     try {
-      await createVersion({
+      const newVersionId = await createVersion({
         isMajorVersion,
         startFromScratch,
         copyComments: startFromScratch ? false : copyComments,
         description: description.trim() || undefined,
       });
 
-      // Reset form and close modal
+      // Keep modal open until webpack HMR has the new component ready.
+      const pageName = getCurrentPage();
+      const maxWait = 10_000;
+      const interval = 400;
+      let waited = 0;
+
+      while (waited < maxWait) {
+        if (getComponentFromRegistry(pageName, newVersionId)) break;
+        await new Promise((r) => setTimeout(r, interval));
+        waited += interval;
+      }
+
       setIsMajorVersion(false);
       setStartFromScratch(false);
       setCopyComments(false);
       setDescription("");
+      lockedVersionRef.current = null;
       onClose();
     } catch (error) {
       console.error("Failed to create version:", error);
+      lockedVersionRef.current = null;
     } finally {
       setIsCreating(false);
     }
@@ -73,11 +98,11 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 
   const handleClose = () => {
     if (!isCreating) {
-      // Reset form state when closing
       setIsMajorVersion(false);
       setStartFromScratch(false);
       setCopyComments(false);
       setDescription("");
+      lockedVersionRef.current = null;
       onClose();
     }
   };
@@ -146,6 +171,13 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     marginBottom: "20px",
   };
 
+  const dividerStyle: React.CSSProperties = {
+    height: "1px",
+    backgroundColor: colors.border,
+    opacity: 0.5,
+    margin: "4px 0 20px 0",
+  };
+
   const labelStyle: React.CSSProperties = {
     display: "block",
     fontSize: "14px",
@@ -159,39 +191,6 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     fontWeight: "600",
     color: colors.accent,
     marginBottom: "8px",
-  };
-
-  const checkboxContainerStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "8px",
-    marginBottom: "12px",
-  };
-
-  const checkboxStyle: React.CSSProperties = {
-    width: "16px",
-    height: "16px",
-    accentColor: colors.accent,
-  };
-
-  const radioContainerStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "8px",
-    marginBottom: "12px",
-  };
-
-  const radioStyle: React.CSSProperties = {
-    width: "16px",
-    height: "16px",
-    marginTop: "2px",
-    accentColor: colors.accent,
-  };
-
-  const radioLabelStyle: React.CSSProperties = {
-    fontSize: "14px",
-    color: colors.textPrimary,
-    lineHeight: "1.4",
   };
 
   const textareaStyle: React.CSSProperties = {
@@ -242,18 +241,23 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   const createButtonDisabledStyle: React.CSSProperties = {
     ...createButtonStyle,
     backgroundColor: colors.textMuted,
-    cursor: "not-allowed",
+    cursor: "default",
   };
 
   return (
     <>
-      {/* Backdrop */}
       <div style={overlayStyle} onClick={handleClose}>
-        {/* Modal */}
-        <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-          {/* Header */}
+        <div className="create-version-modal" style={modalStyle} onClick={(e) => e.stopPropagation()}>
+          <style>{`
+            .create-version-modal [class*="euiRadio__circle-selected"],
+            .create-version-modal [class*="euiCheckbox__square-selected"] {
+              background-color: ${colors.accent} !important;
+              border-color: ${colors.accent} !important;
+            }
+          `}</style>
+
           <div style={headerStyle}>
-            <h2 style={titleStyle}>Create New Version</h2>
+            <h2 style={titleStyle}>Create new version</h2>
             <button
               style={closeButtonStyle}
               onClick={handleClose}
@@ -272,96 +276,75 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
             </button>
           </div>
 
-          {/* Content */}
           <div style={contentStyle}>
-            {/* Version Preview */}
+            {/* Version number + major toggle */}
             <div style={sectionStyle}>
-              <label style={labelStyle}>New Version</label>
-              <div style={previewStyle}>Version {nextVersionNumber}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "12px" }}>
+                <div style={previewStyle}>Version {nextVersionNumber}</div>
+              </div>
+              <EuiCheckbox
+                id="majorVersion"
+                label="Major version"
+                checked={isMajorVersion}
+                onChange={(e) => setIsMajorVersion(e.target.checked)}
+                disabled={isCreating}
+              />
             </div>
 
-            {/* Version Type */}
+            <div style={dividerStyle} />
+
+            {/* Starting point */}
             <div style={sectionStyle}>
-              <div style={checkboxContainerStyle}>
-                <input
-                  type="checkbox"
-                  id="majorVersion"
-                  checked={isMajorVersion}
-                  onChange={(e) => setIsMajorVersion(e.target.checked)}
-                  style={checkboxStyle}
-                  disabled={isCreating}
-                />
-                <label htmlFor="majorVersion" style={labelStyle}>
-                  This is a major version
-                </label>
-              </div>
-            </div>
+              <label style={labelStyle}>Starting point</label>
 
-            {/* Base Version Options */}
-            <div style={sectionStyle}>
-              <label style={labelStyle}>Create From</label>
+              <EuiRadio
+                id="basedOnCurrent"
+                label={
+                  <span>
+                    Based on{" "}
+                    <strong>v{currentVersion?.id || "1.0"}</strong>
+                  </span>
+                }
+                checked={!startFromScratch}
+                onChange={() => setStartFromScratch(false)}
+                disabled={isCreating}
+              />
 
-              <div style={radioContainerStyle}>
-                <input
-                  type="radio"
-                  id="basedOnCurrent"
-                  name="baseVersion"
-                  checked={!startFromScratch}
-                  onChange={() => setStartFromScratch(false)}
-                  style={radioStyle}
-                  disabled={isCreating}
-                />
-                <label htmlFor="basedOnCurrent" style={radioLabelStyle}>
-                  Based on{" "}
-                  <strong>Version {currentVersion?.id || "1.0"}</strong>
-                </label>
-              </div>
-
-              {/* Copy comments checkbox — only visible when based on existing */}
               {!startFromScratch && (
-                <div style={{ ...checkboxContainerStyle, marginLeft: "24px" }}>
-                  <input
-                    type="checkbox"
+                <div style={{ marginLeft: "24px", marginTop: "8px" }}>
+                  <EuiCheckbox
                     id="copyComments"
+                    label={
+                      <span style={{ fontSize: "13px", color: colors.textSecondary }}>
+                        Copy comments
+                      </span>
+                    }
                     checked={copyComments}
                     onChange={(e) => setCopyComments(e.target.checked)}
-                    style={checkboxStyle}
                     disabled={isCreating}
                   />
-                  <label
-                    htmlFor="copyComments"
-                    style={{ fontSize: "13px", color: colors.textSecondary }}
-                  >
-                    Copy comments from current version
-                  </label>
                 </div>
               )}
 
-              <div style={radioContainerStyle}>
-                <input
-                  type="radio"
+              <div style={{ marginTop: "12px" }}>
+                <EuiRadio
                   id="startFromScratch"
-                  name="baseVersion"
+                  label="Start from scratch"
                   checked={startFromScratch}
                   onChange={() => setStartFromScratch(true)}
-                  style={radioStyle}
                   disabled={isCreating}
                 />
-                <label htmlFor="startFromScratch" style={radioLabelStyle}>
-                  Start from scratch
-                  <br />
-                  <span
-                    style={{ color: colors.textSecondary, fontSize: "12px" }}
-                  >
-                    Begin with empty comments
-                  </span>
-                </label>
               </div>
             </div>
 
+            <div style={dividerStyle} />
+
             {/* Description */}
             <div style={sectionStyle}>
-              <label style={labelStyle}>Description (Optional)</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
+                <label style={{ ...labelStyle, marginBottom: 0 }}>Description</label>
+                <span style={{ fontSize: "12px", color: colors.textSecondary }}>Optional</span>
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -409,9 +392,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 }
               }}
             >
-              {isCreating
-                ? "Creating..."
-                : `Create Version ${nextVersionNumber}`}
+              {isCreating ? <>Creating<AnimatedDots /></> : "Create version"}
             </button>
           </div>
         </div>

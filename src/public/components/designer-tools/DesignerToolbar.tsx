@@ -327,10 +327,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
 
           {/* Dismiss Button */}
           <button
-            style={{
-              ...buttonStyle(false),
-              marginLeft: '8px',
-            }}
+            style={buttonStyle(false)}
             onClick={handleDismiss}
             title="Dismiss toolbar"
             onMouseEnter={(e) => {

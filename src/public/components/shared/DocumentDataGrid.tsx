@@ -94,6 +94,15 @@ export interface DocumentDataGridProps {
 
   /** Initial page size */
   initialPageSize?: number;
+
+  /**
+   * When the Summary column is shown (only @timestamp selected), controls how it is built.
+   * `flatten` — all fields concatenated (default). `message` — single field only (see summaryMessageField).
+   */
+  summaryMode?: "flatten" | "message";
+
+  /** Field path for summary when summaryMode is `message` (supports dot notation). */
+  summaryMessageField?: string;
 }
 
 export const DocumentDataGrid: React.FC<DocumentDataGridProps> = ({
@@ -107,6 +116,8 @@ export const DocumentDataGrid: React.FC<DocumentDataGridProps> = ({
   height = 600,
   isCodeEditorMode = false,
   initialPageSize = 50,
+  summaryMode = "flatten",
+  summaryMessageField = "message",
 }) => {
   const { euiTheme } = useEuiTheme();
 
@@ -316,13 +327,95 @@ export const DocumentDataGrid: React.FC<DocumentDataGridProps> = ({
       if (!document) return "";
 
       if (columnId === "summary") {
-        // Extract service.name and host.name for badges
+        // Extract service.name and host.name for badges (both summary modes)
         const serviceName =
           getNestedFieldValue(document, "service.name") ||
           getNestedFieldValue(document, "service");
         const hostName =
           getNestedFieldValue(document, "host.name") ||
           getNestedFieldValue(document, "host");
+
+        const summaryBadges = (serviceName || hostName) && (
+          <div
+            style={{
+              marginBottom: "8px",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "4px",
+            }}
+          >
+            {serviceName && (
+              <EuiBadge
+                color="hollow"
+                style={{
+                  fontSize: "11px",
+                  fontFamily: '"Roboto Mono", monospace',
+                }}
+              >
+                {serviceName}
+              </EuiBadge>
+            )}
+            {hostName && (
+              <EuiBadge
+                color="hollow"
+                style={{
+                  fontSize: "11px",
+                  fontFamily: '"Roboto Mono", monospace',
+                }}
+              >
+                {hostName}
+              </EuiBadge>
+            )}
+          </div>
+        );
+
+        if (summaryMode === "message") {
+          const raw = getNestedFieldValue(document, summaryMessageField);
+          const messageEmpty =
+            raw === null || raw === undefined || raw === "";
+
+          const messageText = messageEmpty
+            ? ""
+            : Array.isArray(raw)
+              ? raw.join(", ")
+              : typeof raw === "object"
+                ? JSON.stringify(raw)
+                : String(raw);
+
+          const messageContent = messageEmpty ? (
+            <EuiText
+              size="s"
+              color="subdued"
+              style={{
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: "12px",
+              }}
+            >
+              —
+            </EuiText>
+          ) : (
+            <EuiText
+              size="s"
+              style={{
+                whiteSpace: "normal",
+                lineHeight: "1.4",
+                fontFamily: '"Roboto Mono", monospace',
+                fontSize: "12px",
+              }}
+            >
+              {searchTerm
+                ? highlightSearchTerm(messageText, searchTerm, euiTheme)
+                : messageText}
+            </EuiText>
+          );
+
+          return (
+            <div>
+              {summaryBadges}
+              {messageContent}
+            </div>
+          );
+        }
 
         // Helper function to flatten nested objects and format values
         const flattenObject = (
@@ -408,40 +501,7 @@ export const DocumentDataGrid: React.FC<DocumentDataGridProps> = ({
 
         return (
           <div>
-            {/* Service and Host badges */}
-            {(serviceName || hostName) && (
-              <div
-                style={{
-                  marginBottom: "8px",
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "4px",
-                }}
-              >
-                {serviceName && (
-                  <EuiBadge
-                    color="hollow"
-                    style={{
-                      fontSize: "11px",
-                      fontFamily: '"Roboto Mono", monospace',
-                    }}
-                  >
-                    {serviceName}
-                  </EuiBadge>
-                )}
-                {hostName && (
-                  <EuiBadge
-                    color="hollow"
-                    style={{
-                      fontSize: "11px",
-                      fontFamily: '"Roboto Mono", monospace',
-                    }}
-                  >
-                    {hostName}
-                  </EuiBadge>
-                )}
-              </div>
-            )}
+            {summaryBadges}
 
             {/* Summary content */}
             <EuiText
@@ -519,7 +579,7 @@ export const DocumentDataGrid: React.FC<DocumentDataGridProps> = ({
         </EuiText>
       );
     },
-    [processedDocuments, searchTerm, euiTheme]
+    [processedDocuments, searchTerm, euiTheme, summaryMode, summaryMessageField]
   );
 
   if (isLoading) {
@@ -626,9 +686,7 @@ export const DocumentDataGrid: React.FC<DocumentDataGridProps> = ({
         }}
         height={height}
         rowHeightsOptions={{
-          defaultHeight: {
-            lineCount: 5,
-          },
+          defaultHeight: "auto",
           rowHeights: {},
         }}
       />
