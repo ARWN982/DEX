@@ -614,12 +614,22 @@ const DetectionRulesPage: React.FC = () => {
                   size="s"
                   display="base"
                   onClick={() => setIsFilterPanelOpen(false)}
-                  style={{ flexShrink: 0 }}
+                  style={{ flexShrink: 0, height: 40, width: 40, borderRadius: 6 }}
                 />
                 <EuiText size="s" style={{ fontWeight: 700, flex: 1 }}>Filters</EuiText>
-                <EuiButtonEmpty size="xs" flush="right" color="primary">
-                  Clear
-                </EuiButtonEmpty>
+                {Object.values(selectedFilters).some((v) => v.length > 0) && (
+                  <EuiButtonEmpty
+                    size="xs"
+                    flush="right"
+                    color="primary"
+                    onClick={() => {
+                      setSelectedFilters({});
+                      setPageIndex(0);
+                    }}
+                  >
+                    Clear
+                  </EuiButtonEmpty>
+                )}
               </div>
 
               {/* Filter accordions */}
@@ -717,6 +727,7 @@ const DetectionRulesPage: React.FC = () => {
                     size="s"
                     display="base"
                     onClick={() => setIsFilterPanelOpen(true)}
+                    style={{ height: 40, width: 40, borderRadius: 6 }}
                   />
                 </EuiFlexItem>
               )}

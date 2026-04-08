@@ -918,10 +918,8 @@ const RuleDetailsPage: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {/* Full header - scrolls naturally */}
               <div style={{ padding: '28px 16px 16px 16px', background: '#fff', position: 'relative' }}>
-                {/* Top-right action icons */}
-                <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <EuiButtonIcon iconType="discuss" aria-label="Comment" color="text" size="s" />
-                  <EuiButtonIcon iconType="share" aria-label="Share" color="text" size="s" />
+                {/* Close button */}
+                <div style={{ position: 'absolute', top: 12, right: 12 }}>
                   <EuiButtonIcon
                     iconType="cross"
                     aria-label="Close flyout"
