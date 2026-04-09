@@ -129,5 +129,8 @@ src/data/versions.json
 # Local sandbox/test projects (underscore-prefixed folders in pages)
 src/public/pages/_*/
 
+# Thumbnails for local test projects
+public/thumbnails/_*
+
 # Playwright MCP screenshots
 .playwright-mcp/

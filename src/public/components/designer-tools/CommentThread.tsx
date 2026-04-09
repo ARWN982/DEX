@@ -1,6 +1,7 @@
 import { Check, X, PaperPlaneRight } from "phosphor-react";
 import React, { useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
+import { useCommentStore } from "../../store/useCommentStore";
 import {
   getDesignUIColors,
   createBoxShadow,
@@ -101,6 +102,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
 }) => {
   const [replyContent, setReplyContent] = useState("");
   const { colorMode } = useAppStore();
+  const { isSaving } = useCommentStore();
   
   const currentUser = getUserIdentity();
   const currentUserInitials = currentUser
@@ -113,17 +115,16 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
     : "?";
 
   const handleSubmitReply = () => {
-    if (replyContent.trim()) {
-      console.log("Submitting reply:", replyContent.trim());
-      onAddComment({ content: replyContent.trim() });
-      setReplyContent("");
-    }
+    const trimmed = replyContent.trim();
+    if (!trimmed || isSaving) return;
+    setReplyContent("");
+    onAddComment({ content: trimmed });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       onClose();
-    } else if (e.key === "Enter" && replyContent.trim()) {
+    } else if (e.key === "Enter" && replyContent.trim() && !isSaving) {
       e.preventDefault();
       handleSubmitReply();
     }
@@ -272,8 +273,8 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             height: "32px",
             border: "none",
             backgroundColor: "transparent",
-            cursor: replyContent.trim() ? "pointer" : "not-allowed",
-            color: replyContent.trim() ? colors.primaryButton : colors.textMuted,
+            cursor: replyContent.trim() && !isSaving ? "pointer" : "not-allowed",
+            color: replyContent.trim() && !isSaving ? colors.primaryButton : colors.textMuted,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -285,7 +286,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
             e.stopPropagation();
             handleSubmitReply();
           }}
-          disabled={!replyContent.trim()}
+          disabled={!replyContent.trim() || isSaving}
         >
           <PaperPlaneRight size={16} weight="fill" />
         </button>

@@ -201,13 +201,12 @@ router.post('/', async (req: Request, res: Response) => {
         // Projects: import from '../../../components' (3 levels up from pages/project/v1.0/)
         // Replace relative imports that go up 2 levels with 3 levels
         templateContent = templateContent.replace(
-          /from\s+['"]\.\.\/\.\.\/([^'"]+)/g,
-          (match, importPath) => {
-            // Skip if it's already 3 levels or more, or if it's an absolute path
+          /from\s+(['"])\.\.\/\.\.\/([^'"]+)\1/g,
+          (match, quote, importPath) => {
             if (importPath.startsWith('../')) {
               return match;
             }
-            return `from '../../../${importPath}`;
+            return `from ${quote}../../../${importPath}${quote}`;
           }
         );
         
@@ -230,21 +229,14 @@ router.post('/', async (req: Request, res: Response) => {
               const filePath = path.join(projectComponentsDir, file);
               let fileContent = await fs.readFile(filePath, 'utf-8');
               
-              // Replace ../../../utils with ../../../../utils (one more level up)
+              // Fix relative imports that go up 3 levels (need 4 in the new location)
               fileContent = fileContent.replace(
-                /from\s+['"]\.\.\/\.\.\/\.\.\/utils\//g,
-                "from '../../../../utils/"
-              );
-              
-              // Also fix other relative imports that go up 3 levels
-              fileContent = fileContent.replace(
-                /from\s+['"]\.\.\/\.\.\/\.\.\/([^'"]+)/g,
-                (match, importPath) => {
-                  // Skip if it's already 4 levels or more, or if it's an absolute path
+                /from\s+(['"])\.\.\/\.\.\/\.\.\/([^'"]+)\1/g,
+                (match, quote, importPath) => {
                   if (importPath.startsWith('../')) {
                     return match;
                   }
-                  return `from '../../../../${importPath}`;
+                  return `from ${quote}../../../../${importPath}${quote}`;
                 }
               );
               

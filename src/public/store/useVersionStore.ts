@@ -52,7 +52,7 @@ function getPublishVersions(): Version[] {
   }
 }
 
-function getHighestVersion(versions: Version[]): string {
+export function getHighestVersion(versions: Version[]): string {
   if (versions.length === 0) return '1.0';
   return versions
     .map(v => v.id)
@@ -61,6 +61,12 @@ function getHighestVersion(versions: Version[]): string {
       const [bMaj, bMin] = b.split('.').map(Number);
       return aMaj !== bMaj ? bMaj - aMaj : bMin - aMin;
     })[0];
+}
+
+export function getNextVersionId(versions: Version[], isMajorVersion: boolean): string {
+  const highest = getHighestVersion(versions);
+  const [major, minor] = highest.split('.').map(Number);
+  return isMajorVersion ? `${major + 1}.0` : `${major}.${minor + 1}`;
 }
 
 export const useVersionStore = create<VersionStore>((set, get) => ({

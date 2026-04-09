@@ -55,18 +55,24 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setError(null);
 
     try {
+      const normalizedName = projectName.trim().toLowerCase();
+
       // Check if project name already exists
       const checkResponse = await fetch(`/api/projects`);
       if (checkResponse.ok) {
-        const checkData = await checkResponse.json();
-        const normalizedName = projectName.trim().toLowerCase();
-        const existingProject = checkData.projects?.find(
-          (p: any) => p.name === normalizedName
-        );
-        if (existingProject) {
-          setError(`A project with the name "${normalizedName}" already exists`);
-          setIsCreating(false);
-          return;
+        const checkText = await checkResponse.text();
+        try {
+          const checkData = JSON.parse(checkText);
+          const existingProject = checkData.projects?.find(
+            (p: any) => p.name === normalizedName
+          );
+          if (existingProject) {
+            setError(`A project with the name "${normalizedName}" already exists`);
+            setIsCreating(false);
+            return;
+          }
+        } catch {
+          // Server returned non-JSON — skip the duplicate check and let the POST handle it
         }
       }
 
@@ -76,18 +82,26 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: projectName.trim().toLowerCase(),
+          name: normalizedName,
           description: description.trim() || undefined,
           templateName: templateName,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create project");
+      const responseText = await response.text();
+      let result: any;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status})`);
+        }
+        throw new Error("Server returned an invalid response. The project may have been created — try refreshing.");
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create project");
+      }
       console.log("Project created successfully:", result);
 
       // Reset form and close modal
