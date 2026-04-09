@@ -107,6 +107,41 @@ const RuleDetailsPage: React.FC = () => {
   });
   const toggleFlyoutSection = (key: string) =>
     setFlyoutSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const [expandedFlowSteps, setExpandedFlowSteps] = useState<Record<number, boolean>>({});
+  const toggleFlowStep = (idx: number) =>
+    setExpandedFlowSteps((prev) => ({ ...prev, [idx]: !prev[idx] }));
+
+  const executionFlowSteps = [
+    {
+      label: 'Start rule execution',
+      duration: 'Mar 5 @ 2026 19:36:41.095',
+      children: [],
+    },
+    {
+      label: 'Query Elasticsearch',
+      duration: '3m 124 ms',
+      children: [],
+    },
+    {
+      label: 'Process results',
+      duration: '124 ms',
+      children: [
+        { label: 'No index matching logs-endpoint.alerts-*', duration: '25 ms' },
+        { label: 'Changing rule status to "succeeded"', duration: '25 ms' },
+      ],
+    },
+    {
+      label: 'Generate alerts if found',
+      duration: '234 ms',
+      children: [],
+    },
+    {
+      label: 'Completed',
+      duration: '24 ms',
+      children: [],
+    },
+  ];
   const [flyoutTab, setFlyoutTab] = useState('overview');
   const [isCompactHeader, setIsCompactHeader] = useState(false);
 
@@ -1136,7 +1171,7 @@ const RuleDetailsPage: React.FC = () => {
                         <EuiButton
                           size="s"
                           iconType="discuss"
-                          style={{ background: '#e8f0fe', borderColor: 'transparent', color: '#1a56db', borderRadius: 8 }}
+                          style={{ background: '#e8e3fc', borderColor: 'transparent', color: '#5a3dc8', borderRadius: 8 }}
                         >
                           Add to chat
                         </EuiButton>
@@ -1197,7 +1232,7 @@ const RuleDetailsPage: React.FC = () => {
                       {summaryState === 'generated' && (
                         <div style={{ border: '1px solid #d3dae6', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
                           {/* Dotted content area */}
-                          <div style={{ padding: '16px', border: '1.5px dashed #7B61FF', borderRadius: 6, margin: 12 }}>
+                          <div style={{ padding: '16px', border: '1.5px dashed #7B61FF', borderRadius: 6, margin: 12, background: 'rgba(232, 227, 252, 0.5)' }}>
                             <EuiText size="s">
                               <p style={{ margin: 0, lineHeight: '20px', color: '#343741' }}>
                                 This rule executed successfully but encountered a configuration issue. The query returned 0 
@@ -1337,86 +1372,84 @@ const RuleDetailsPage: React.FC = () => {
                       <EuiText size="s" style={{ fontWeight: 700 }}>Execution Flow</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  {flyoutSections.flow && (<div style={{ paddingBottom: 12 }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: 6,
-                      padding: '12px',
-                      background: '#f5f7fa',
+                  {flyoutSections.flow && (
+                    <div style={{ paddingBottom: 12 }}>
+                    <div style={{
+                      background: '#f0f4f9',
                       border: '1px solid #d3dae6',
-                      borderRadius: 8,
+                      borderRadius: 12,
+                      padding: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
                     }}>
-                      {[
-                        { duration: 'Mar 5 @ 2026 19:36:41.095', message: 'Start rule execution', icon: 'warning', iconColor: 'warning', status: 'success' },
-                        { duration: '3m 124 ms', message: 'Query Elasticsearch', icon: 'layers', iconColor: 'primary', status: 'success' },
-                        { duration: '124 ms', message: 'Process results', icon: 'bullseye', iconColor: 'primary', status: 'success' },
-                        { duration: '25 ms', message: 'Generate alerts', icon: 'console', iconColor: 'primary', status: 'success' },
-                        { duration: '5 m', message: 'Index alerts', icon: 'layers', iconColor: 'primary', status: 'success' },
-                        { duration: '234 ms', message: 'Completed', icon: 'layers', iconColor: 'primary', status: 'success' },
-                      ].map((row, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            padding: '10px 14px',
-                            background: '#fff',
-                            border: '1px solid #d3dae6',
-                            borderRadius: 10,
-                            minHeight: 48,
-                          }}
-                        >
-                          <EuiIcon
-                            type="check"
-                            size="s"
-                            color="success"
-                            style={{ flexShrink: 0 }}
-                          />
-                          <span style={{ flex: 1, fontSize: 12, fontWeight: 500, lineHeight: '20px', color: '#1a1c21', minWidth: 0 }}>
-                            {row.message}
-                          </span>
-                          <span style={{ fontSize: 12, color: '#98a2b3', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                            {row.duration}
-                          </span>
-                          <EuiIcon type="arrowDown" size="s" color="subdued" style={{ flexShrink: 0 }} />
+                      {executionFlowSteps.map((step, idx) => (
+                        <div key={idx}>
+                          {/* Parent step card */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '12px 16px',
+                              background: '#fff',
+                              border: '1px solid #d3dae6',
+                              borderRadius: 10,
+                              cursor: step.children.length > 0 ? 'pointer' : 'default',
+                            }}
+                            onClick={() => step.children.length > 0 && toggleFlowStep(idx)}
+                          >
+                            <EuiIcon type="check" size="s" color="success" style={{ flexShrink: 0 }} />
+                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#1a1c21' }}>
+                              {step.label}
+                            </span>
+                            <span style={{ fontSize: 13, color: '#69707d', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              {step.duration}
+                            </span>
+                            {step.children.length > 0 ? (
+                              <EuiIcon
+                                type={expandedFlowSteps[idx] ? 'arrowDown' : 'arrowRight'}
+                                size="s"
+                                color="subdued"
+                                style={{ flexShrink: 0 }}
+                              />
+                            ) : (
+                              <EuiIcon type="arrowRight" size="s" color="subdued" style={{ flexShrink: 0 }} />
+                            )}
+                          </div>
+
+                          {/* Child step cards */}
+                          {expandedFlowSteps[idx] && step.children.length > 0 && (
+                            <div style={{ paddingLeft: 24, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                              {step.children.map((child, cIdx) => (
+                                <div
+                                  key={cIdx}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    padding: '10px 16px',
+                                    background: '#f5f7fa',
+                                    border: '1px solid #d3dae6',
+                                    borderRadius: 8,
+                                  }}
+                                >
+                                  <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#006bb8', flexShrink: 0 }}>
+                                    {'> _'}
+                                  </EuiText>
+                                  <span style={{ flex: 1, fontSize: 13, fontFamily: 'monospace', color: '#343741' }}>
+                                    {child.label}
+                                  </span>
+                                  <span style={{ fontSize: 12, color: '#69707d', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                    {child.duration}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
-                  </div>)}
-                </div>
-
-                {/* Logs */}
-                <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('logs')}>
-                    <EuiFlexItem grow={false}>
-                      <EuiIcon type={flyoutSections.logs ? 'arrowDown' : 'arrowRight'} size="s" />
-                    </EuiFlexItem>
-                    <EuiFlexItem>
-                      <EuiText size="s" style={{ fontWeight: 700 }}>Logs</EuiText>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
-                  {flyoutSections.logs && (
-                    <div style={{ paddingBottom: 12 }}>
-                      <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ borderRadius: 6, overflow: 'hidden' }}>
-                        <EuiBasicTable
-                          items={[
-                            { time: '17:05:09.901', level: 'DEBUG', message: 'Starting Signal Rule execution' },
-                            { time: '17:05:09.906', level: 'DEBUG', message: 'Interval: 5m' },
-                            { time: '17:05:09.907', level: 'INFO',  message: 'Changing rule status to "running"' },
-                            { time: '17:05:09.908', level: 'WARN',  message: 'No index matching logs-endpoint.alerts-*' },
-                            { time: '17:05:09.910', level: 'WARN',  message: 'Changing rule status to "partial failure"' },
-                            { time: '17:05:09.911', level: 'DEBUG', message: 'totalHits: 0' },
-                            { time: '17:05:09.912', level: 'DEBUG', message: 'completed bulk index of 0' },
-                          ]}
-                          columns={[
-                            { field: 'time', name: 'Time', width: '120px' },
-                            { field: 'level', name: 'Level', width: '80px' },
-                            { field: 'message', name: 'Message', truncateText: true },
-                          ]}
-                        />
-                      </EuiPanel>
                     </div>
                   )}
                 </div>
