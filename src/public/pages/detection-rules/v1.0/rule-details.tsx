@@ -33,6 +33,10 @@ import {
   EuiFlyoutFooter,
   EuiAccordion,
   EuiProgress,
+  EuiFilterGroup,
+  EuiFilterButton,
+  EuiPopover,
+  EuiSelectable,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -70,8 +74,39 @@ const RuleDetailsPage: React.FC = () => {
   const [gapFillPageSize, setGapFillPageSize] = useState(10);
   const [showSourceEventRange, setShowSourceEventRange] = useState(true);
   const [showMetricsColumns, setShowMetricsColumns] = useState(false);
+  const [runTypeOptions, setRunTypeOptions] = useState([
+    { label: 'Scheduled' },
+    { label: 'Manual' },
+    { label: 'Gap fill' },
+  ]);
+  const [statusOptions, setStatusOptions] = useState([
+    { label: 'Succeeded' },
+    { label: 'Failed' },
+    { label: 'Error' },
+  ]);
+  const [runTypePopoverOpen, setRunTypePopoverOpen] = useState(false);
+  const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const runTypeActiveCount = runTypeOptions.filter((o: any) => o.checked === 'on').length;
+  const statusActiveCount = statusOptions.filter((o: any) => o.checked === 'on').length;
   const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
   const [selectedExecution, setSelectedExecution] = useState<any>(null);
+  const [summaryState, setSummaryState] = useState<'idle' | 'generating' | 'generated'>('idle');
+
+  const generateSummary = () => {
+    setSummaryState('generating');
+    setTimeout(() => setSummaryState('generated'), 2500);
+  };
+  const [flyoutSections, setFlyoutSections] = useState<Record<string, boolean>>({
+    summary: true,
+    message: true,
+    alerts: true,
+    metrics: true,
+    flow: true,
+    logs: true,
+    matched: true,
+  });
+  const toggleFlyoutSection = (key: string) =>
+    setFlyoutSections((prev) => ({ ...prev, [key]: !prev[key] }));
   const [flyoutTab, setFlyoutTab] = useState('overview');
   const [isCompactHeader, setIsCompactHeader] = useState(false);
 
@@ -596,17 +631,130 @@ const RuleDetailsPage: React.FC = () => {
                   <>
                     {/* Execution log */}
                     <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ borderRadius: '6px' }}>
-                      <EuiTitle size="m">
-                        <h2>Execution log</h2>
-                      </EuiTitle>
+
+                      {/* Panel title row with filter dropdowns */}
+                      <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiTitle size="m"><h2>Execution log</h2></EuiTitle>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                            <EuiFlexItem grow={false}>
+                              <EuiFilterGroup>
+                                <EuiPopover
+                                  button={
+                                    <EuiFilterButton
+                                      iconType="arrowDown"
+                                      iconSide="right"
+                                      onClick={() => setRunTypePopoverOpen(!runTypePopoverOpen)}
+                                      isSelected={runTypePopoverOpen}
+                                      numFilters={runTypeOptions.length}
+                                      numActiveFilters={runTypeActiveCount}
+                                      hasActiveFilters={runTypeActiveCount > 0}
+                                    >
+                                      Run type
+                                    </EuiFilterButton>
+                                  }
+                                  isOpen={runTypePopoverOpen}
+                                  closePopover={() => setRunTypePopoverOpen(false)}
+                                  panelPaddingSize="none"
+                                >
+                                  <EuiSelectable
+                                    searchable
+                                    searchProps={{ placeholder: 'Filter list', compressed: true }}
+                                    options={runTypeOptions}
+                                    onChange={(opts) => setRunTypeOptions(opts)}
+                                  >
+                                    {(list, search) => (
+                                      <div style={{ width: 240 }}>
+                                        <div style={{ padding: '8px 8px 4px' }}>{search}</div>
+                                        {list}
+                                      </div>
+                                    )}
+                                  </EuiSelectable>
+                                </EuiPopover>
+                              </EuiFilterGroup>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiFilterGroup>
+                                <EuiPopover
+                                  button={
+                                    <EuiFilterButton
+                                      iconType="arrowDown"
+                                      iconSide="right"
+                                      onClick={() => setStatusPopoverOpen(!statusPopoverOpen)}
+                                      isSelected={statusPopoverOpen}
+                                      numFilters={statusOptions.length}
+                                      numActiveFilters={statusActiveCount}
+                                      hasActiveFilters={statusActiveCount > 0}
+                                    >
+                                      Status
+                                    </EuiFilterButton>
+                                  }
+                                  isOpen={statusPopoverOpen}
+                                  closePopover={() => setStatusPopoverOpen(false)}
+                                  panelPaddingSize="none"
+                                >
+                                  <EuiSelectable
+                                    searchable
+                                    searchProps={{ placeholder: 'Filter list', compressed: true }}
+                                    options={statusOptions}
+                                    onChange={(opts) => setStatusOptions(opts)}
+                                  >
+                                    {(list, search) => (
+                                      <div style={{ width: 240 }}>
+                                        <div style={{ padding: '8px 8px 4px' }}>{search}</div>
+                                        {list}
+                                      </div>
+                                    )}
+                                  </EuiSelectable>
+                                </EuiPopover>
+                              </EuiFilterGroup>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButton size="s" iconType="calendar">Last 90 days</EuiButton>
+                            </EuiFlexItem>
+                          </EuiFlexGroup>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+
+                      <EuiSpacer size="m" />
+
+                      {/* Summary health bar */}
+                      <EuiPanel color="plain" hasBorder hasShadow={false} paddingSize="none">
+                        <div style={{ padding: '14px 16px', display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                          <EuiText size="s"><strong>Overall health:</strong></EuiText>
+                          <EuiBadge color="danger">Action required</EuiBadge>
+
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Last run:</strong></EuiText>
+                          <EuiBadge color="danger">Failed</EuiBadge>
+                          <EuiText size="s" color="subdued">4 min ago</EuiText>
+
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Failure rate:</strong></EuiText>
+                          <EuiBadge color="danger">0.4%</EuiBadge>
+
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Total executions:</strong></EuiText>
+                          <EuiBadge color="hollow">1532</EuiBadge>
+
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Gaps:</strong></EuiText>
+                          <EuiBadge color="warning">2 detected</EuiBadge>
+                        </div>
+                      </EuiPanel>
+
                       <EuiSpacer size="m" />
 
                       {/* Filters and controls */}
                       <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
                         <EuiFlexItem grow={false}>
-                          <EuiText size="s" color="subdued">
-                            Showing 40 rule executions
-                          </EuiText>
+                          <EuiText size="s" color="subdued">Showing 40 rule executions</EuiText>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
                           <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
@@ -627,17 +775,10 @@ const RuleDetailsPage: React.FC = () => {
                               />
                             </EuiFlexItem>
                             <EuiFlexItem grow={false}>
-                              <EuiText size="xs" color="subdued">
-                                Updated 3 minutes ago
-                              </EuiText>
+                              <EuiText size="xs" color="subdued">Updated 3 minutes ago</EuiText>
                             </EuiFlexItem>
                             <EuiFlexItem grow={false}>
                               <EuiButtonIcon iconType="refresh" aria-label="Refresh" size="s" />
-                            </EuiFlexItem>
-                            <EuiFlexItem grow={false}>
-                              <EuiButton size="s" iconType="calendar">
-                                Last 90 days
-                              </EuiButton>
                             </EuiFlexItem>
                           </EuiFlexGroup>
                         </EuiFlexItem>
@@ -978,9 +1119,10 @@ const RuleDetailsPage: React.FC = () => {
               <div style={{ padding: '8px 16px 24px', background: '#fff', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {/* Execution summary */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  {/* Header row */}
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('summary')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.summary ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Execution summary</EuiText>
@@ -989,95 +1131,139 @@ const RuleDetailsPage: React.FC = () => {
                       <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
                     </EuiFlexItem>
                     <EuiFlexItem grow={true} />
-                    <EuiFlexItem grow={false}>
+                    {summaryState === 'generated' && (
+                      <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                        <EuiButton
+                          size="s"
+                          iconType="discuss"
+                          style={{ background: '#e8f0fe', borderColor: 'transparent', color: '#1a56db', borderRadius: 8 }}
+                        >
+                          Add to chat
+                        </EuiButton>
+                      </EuiFlexItem>
+                    )}
+                    <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                       <EuiButtonIcon iconType="boxesHorizontal" aria-label="More options" color="text" size="xs" />
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
-                    {/* Blue-tinted AI summary panel */}
-                    <div style={{
-                      border: '1px solid #c5cae8',
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      background: '#f0f2fc',
-                    }}>
-                      {/* Summary text */}
-                      <div style={{ padding: '12px 16px' }}>
-                        <EuiText size="s">
-                          <p style={{ lineHeight: '20px', color: '#343741', margin: 0 }}>
-                            This rule executed successfully but encountered a configuration issue. The query returned 0 
-                            matching events because no indices matched the rule's index pattern (logs-endpoint.alerts-*). As a 
-                            result, no alerts were generated.
-                          </p>
-                        </EuiText>
-                      </div>
 
-                      <EuiHorizontalRule margin="none" />
+                  {/* Expanded content */}
+                  {flyoutSections.summary && (
+                    <div style={{ paddingBottom: 12 }}>
 
-                      {/* Recommended actions */}
-                      <div style={{ padding: '12px 16px' }}>
-                        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                          <EuiFlexItem grow={false}>
-                            <EuiIcon type="document" size="s" color="primary" />
-                          </EuiFlexItem>
-                          <EuiFlexItem>
-                            <EuiText size="s" style={{ fontWeight: 700 }}>Recommended actions</EuiText>
-                          </EuiFlexItem>
-                        </EuiFlexGroup>
-                        <EuiSpacer size="s" />
-                        <EuiText size="s">
-                          <ul style={{ margin: 0, paddingLeft: 20 }}>
-                            <li>Verify that the index pattern is correct.</li>
-                            <li>Confirm that data is being ingested into the expected indices.</li>
-                            <li>If Endpoint Security was recently deployed, alerts may appear once data is available.</li>
-                          </ul>
-                        </EuiText>
-                      </div>
-
-                      <EuiHorizontalRule margin="none" />
-
-                      {/* AI footer */}
-                      <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <EuiText size="xs" color="subdued">
-                          Generated by AI on mmm dd, yyyy at hh:mm
-                        </EuiText>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          <EuiButtonIcon iconType="refresh" aria-label="Regenerate" color="primary" size="xs" />
-                          <EuiButtonIcon iconType="copy" aria-label="Copy" color="primary" size="xs" />
+                      {/* STATE: idle — prompt + generate button */}
+                      {summaryState === 'idle' && (
+                        <div style={{
+                          border: '1px solid #d3dae6',
+                          borderRadius: 8,
+                          padding: '12px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 16,
+                          background: '#fff',
+                        }}>
+                          <EuiText size="s" color="subdued">
+                            Analyse the execution result and generate an AI summary with recommended actions.
+                          </EuiText>
+                          <EuiButton
+                            size="s"
+                            iconType="sparkles"
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); generateSummary(); }}
+                            style={{ whiteSpace: 'nowrap', flexShrink: 0, background: '#e8e3fc', borderColor: 'transparent', color: '#5a3dc8' }}
+                          >
+                            Generate AI content
+                          </EuiButton>
                         </div>
-                      </div>
+                      )}
+
+                      {/* STATE: generating — loading skeleton */}
+                      {summaryState === 'generating' && (
+                        <div style={{
+                          border: '1px solid #d3dae6',
+                          borderRadius: 8,
+                          padding: '16px',
+                          background: '#fafafa',
+                        }}>
+                          <EuiText size="s" color="subdued" style={{ marginBottom: 12, fontStyle: 'italic' }}>
+                            Generating AI content ...
+                          </EuiText>
+                          <div style={{ height: 10, borderRadius: 5, background: 'linear-gradient(90deg, #c5b8f5 0%, #e8e3fc 60%, #c5b8f5 100%)', marginBottom: 8, backgroundSize: '200% 100%' }} />
+                          <div style={{ height: 10, borderRadius: 5, width: '65%', background: 'linear-gradient(90deg, #c5b8f5 0%, #e8e3fc 60%, #c5b8f5 100%)', backgroundSize: '200% 100%' }} />
+                        </div>
+                      )}
+
+                      {/* STATE: generated — AI content */}
+                      {summaryState === 'generated' && (
+                        <div style={{ border: '1px solid #d3dae6', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+                          {/* Dotted content area */}
+                          <div style={{ padding: '16px', border: '1.5px dashed #7B61FF', borderRadius: 6, margin: 12 }}>
+                            <EuiText size="s">
+                              <p style={{ margin: 0, lineHeight: '20px', color: '#343741' }}>
+                                This rule executed successfully but encountered a configuration issue. The query returned 0 
+                                matching events because no indices matched the rule's index pattern (logs-endpoint.alerts-*). As a 
+                                result, no alerts were generated.
+                              </p>
+                            </EuiText>
+                            <EuiSpacer size="s" />
+                            <EuiText size="xs" style={{ fontWeight: 700 }}>Recommended actions</EuiText>
+                            <EuiText size="s">
+                              <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+                                <li>Verify that the index pattern is correct.</li>
+                                <li>Confirm that data is being ingested into the expected indices.</li>
+                                <li>If Endpoint Security was recently deployed, alerts may appear once data is available.</li>
+                              </ul>
+                            </EuiText>
+                          </div>
+
+                          {/* Footer */}
+                          <EuiHorizontalRule margin="none" />
+                          <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <EuiText size="xs" color="subdued">Generated by AI on mmm dd, yyyy at hh:mm</EuiText>
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              <EuiButtonIcon iconType="refresh" aria-label="Regenerate" color="text" size="xs" onClick={() => setSummaryState('idle')} />
+                              <EuiButtonIcon iconType="copy" aria-label="Copy" color="text" size="xs" />
+                              <EuiButtonIcon iconType="thumbsUp" aria-label="Helpful" color="text" size="xs" />
+                              <EuiButtonIcon iconType="thumbsDown" aria-label="Not helpful" color="text" size="xs" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Message */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('message')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.message ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Message</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
-                    <EuiCodeBlock language="text" fontSize="s" paddingSize="m" isCopyable={false}>
-                      Rule executed successfully
-                    </EuiCodeBlock>
-                  </div>
+                  {flyoutSections.message && (
+                    <div style={{ paddingBottom: 12 }}>
+                      <EuiCodeBlock language="text" fontSize="s" paddingSize="m" isCopyable={false}>
+                        Rule executed successfully
+                      </EuiCodeBlock>
+                    </div>
+                  )}
                 </div>
 
                 {/* Alerts */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('alerts')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.alerts ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Alerts</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
+                  {flyoutSections.alerts && (<div style={{ paddingBottom: 12 }}>
                     <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 4 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }}>
                         {[
@@ -1099,20 +1285,20 @@ const RuleDetailsPage: React.FC = () => {
                         ))}
                       </div>
                     </EuiPanel>
-                  </div>
+                  </div>)}
                 </div>
 
                 {/* Execution Metrics */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('metrics')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.metrics ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Execution Metrics</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
+                  {flyoutSections.metrics && (<div style={{ paddingBottom: 12 }}>
                     <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
                       <EuiFlexGroup gutterSize="l">
                         <EuiFlexItem>
@@ -1138,20 +1324,20 @@ const RuleDetailsPage: React.FC = () => {
                         </EuiFlexItem>
                       </EuiFlexGroup>
                     </EuiPanel>
-                  </div>
+                  </div>)}
                 </div>
 
-                {/* Execution Logs */}
+                {/* Execution Flow */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('flow')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.flow ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Execution Flow</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
+                  {flyoutSections.flow && (<div style={{ paddingBottom: 12 }}>
                     <div style={{ 
                       display: 'flex', 
                       flexDirection: 'column', 
@@ -1198,69 +1384,73 @@ const RuleDetailsPage: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div>)}
                 </div>
 
-                {/* Execution Flow */}
+                {/* Logs */}
                 <div style={{ borderBottom: '1px solid #d3dae6' }}>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('logs')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.logs ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Logs</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ borderRadius: 6, overflow: 'hidden' }}>
-                      <EuiBasicTable
-                        items={[
-                          { time: '17:05:09.901', level: 'DEBUG', message: 'Starting Signal Rule execution' },
-                          { time: '17:05:09.906', level: 'DEBUG', message: 'Interval: 5m' },
-                          { time: '17:05:09.907', level: 'INFO',  message: 'Changing rule status to "running"' },
-                          { time: '17:05:09.908', level: 'WARN',  message: 'No index matching logs-endpoint.alerts-*' },
-                          { time: '17:05:09.910', level: 'WARN',  message: 'Changing rule status to "partial failure"' },
-                          { time: '17:05:09.911', level: 'DEBUG', message: 'totalHits: 0' },
-                          { time: '17:05:09.912', level: 'DEBUG', message: 'completed bulk index of 0' },
-                        ]}
-                        columns={[
-                          { field: 'time', name: 'Time', width: '120px' },
-                          { field: 'level', name: 'Level', width: '80px' },
-                          { field: 'message', name: 'Message', truncateText: true },
-                        ]}
-                      />
-                    </EuiPanel>
-                  </div>
+                  {flyoutSections.logs && (
+                    <div style={{ paddingBottom: 12 }}>
+                      <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ borderRadius: 6, overflow: 'hidden' }}>
+                        <EuiBasicTable
+                          items={[
+                            { time: '17:05:09.901', level: 'DEBUG', message: 'Starting Signal Rule execution' },
+                            { time: '17:05:09.906', level: 'DEBUG', message: 'Interval: 5m' },
+                            { time: '17:05:09.907', level: 'INFO',  message: 'Changing rule status to "running"' },
+                            { time: '17:05:09.908', level: 'WARN',  message: 'No index matching logs-endpoint.alerts-*' },
+                            { time: '17:05:09.910', level: 'WARN',  message: 'Changing rule status to "partial failure"' },
+                            { time: '17:05:09.911', level: 'DEBUG', message: 'totalHits: 0' },
+                            { time: '17:05:09.912', level: 'DEBUG', message: 'completed bulk index of 0' },
+                          ]}
+                          columns={[
+                            { field: 'time', name: 'Time', width: '120px' },
+                            { field: 'level', name: 'Level', width: '80px' },
+                            { field: 'message', name: 'Message', truncateText: true },
+                          ]}
+                        />
+                      </EuiPanel>
+                    </div>
+                  )}
                 </div>
 
                 {/* Matched events */}
                 <div>
-                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('matched')}>
                     <EuiFlexItem grow={false}>
-                      <EuiIcon type="arrowDown" size="s" />
+                      <EuiIcon type={flyoutSections.matched ? 'arrowDown' : 'arrowRight'} size="s" />
                     </EuiFlexItem>
                     <EuiFlexItem>
                       <EuiText size="s" style={{ fontWeight: 700 }}>Matched events</EuiText>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <div style={{ paddingBottom: 12 }}>
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
-                      <EuiBasicTable
-                        items={[
-                          { time: '11:50:10', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
-                          { time: '11:50:13', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
-                          { time: '11:50:16', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
-                        ]}
-                        columns={[
-                          { field: 'time', name: 'Time', width: '80px' },
-                          { field: 'host', name: 'Host', width: '140px' },
-                          { field: 'user', name: 'User', width: '60px' },
-                          { field: 'process', name: 'Process', width: '80px' },
-                          { field: 'file', name: 'File', width: '80px' },
-                        ]}
-                      />
-                    </EuiPanel>
-                  </div>
+                  {flyoutSections.matched && (
+                    <div style={{ paddingBottom: 12 }}>
+                      <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
+                        <EuiBasicTable
+                          items={[
+                            { time: '11:50:10', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
+                            { time: '11:50:13', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
+                            { time: '11:50:16', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
+                          ]}
+                          columns={[
+                            { field: 'time', name: 'Time', width: '80px' },
+                            { field: 'host', name: 'Host', width: '140px' },
+                            { field: 'user', name: 'User', width: '60px' },
+                            { field: 'process', name: 'Process', width: '80px' },
+                            { field: 'file', name: 'File', width: '80px' },
+                          ]}
+                        />
+                      </EuiPanel>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
