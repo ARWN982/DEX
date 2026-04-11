@@ -1,3 +1,4 @@
+import { useEuiTheme } from "@elastic/eui";
 import { Check, X, PaperPlaneRight } from "phosphor-react";
 import React, { useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
@@ -5,7 +6,8 @@ import { useCommentStore } from "../../store/useCommentStore";
 import {
   getDesignUIColors,
   createBoxShadow,
-} from "../../styles/designToolsColors";
+  dtRadius,
+} from "../../styles/designToolsTokens";
 import {
   CommentThread as CommentThreadType,
   Comment,
@@ -35,20 +37,21 @@ const CommentItem: React.FC<CommentItemProps> = ({
   textColor,
   secondaryTextColor,
 }) => {
+  const { euiTheme } = useEuiTheme();
   const timeAgo = getTimeAgo(comment.createdAt);
   const authorInitials = comment.author.name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2); // Limit to first 2 characters
+    .slice(0, 2);
 
   return (
-    <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+    <div style={{ display: "flex", gap: euiTheme.size.m, marginBottom: euiTheme.size.base }}>
       <div
         style={{
-          width: "24px",
-          height: "24px",
+          width: euiTheme.size.l,
+          height: euiTheme.size.l,
           borderRadius: "50%",
           backgroundColor: comment.author.color || "#0d99ff",
           display: "flex",
@@ -68,7 +71,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
-            marginBottom: "4px",
+            marginBottom: euiTheme.size.xs,
           }}
         >
           <span style={{ color: textColor, fontSize: "14px", fontWeight: 500 }}>
@@ -103,6 +106,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
   const [replyContent, setReplyContent] = useState("");
   const { colorMode } = useAppStore();
   const { isSaving } = useCommentStore();
+  const { euiTheme } = useEuiTheme();
   
   const currentUser = getUserIdentity();
   const currentUserInitials = currentUser
@@ -146,7 +150,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
         width: "380px",
         backgroundColor: colors.primary,
         border: "none",
-        borderRadius: "16px",
+        borderRadius: dtRadius.panel,
         boxShadow: createBoxShadow(colors, "medium"),
         color: colors.textPrimary,
       }}
@@ -159,7 +163,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "8px",
+          padding: euiTheme.size.s,
           borderBottom: `1px solid ${colors.border}`,
         }}
       >
@@ -173,12 +177,12 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
         >
           Comments ({thread.comments.length})
         </h3>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: euiTheme.size.s }}>
           <button
             style={{
-              padding: "4px",
+              padding: euiTheme.size.xs,
               border: "none",
-              borderRadius: "4px",
+              borderRadius: dtRadius.small,
               backgroundColor: "transparent",
               color:
                 thread.status === "resolved"
@@ -196,9 +200,9 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           </button>
           <button
             style={{
-              padding: "4px",
+              padding: euiTheme.size.xs,
               border: "none",
-              borderRadius: "4px",
+              borderRadius: dtRadius.small,
               backgroundColor: "transparent",
               color: colors.textSecondary,
               cursor: "pointer",
@@ -212,7 +216,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
       </div>
 
       {/* Comments */}
-      <div style={{ padding: "16px", maxHeight: "256px", overflowY: "auto" }}>
+      <div style={{ padding: euiTheme.size.base, maxHeight: "256px", overflowY: "auto" }}>
         {thread.comments.map((comment, index) => (
           <CommentItem
             key={comment.id}
@@ -226,16 +230,16 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
 
       {/* Reply Section */}
       <div style={{ 
-        padding: "8px 16px 12px 16px", 
+        padding: `${euiTheme.size.s} ${euiTheme.size.base} ${euiTheme.size.m} ${euiTheme.size.base}`, 
         borderTop: `1px solid ${colors.border}`,
         display: "flex",
         alignItems: "center",
-        gap: "12px"
+        gap: euiTheme.size.m,
       }}>
         <div
           style={{
-            width: "24px",
-            height: "24px",
+            width: euiTheme.size.l,
+            height: euiTheme.size.l,
             borderRadius: "50%",
             backgroundColor: currentUser?.color || "#0d99ff",
             display: "flex",
@@ -253,7 +257,7 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
           type="text"
           style={{
             flex: 1,
-            padding: "8px 12px",
+            padding: `${euiTheme.size.s} ${euiTheme.size.m}`,
             backgroundColor: "transparent",
             border: "none",
             color: colors.textSecondary,
@@ -269,8 +273,8 @@ export const CommentThread: React.FC<CommentThreadProps> = ({
         />
         <button
           style={{
-            width: "32px",
-            height: "32px",
+            width: euiTheme.size.xl,
+            height: euiTheme.size.xl,
             border: "none",
             backgroundColor: "transparent",
             cursor: replyContent.trim() && !isSaving ? "pointer" : "not-allowed",

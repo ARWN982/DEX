@@ -206,7 +206,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Create version-specific data files
     const shouldCopyComments = baseVersionId ? (copyComments !== false) : false;
-    await createVersionFiles(finalVersionId, baseVersionId, pageName, shouldCopyComments);
+    await createVersionFiles(finalVersionId, baseVersionId, pageName, shouldCopyComments, description);
 
     res.json(newVersion);
   } catch (error) {
@@ -268,7 +268,7 @@ function resolvePagesDir(): string {
 }
 
 // Helper function to create version-specific files
-async function createVersionFiles(versionId: string, baseVersionId?: string | null, pageName?: string, copyComments: boolean = true) {
+async function createVersionFiles(versionId: string, baseVersionId?: string | null, pageName?: string, copyComments: boolean = true, description?: string) {
   const targetPage = pageName || '';
   const pagesDir = resolvePagesDir();
   
@@ -305,6 +305,12 @@ async function createVersionFiles(versionId: string, baseVersionId?: string | nu
 
     await fs.writeFile(commentsFile, JSON.stringify(commentsData, null, 2));
     console.log(`Created comment file for ${targetPage} v${versionId}`);
+
+    if (description && description.trim()) {
+      const notesPath = path.join(versionDir, 'notes.md');
+      await fs.writeFile(notesPath, description.trim(), 'utf8');
+      console.log(`Created notes.md for ${targetPage} v${versionId}`);
+    }
 
     // Create version-specific page component directories and files
     await createVersionComponentFiles(versionId, baseVersionId, targetPage);

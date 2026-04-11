@@ -1,9 +1,10 @@
+import { useEuiTheme } from '@elastic/eui';
 import { Cursor, ChatCircle, X } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { useVersionStore } from '../../store/useVersionStore';
-import { getToolbarColors, createBoxShadow } from '../../styles/designToolsColors';
+import { getToolbarColors, createBoxShadow, dtRadius } from '../../styles/designToolsTokens';
 import { AboutFlyout, type ProjectMetadata } from './AboutFlyout';
 import { CreateProjectModal } from './CreateProjectModal';
 import { VersionSwitcher } from './VersionSwitcher';
@@ -37,6 +38,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { colorMode } = useAppStore();
   const { currentVersion } = useVersionStore();
+  const { euiTheme } = useEuiTheme();
   const navigate = useNavigate();
 
   const handleMouseEnter = () => {
@@ -79,15 +81,15 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
 
   const toolbarStyle: React.CSSProperties = {
     position: 'absolute',
-    bottom: isVisible ? '16px' : '-40px', // Show only 16px when not visible
+    bottom: isVisible ? euiTheme.size.base : '-40px',
     left: '50%',
     transform: 'translateX(-50%)',
     backgroundColor: colors.primary,
-    borderRadius: '28px',
-    padding: '8px 16px',
+    borderRadius: dtRadius.toolbar,
+    padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: euiTheme.size.s,
     boxShadow: createBoxShadow(colors, 'medium'),
     transition: 'bottom 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
     zIndex: 1010,
@@ -95,9 +97,9 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   };
 
   const buttonStyle = (isActive: boolean): React.CSSProperties => ({
-    width: '32px',
-    height: '32px',
-    borderRadius: '8px',
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.medium,
     border: 'none',
     backgroundColor: isActive ? colors.accent : 'transparent',
     color: isActive ? '#ffffff' : colors.textSecondary,
@@ -182,8 +184,8 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               backgroundColor: colors.buttonHover,
               color: colors.textPrimary,
               border: 'none',
-              borderRadius: '16px',
-              padding: '8px 16px',
+              borderRadius: dtRadius.panel,
+              padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
               fontSize: '11px',
               fontWeight: '500',
               cursor: 'pointer',
@@ -192,7 +194,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               justifyContent: 'center',
               transition: 'all 0.2s ease',
               outline: 'none',
-              marginRight: '16px',
+              marginRight: euiTheme.size.base,
             }}
             onClick={handleHomeClick}
             title="Go to home page"
@@ -212,8 +214,8 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
                 backgroundColor: colors.accent,
                 color: '#ffffff',
                 border: 'none',
-                borderRadius: '16px',
-                padding: '8px 16px',
+                borderRadius: dtRadius.panel,
+                padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
                 fontSize: '11px',
                 fontWeight: '500',
                 cursor: 'pointer',
@@ -222,7 +224,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
                 justifyContent: 'center',
                 transition: 'all 0.2s ease',
                 outline: 'none',
-                marginRight: '16px',
+                marginRight: euiTheme.size.base,
                 whiteSpace: 'nowrap',
               }}
               onClick={() => setIsCreateProjectModalOpen(true)}
@@ -246,8 +248,8 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
                   backgroundColor: colors.buttonHover,
                   color: colors.textPrimary,
                   border: 'none',
-                  borderRadius: '16px',
-                  padding: '8px 16px',
+                  borderRadius: dtRadius.panel,
+                  padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
                   fontSize: '11px',
                   fontWeight: '500',
                   cursor: 'pointer',
@@ -256,7 +258,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
                   justifyContent: 'center',
                   transition: 'all 0.2s ease',
                   outline: 'none',
-                  marginRight: '16px',
+                  marginRight: euiTheme.size.base,
                 }}
                 onClick={handleAboutClick}
                 title="About this project"
@@ -271,16 +273,16 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               </button>
 
               {/* Version Switcher */}
-              <div style={{ marginRight: '16px' }}>
+              <div style={{ marginRight: euiTheme.size.base }}>
                 <VersionSwitcher onCreateVersion={onCreateVersion} />
               </div>
 
               {/* Divider */}
               <div style={{
                 width: '1px',
-                height: '32px',
+                height: euiTheme.size.xl,
                 backgroundColor: colors.border,
-                marginRight: '16px',
+                marginRight: euiTheme.size.base,
               }} />
             </>
           )}

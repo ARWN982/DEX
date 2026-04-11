@@ -4,7 +4,7 @@ import { useAppStore } from "./store/useAppStore";
 import { useVersionStore } from "./store/useVersionStore";
 import { VersionedComponentLoader } from "./utils/componentLoader";
 import { VersionSwitcher } from "./components/designer-tools/VersionSwitcher";
-import { getToolbarColors, createBoxShadow } from "./styles/designToolsColors";
+import { getToolbarColors, createBoxShadow } from "./styles/designToolsTokens";
 
 declare const __PUBLISH_PROJECT__: string;
 declare const __PUBLISH_VERSIONS__: string;

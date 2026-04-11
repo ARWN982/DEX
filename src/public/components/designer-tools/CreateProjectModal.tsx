@@ -1,7 +1,8 @@
+import { useEuiTheme } from "@elastic/eui";
 import { X } from "phosphor-react";
 import React, { useState, useEffect } from "react";
 import { useAppStore } from "../../store/useAppStore";
-import { getToolbarColors } from "../../styles/designToolsColors";
+import { getToolbarColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   defaultProjectName,
 }) => {
   const { colorMode } = useAppStore();
+  const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
   const [projectName, setProjectName] = useState(defaultProjectName || "");
@@ -154,12 +156,12 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    padding: dtPadding,
   };
 
   const modalStyle: React.CSSProperties = {
     backgroundColor: colors.primary,
-    borderRadius: "16px",
+    borderRadius: dtRadius.panel,
     padding: "0",
     maxWidth: "480px",
     width: "100%",
@@ -169,7 +171,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const headerStyle: React.CSSProperties = {
-    padding: "24px 24px 0 24px",
+    padding: `${dtPadding} ${dtPadding} 0 ${dtPadding}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -183,9 +185,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const closeButtonStyle: React.CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "16px",
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.panel,
     border: "none",
     backgroundColor: "transparent",
     color: colors.textSecondary,
@@ -198,11 +200,11 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const contentStyle: React.CSSProperties = {
-    padding: "24px",
+    padding: dtPadding,
   };
 
   const sectionStyle: React.CSSProperties = {
-    marginBottom: "20px",
+    marginBottom: dtPadding,
   };
 
   const labelStyle: React.CSSProperties = {
@@ -210,13 +212,13 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     fontSize: "14px",
     fontWeight: "500",
     color: colors.textPrimary,
-    marginBottom: "8px",
+    marginBottom: euiTheme.size.s,
   };
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    padding: "12px",
-    borderRadius: "8px",
+    padding: euiTheme.size.m,
+    borderRadius: dtRadius.medium,
     border: `1px solid ${error ? "#d32f2f" : colors.border}`,
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
@@ -234,19 +236,19 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const errorStyle: React.CSSProperties = {
     fontSize: "12px",
     color: "#d32f2f",
-    marginTop: "4px",
+    marginTop: euiTheme.size.xs,
   };
 
   const footerStyle: React.CSSProperties = {
-    padding: "0 24px 24px 24px",
+    padding: `0 ${dtPadding} ${dtPadding} ${dtPadding}`,
     display: "flex",
-    gap: "12px",
+    gap: euiTheme.size.m,
     justifyContent: "flex-end",
   };
 
   const buttonBaseStyle: React.CSSProperties = {
     padding: "10px 20px",
-    borderRadius: "8px",
+    borderRadius: dtRadius.medium,
     border: "none",
     fontSize: "14px",
     fontWeight: "500",
@@ -266,7 +268,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     ...buttonBaseStyle,
     backgroundColor: colors.primaryButton,
     color: colors.primaryButtonText,
-    borderRadius: "24px",
+    borderRadius: dtRadius.pill,
   };
 
   const createButtonDisabledStyle: React.CSSProperties = {
@@ -325,7 +327,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 style={{
                   fontSize: "12px",
                   color: colors.textSecondary,
-                  marginTop: "4px",
+                  marginTop: euiTheme.size.xs,
                 }}
               >
                 Use lowercase letters, numbers, hyphens, and underscores only

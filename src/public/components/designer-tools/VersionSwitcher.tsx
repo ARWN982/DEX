@@ -1,8 +1,9 @@
+import { useEuiTheme } from '@elastic/eui';
 import { CaretDown, Plus } from 'phosphor-react';
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useVersionStore } from '../../store/useVersionStore';
-import { getToolbarColors } from '../../styles/designToolsColors';
+import { getToolbarColors, dtRadius } from '../../styles/designToolsTokens';
 
 interface VersionSwitcherProps {
   onCreateVersion?: () => void;
@@ -22,6 +23,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
   } = useVersionStore();
   
   const [isOpen, setIsOpen] = useState(false);
+  const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
   // Load versions on mount
@@ -44,8 +46,8 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
   if (isLoading) {
     return (
       <div style={{
-        padding: '8px 12px',
-        borderRadius: '16px',
+        padding: `${euiTheme.size.s} ${euiTheme.size.m}`,
+        borderRadius: dtRadius.panel,
         backgroundColor: colors.secondary,
         color: colors.textSecondary,
         fontSize: '11px',
@@ -63,9 +65,9 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
   const buttonStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    borderRadius: '16px',
+    gap: euiTheme.size.s,
+    padding: `${euiTheme.size.s} ${euiTheme.size.m}`,
+    borderRadius: dtRadius.panel,
     border: 'none',
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
@@ -86,10 +88,10 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
     position: 'absolute',
     bottom: '100%',
     left: 0,
-    marginBottom: '4px',
+    marginBottom: euiTheme.size.xs,
     backgroundColor: colors.primary,
     border: `1px solid ${colors.border}`,
-    borderRadius: '12px',
+    borderRadius: dtRadius.large,
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
     zIndex: 1000,
     minWidth: '200px',
@@ -100,7 +102,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 16px',
+    padding: `${euiTheme.size.m} ${euiTheme.size.base}`,
     border: 'none',
     backgroundColor: 'transparent',
     color: colors.textPrimary,
@@ -217,7 +219,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
                   Object.assign(e.currentTarget.style, createButtonStyle);
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: euiTheme.size.s }}>
                   <Plus size={16} />
                   <span>Create New Version</span>
                 </div>

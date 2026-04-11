@@ -1,9 +1,9 @@
-import { EuiLoadingSpinner } from "@elastic/eui";
+import { EuiLoadingSpinner, useEuiTheme } from "@elastic/eui";
 import { X } from "phosphor-react";
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useAppStore } from "../../store/useAppStore";
-import { getDesignUIColors } from "../../styles/designToolsColors";
+import { getDesignUIColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
 
 export interface ProjectMetadata {
   projectName: string;
@@ -31,6 +31,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   projectName,
 }) => {
   const { colorMode } = useAppStore();
+  const { euiTheme } = useEuiTheme();
   const colors = getDesignUIColors(colorMode);
   const [versionNotes, setVersionNotes] = useState("");
   const [notesLoading, setNotesLoading] = useState(false);
@@ -81,12 +82,12 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
 
   const flyoutStyle: React.CSSProperties = {
     position: "fixed",
-    top: "16px",
-    right: "16px",
-    bottom: "16px",
+    top: euiTheme.size.base,
+    right: euiTheme.size.base,
+    bottom: euiTheme.size.base,
     width: "500px",
     backgroundColor: isDark ? "#1a1a1a" : "#f8f9fa",
-    borderRadius: "20px",
+    borderRadius: dtRadius.flyout,
     boxShadow: isDark
       ? "0 32px 64px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05)"
       : "0 32px 64px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08)",
@@ -98,7 +99,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   };
 
   const headerStyle: React.CSSProperties = {
-    padding: "24px 24px 16px 24px",
+    padding: `${dtPadding} ${dtPadding} ${euiTheme.size.base} ${dtPadding}`,
     borderBottom: `1px solid ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)"}`,
     display: "flex",
     alignItems: "center",
@@ -113,9 +114,9 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   };
 
   const closeButtonStyle: React.CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "16px",
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.panel,
     border: "none",
     backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
     color: isDark ? "#ffffff" : "#1a1a1a",
@@ -129,14 +130,14 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
 
   const contentStyle: React.CSSProperties = {
     flex: 1,
-    padding: "24px",
+    padding: dtPadding,
     overflow: "auto",
   };
 
   const dividerStyle: React.CSSProperties = {
     height: "1px",
     backgroundColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)",
-    margin: "24px 0",
+    margin: `${euiTheme.size.l} 0`,
   };
 
   const sectionLabelStyle: React.CSSProperties = {
@@ -145,14 +146,14 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     letterSpacing: "0.05em",
     textTransform: "uppercase" as const,
     color: isDark ? "rgba(255, 255, 255, 0.45)" : "rgba(0, 0, 0, 0.45)",
-    marginBottom: "4px",
+    marginBottom: euiTheme.size.xs,
   };
 
   const fieldValueStyle: React.CSSProperties = {
     fontSize: "14px",
     lineHeight: "1.5",
     color: isDark ? "rgba(255, 255, 255, 0.8)" : "rgba(0, 0, 0, 0.75)",
-    marginBottom: "16px",
+    marginBottom: euiTheme.size.base,
   };
 
   const linkStyle: React.CSSProperties = {
@@ -161,8 +162,8 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     textDecoration: "none",
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    marginBottom: "8px",
+    gap: euiTheme.size.s,
+    marginBottom: euiTheme.size.s,
   };
 
   const markdownContainerStyle: React.CSSProperties = {
@@ -202,12 +203,12 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
           {/* ── Project Info ── */}
           <style>
             {`
-              .about-flyout-markdown p { margin: 0 0 8px 0; }
+              .about-flyout-markdown p { margin: 0 0 ${euiTheme.size.s} 0; }
               .about-flyout-markdown p:last-child { margin-bottom: 0; }
               .about-flyout-markdown h1,
               .about-flyout-markdown h2,
               .about-flyout-markdown h3 {
-                margin: 16px 0 8px 0;
+                margin: ${euiTheme.size.base} 0 ${euiTheme.size.s} 0;
                 font-weight: 600;
                 color: ${isDark ? "#fff" : "#1a1a1a"};
               }
@@ -215,20 +216,20 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
               .about-flyout-markdown h2 { font-size: 16px; }
               .about-flyout-markdown h3 { font-size: 14px; }
               .about-flyout-markdown ul,
-              .about-flyout-markdown ol { padding-left: 20px; margin: 8px 0; }
-              .about-flyout-markdown li { margin-bottom: 4px; }
+              .about-flyout-markdown ol { padding-left: 20px; margin: ${euiTheme.size.s} 0; }
+              .about-flyout-markdown li { margin-bottom: ${euiTheme.size.xs}; }
               .about-flyout-markdown code {
                 background: ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"};
-                padding: 2px 6px;
-                border-radius: 4px;
+                padding: ${euiTheme.size.xxs} 6px;
+                border-radius: ${dtRadius.small};
                 font-size: 13px;
               }
               .about-flyout-markdown pre {
                 background: ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"};
-                padding: 12px;
-                border-radius: 8px;
+                padding: ${euiTheme.size.m};
+                border-radius: ${dtRadius.medium};
                 overflow-x: auto;
-                margin: 8px 0;
+                margin: ${euiTheme.size.s} 0;
               }
               .about-flyout-markdown pre code {
                 background: none;
@@ -239,8 +240,8 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
               }
               .about-flyout-markdown blockquote {
                 border-left: 3px solid ${isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"};
-                margin: 8px 0;
-                padding: 4px 12px;
+                margin: ${euiTheme.size.s} 0;
+                padding: ${euiTheme.size.xs} ${euiTheme.size.m};
                 color: ${isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)"};
               }
             `}
@@ -295,8 +296,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
           {/* ── Project Description (Markdown) ── */}
           {projectMetadata.bodyMarkdown && (
             <>
-              <div style={dividerStyle} />
-              <div style={{ ...sectionLabelStyle, marginBottom: "12px" }}>Project Description</div>
+              <div style={{ ...sectionLabelStyle, marginBottom: euiTheme.size.m }}>Project Description</div>
               <div
                 className="about-flyout-markdown"
                 style={markdownContainerStyle}
@@ -310,11 +310,11 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
           {currentVersion && (
             <>
               <div style={dividerStyle} />
-              <div style={{ ...sectionLabelStyle, marginBottom: "12px" }}>
+              <div style={{ ...sectionLabelStyle, marginBottom: euiTheme.size.m }}>
                 Version {currentVersion} Notes
               </div>
               {notesLoading ? (
-                <div style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+                <div style={{ display: "flex", justifyContent: "center", padding: `${euiTheme.size.base} 0` }}>
                   <EuiLoadingSpinner size="m" />
                 </div>
               ) : versionNotes ? (
@@ -337,8 +337,8 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
                   No notes for this version yet. Add a{" "}
                   <code style={{
                     background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-                    padding: "2px 6px",
-                    borderRadius: "4px",
+                    padding: `${euiTheme.size.xxs} 6px`,
+                    borderRadius: dtRadius.small,
                     fontSize: "12px",
                   }}>
                     notes.md

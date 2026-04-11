@@ -1,10 +1,12 @@
+import { useEuiTheme } from "@elastic/eui";
 import { PaperPlaneRight, ArrowRight } from "phosphor-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import {
   getDesignUIColors,
   createBoxShadow,
-} from "../../styles/designToolsColors";
+  dtRadius,
+} from "../../styles/designToolsTokens";
 import { CommentPosition } from "../../types/comments";
 import { getUserIdentity, setUserIdentity } from "../../utils/userIdentity";
 
@@ -26,6 +28,7 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
   const [content, setContent] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const { colorMode } = useAppStore();
+  const { euiTheme } = useEuiTheme();
 
   useEffect(() => {
     if (inputRef.current) {
@@ -77,14 +80,14 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
     width: "400px",
     backgroundColor: colors.primary,
     border: "none",
-    borderRadius: "24px",
+    borderRadius: dtRadius.pill,
     boxShadow: createBoxShadow(colors, "medium"),
-    paddingInlineStart: "16px",
-    paddingBlock: "8px",
-    paddingInlineEnd: "8px",
+    paddingInlineStart: euiTheme.size.base,
+    paddingBlock: euiTheme.size.s,
+    paddingInlineEnd: euiTheme.size.s,
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: euiTheme.size.m,
   };
 
   if (!identity) {
@@ -110,8 +113,8 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
         />
         <button
           style={{
-            width: "32px",
-            height: "32px",
+            width: euiTheme.size.xl,
+            height: euiTheme.size.xl,
             border: "none",
             backgroundColor: "transparent",
             cursor: nameInput.trim() ? "pointer" : "not-allowed",
@@ -154,8 +157,8 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
 
       <button
         style={{
-          width: "32px",
-          height: "32px",
+          width: euiTheme.size.xl,
+          height: euiTheme.size.xl,
           border: "none",
           backgroundColor: "transparent",
           cursor: content.trim() ? "pointer" : "not-allowed",

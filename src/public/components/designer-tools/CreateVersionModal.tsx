@@ -1,9 +1,9 @@
-import { EuiCheckbox, EuiRadio } from "@elastic/eui";
+import { EuiCheckbox, EuiRadio, useEuiTheme } from "@elastic/eui";
 import { X } from "phosphor-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { useVersionStore } from "../../store/useVersionStore";
-import { getToolbarColors } from "../../styles/designToolsColors";
+import { getToolbarColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
 import { getComponentFromRegistry } from "../../utils/componentRegistry";
 import { getCurrentPage } from "../../utils/pageUtils";
 
@@ -27,6 +27,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 }) => {
   const { colorMode } = useAppStore();
   const { getCurrentVersion, createVersion, versions } = useVersionStore();
+  const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
   const [isMajorVersion, setIsMajorVersion] = useState(false);
@@ -120,12 +121,12 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    padding: dtPadding,
   };
 
   const modalStyle: React.CSSProperties = {
     backgroundColor: colors.primary,
-    borderRadius: "16px",
+    borderRadius: dtRadius.panel,
     padding: "0",
     maxWidth: "480px",
     width: "100%",
@@ -135,7 +136,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const headerStyle: React.CSSProperties = {
-    padding: "24px 24px 0 24px",
+    padding: `${dtPadding} ${dtPadding} 0 ${dtPadding}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -149,9 +150,9 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const closeButtonStyle: React.CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "16px",
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.panel,
     border: "none",
     backgroundColor: "transparent",
     color: colors.textSecondary,
@@ -164,18 +165,18 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const contentStyle: React.CSSProperties = {
-    padding: "24px",
+    padding: dtPadding,
   };
 
   const sectionStyle: React.CSSProperties = {
-    marginBottom: "20px",
+    marginBottom: dtPadding,
   };
 
   const dividerStyle: React.CSSProperties = {
     height: "1px",
     backgroundColor: colors.border,
     opacity: 0.5,
-    margin: "4px 0 20px 0",
+    margin: `${euiTheme.size.xs} 0 ${dtPadding} 0`,
   };
 
   const labelStyle: React.CSSProperties = {
@@ -183,21 +184,21 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     fontSize: "14px",
     fontWeight: "500",
     color: colors.textPrimary,
-    marginBottom: "8px",
+    marginBottom: euiTheme.size.s,
   };
 
   const previewStyle: React.CSSProperties = {
     fontSize: "16px",
     fontWeight: "600",
     color: colors.accent,
-    marginBottom: "8px",
+    marginBottom: euiTheme.size.s,
   };
 
   const textareaStyle: React.CSSProperties = {
     width: "100%",
     minHeight: "80px",
-    padding: "12px",
-    borderRadius: "8px",
+    padding: euiTheme.size.m,
+    borderRadius: dtRadius.medium,
     border: `1px solid ${colors.border}`,
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
@@ -208,15 +209,15 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const footerStyle: React.CSSProperties = {
-    padding: "0 24px 24px 24px",
+    padding: `0 ${dtPadding} ${dtPadding} ${dtPadding}`,
     display: "flex",
-    gap: "12px",
+    gap: euiTheme.size.m,
     justifyContent: "flex-end",
   };
 
   const buttonBaseStyle: React.CSSProperties = {
     padding: "10px 20px",
-    borderRadius: "8px",
+    borderRadius: dtRadius.medium,
     border: "none",
     fontSize: "14px",
     fontWeight: "500",
@@ -279,7 +280,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
           <div style={contentStyle}>
             {/* Version number + major toggle */}
             <div style={sectionStyle}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "12px" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: euiTheme.size.m, marginBottom: euiTheme.size.m }}>
                 <div style={previewStyle}>Version {nextVersionNumber}</div>
               </div>
               <EuiCheckbox
@@ -311,7 +312,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               />
 
               {!startFromScratch && (
-                <div style={{ marginLeft: "24px", marginTop: "8px" }}>
+                <div style={{ marginLeft: euiTheme.size.l, marginTop: euiTheme.size.s }}>
                   <EuiCheckbox
                     id="copyComments"
                     label={
@@ -326,7 +327,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 </div>
               )}
 
-              <div style={{ marginTop: "12px" }}>
+              <div style={{ marginTop: euiTheme.size.m }}>
                 <EuiRadio
                   id="startFromScratch"
                   label="Start from scratch"
@@ -341,7 +342,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
 
             {/* Description */}
             <div style={sectionStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: euiTheme.size.s }}>
                 <label style={{ ...labelStyle, marginBottom: 0 }}>Description</label>
                 <span style={{ fontSize: "12px", color: colors.textSecondary }}>Optional</span>
               </div>

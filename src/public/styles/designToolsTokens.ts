@@ -178,39 +178,51 @@ export const createBoxShadow = (
 };
 
 /**
+ * Design tool tokens for border radii and layout dimensions.
+ * These are intentionally distinct from EUI's defaults.
+ */
+export const dtRadius = {
+  small: '4px',
+  medium: '8px',
+  large: '12px',
+  panel: '16px',
+  flyout: '20px',
+  pill: '24px',
+  toolbar: '28px',
+} as const;
+
+export const dtPadding = '20px' as const;
+
+/**
  * Common style patterns for design tools
  */
 export const getCommonStyles = (colors: DesignToolsColorScheme) => ({
-  // Card/panel style
   panel: {
     backgroundColor: colors.primary,
     border: "none",
-    borderRadius: "16px",
+    borderRadius: dtRadius.panel,
     boxShadow: createBoxShadow(colors, "medium"),
     color: colors.textPrimary,
   },
 
-  // Input style
   input: {
     backgroundColor: colors.secondary,
     border: `1px solid ${colors.border}`,
-    borderRadius: "8px",
+    borderRadius: dtRadius.medium,
     color: colors.textPrimary,
   },
 
-  // Button style
   button: {
     backgroundColor: colors.tertiary,
     border: "none",
-    borderRadius: "8px",
+    borderRadius: dtRadius.medium,
     color: colors.buttonActive,
   },
 
-  // Toolbar style
   toolbar: {
     backgroundColor: colors.primary,
     border: `1px solid ${colors.border}`,
-    borderRadius: "28px",
+    borderRadius: dtRadius.toolbar,
     boxShadow: createBoxShadow(colors, "medium"),
   },
 });
