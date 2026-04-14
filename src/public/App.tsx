@@ -17,6 +17,7 @@ import { VersionedComponentLoader } from "./utils/componentLoader";
 import { TemplateLoader } from "./utils/templateLoader";
 import RuleDetailsPage from "./pages/detection-rules/v1.0/rule-details";
 import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
+import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -88,6 +89,10 @@ const App: React.FC = () => {
             <Route
               path="/detection-rules/create"
               element={<RuleCreationPage />}
+            />
+            <Route
+              path="/detection-rules/add"
+              element={<AddElasticRulesPage />}
             />
             <Route
               path="/detection-rules/:ruleId"

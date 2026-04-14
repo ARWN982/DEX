@@ -529,7 +529,7 @@ const DetectionRulesPage: React.FC = () => {
                   </EuiButtonEmpty>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty iconType="plusInCircle" size="s">
+                  <EuiButtonEmpty iconType="plusInCircle" size="s" onClick={() => navigate('/detection-rules/add')}>
                     Add Elastic rules
                     <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
                       1517
