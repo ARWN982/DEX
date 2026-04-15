@@ -33,7 +33,7 @@ const suggestionCards = [
     action: 'Begin discovery',
   },
   {
-    icon: 'integrationGeneral',
+    icon: 'addDataApp',
     iconColor: '#0077cc',
     title: 'Newly added integrations',
     desc: 'Locate all the rules for your newly added integrations.',

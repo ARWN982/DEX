@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   EuiHeader,
   EuiHeaderSection,
@@ -12,12 +12,14 @@ import {
   EuiBreadcrumbs,
   EuiSpacer,
 } from '@elastic/eui';
+import AIAgentPanel from './AIAgentPanel';
 
 interface SecurityHeaderProps {
   onMenuClick: () => void;
 }
 
 const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
+  const [isAgentOpen, setIsAgentOpen] = useState(false);
   const breadcrumbs = [
     {
       text: 'AN test',
@@ -34,6 +36,7 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
   ];
 
   return (
+    <>
     <EuiHeader position="fixed" style={{ zIndex: 1000, backgroundColor: '#F6F9FC', border: 'none', boxShadow: 'none' }}>
       {/* Left Section: Elastic Logo + Space Avatar + Breadcrumbs */}
       <EuiHeaderSection grow={false}>
@@ -103,11 +106,12 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
               <EuiButton
                 iconType="productAgent"
                 size="s"
-                style={{ 
-                  backgroundColor: '#d9e8ff',
-                  color: '#1750ba',
-                  border: 'none',
-                  fontWeight: 500
+                onClick={() => setIsAgentOpen(!isAgentOpen)}
+                style={{
+                  background: 'linear-gradient(to right, #D9E8FF, #ECE2FE)',
+                  borderColor: 'transparent',
+                  color: '#3D4AB8',
+                  fontWeight: 600,
                 }}
               >
                 AI Agent
@@ -125,6 +129,10 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
         </EuiHeaderSectionItem>
       </EuiHeaderSection>
     </EuiHeader>
+
+      {/* AI Agent Panel */}
+      {isAgentOpen && <AIAgentPanel onClose={() => setIsAgentOpen(false)} />}
+    </>
   );
 };
 
