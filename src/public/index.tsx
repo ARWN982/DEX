@@ -42,11 +42,13 @@ import { icon as clock } from '@elastic/eui/es/components/icon/assets/clock';
 import { icon as thumbsUp } from '@elastic/eui/es/components/icon/assets/thumb_up';
 // @ts-ignore
 import { icon as thumbsDown } from '@elastic/eui/es/components/icon/assets/thumb_down';
+// @ts-ignore
+import { icon as checkInCircleFilled } from '@elastic/eui/es/components/icon/assets/check_circle_fill';
 
 appendIconComponentCache({
   cross, pencil, documentation, popout, casesApp, tokenField,
   copy, refresh, check, sparkles, discuss, boxesHorizontal,
-  dashboardApp, clock, thumbsUp, thumbsDown,
+  dashboardApp, clock, thumbsUp, thumbsDown, checkInCircleFilled,
 });
 
 const queryClient = new QueryClient({
