@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import {
   EuiBadge,
   EuiBasicTable,
+  EuiButton,
   EuiButtonEmpty,
   EuiButtonIcon,
+  EuiFieldSearch,
+  EuiFilterButton,
+  EuiFilterGroup,
   EuiFlexGroup,
   EuiFlexItem,
   EuiFlyout,
@@ -20,8 +24,11 @@ import {
   EuiModalHeader,
   EuiModalHeaderTitle,
   EuiPanel,
+  EuiPopover,
+  EuiPopoverTitle,
   EuiRange,
   EuiSelect,
+  EuiSelectable,
   EuiSpacer,
   EuiSwitch,
   EuiText,
@@ -84,6 +91,7 @@ interface SignalCardProps {
   badge?: React.ReactNode;
   count: number;
   countColor: string;
+  statText?: string;
   subLine: string;
   isEmpty?: boolean;
   emptySubLine?: string;
@@ -98,6 +106,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
   badge,
   count,
   countColor,
+  statText,
   subLine,
   isEmpty,
   emptySubLine,
@@ -121,7 +130,9 @@ const SignalCard: React.FC<SignalCardProps> = ({
 
     {/* Stat */}
     <EuiTitle size="l">
-      <span style={{ color: isEmpty ? '#69707d' : countColor, lineHeight: 1 }}>{count}</span>
+      <span style={{ color: isEmpty ? '#69707d' : countColor, lineHeight: 1 }}>
+        {isEmpty ? count : (statText ?? count)}
+      </span>
     </EuiTitle>
 
     {/* Sub-line */}
@@ -160,7 +171,7 @@ interface DrillPanelProps {
 }
 
 const DrillPanel: React.FC<DrillPanelProps> = ({ items, onClose, onOpenAIAssistant, onNavigateToRule }) => (
-  <EuiPanel color="subdued" paddingSize="s" style={{ marginTop: 8, position: 'relative' }}>
+  <EuiPanel color="subdued" paddingSize="s" style={{ marginTop: 16, position: 'relative' }}>
     <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
       <EuiButtonIcon iconType="cross" aria-label="Close" size="xs" color="text" onClick={onClose} />
     </div>
@@ -247,7 +258,7 @@ const MOCK_LOGS = [
     id: '5',
     timestamp: 'Apr 15, 2026 @ 13:38:02',
     action: 'Updated rule',
-    actionColor: 'accent' as const,
+    actionColor: 'primary' as const,
     rule: 'Potential Widespread Malware Infection Across Multiple Hosts',
     reasoning: 'Version 3.2→3.3: Elastic Security Labs released a fix for false positives caused by legitimate antivirus scanning. AutoDEX applied the update after verifying no active suppressions would be affected.',
     status: 'success' as const,
@@ -258,11 +269,15 @@ const MOCK_LOGS = [
 
 interface AutoDexStripProps {
   autoDex: DetectionSummaryPanelProps['autoDex'];
+  autoDexState: 'off' | 'running' | 'healthy';
+  onToggle: () => void;
   onOpenAIAssistant: (prompt: string) => void;
 }
 
-const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant }) => {
-  const { isRunning, fixedCount, tunedCount, installedCount, updatedCount } = autoDex;
+const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onToggle, onOpenAIAssistant }) => {
+  const { fixedCount, tunedCount, installedCount, updatedCount } = autoDex;
+  const isOn = autoDexState !== 'off';
+  const isHealthy = autoDexState === 'healthy';
 
   // Configure modal state
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
@@ -275,22 +290,34 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
 
   // View logs flyout state
   const [isLogsOpen, setIsLogsOpen] = useState(false);
+  const [logSearch, setLogSearch] = useState('');
+  const [isTypePopoverOpen, setIsTypePopoverOpen] = useState(false);
+  const [typeFilterOptions, setTypeFilterOptions] = useState([
+    { label: 'Fixed execution failure' },
+    { label: 'Tuned false positives' },
+    { label: 'Installed rule' },
+    { label: 'Updated rule' },
+  ]);
 
   const metrics = [
     {
       label: `${fixedCount} failing rules fixed`,
+      status: 'progress' as const,
       prompt: 'Show me the rules AutoDEX fixed automatically and what changes were made',
     },
     {
       label: `${tunedCount} rules tuned with new exceptions`,
+      status: 'complete' as const,
       prompt: `Show me the ${tunedCount} rules AutoDEX tuned with new exceptions and the reasoning for each`,
     },
     {
       label: `${installedCount} new Elastic rules installed`,
+      status: 'complete' as const,
       prompt: `Show me the ${installedCount} new Elastic rules AutoDEX installed and why they were selected`,
     },
     {
       label: `${updatedCount} Elastic rules updated`,
+      status: 'complete' as const,
       prompt: `Show me the ${updatedCount} Elastic rules AutoDEX updated and what changed`,
     },
   ];
@@ -301,7 +328,7 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
     <>
     {/* ── Configure modal ──────────────────────────────────────────── */}
     {isConfigureOpen && (
-      <EuiModal onClose={() => setIsConfigureOpen(false)} style={{ width: 560 }}>
+      <EuiModal onClose={() => setIsConfigureOpen(false)} style={{ width: 672 }}>
         <EuiModalHeader>
           <EuiModalHeaderTitle>
             <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
@@ -310,27 +337,34 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
             </EuiFlexGroup>
           </EuiModalHeaderTitle>
         </EuiModalHeader>
+        <EuiHorizontalRule margin="none" />
+
         <EuiModalBody>
+          <EuiSpacer size="s" />
           <EuiTitle size="xs"><h3>Automation scope</h3></EuiTitle>
+          <EuiSpacer size="xs" />
           <EuiText size="s" color="subdued">Choose which actions AutoDEX can perform automatically.</EuiText>
-          <EuiSpacer size="m" />
+          <EuiSpacer size="l" />
           {[
             { label: 'Fix execution failures', desc: 'Automatically resolve index pattern mismatches and query errors.', value: autoFixFailures, set: setAutoFixFailures },
             { label: 'Tune high false positive rules', desc: 'Add exceptions and threshold adjustments based on alert patterns.', value: autoTuneNoise, set: setAutoTuneNoise },
             { label: 'Install new Elastic prebuilt rules', desc: 'Install rules that fill detected MITRE coverage gaps.', value: autoInstallRules, set: setAutoInstallRules },
             { label: 'Update existing Elastic rules', desc: 'Apply new versions of installed prebuilt rules automatically.', value: autoUpdateRules, set: setAutoUpdateRules },
           ].map(({ label, desc, value, set }) => (
-            <div key={label} style={{ marginBottom: 16 }}>
+            <div key={label} style={{ marginBottom: 20 }}>
               <EuiSwitch label={<strong>{label}</strong>} checked={value} onChange={e => set(e.target.checked)} />
-              <EuiText size="xs" color="subdued" style={{ marginTop: 4, marginLeft: 44 }}>{desc}</EuiText>
+              <EuiText size="xs" color="subdued" style={{ marginTop: 6, marginLeft: 44 }}>{desc}</EuiText>
             </div>
           ))}
 
-          <EuiHorizontalRule />
+          <EuiSpacer size="m" />
+          <EuiHorizontalRule margin="none" />
+          <EuiSpacer size="l" />
 
           <EuiTitle size="xs"><h3>Automation level</h3></EuiTitle>
+          <EuiSpacer size="xs" />
           <EuiText size="s" color="subdued">Control how much AutoDEX acts without your approval.</EuiText>
-          <EuiSpacer size="m" />
+          <EuiSpacer size="l" />
           <EuiRange
             min={1}
             max={3}
@@ -352,11 +386,14 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
             {automationLevel === 3 && 'AutoDEX applies all changes automatically. You can review them in the logs at any time.'}
           </EuiText>
 
-          <EuiHorizontalRule />
+          <EuiSpacer size="m" />
+          <EuiHorizontalRule margin="none" />
+          <EuiSpacer size="l" />
 
           <EuiTitle size="xs"><h3>Approval threshold</h3></EuiTitle>
+          <EuiSpacer size="xs" />
           <EuiText size="s" color="subdued">Define what risk level requires your manual approval.</EuiText>
-          <EuiSpacer size="s" />
+          <EuiSpacer size="m" />
           <EuiSelect
             options={[
               { value: 'low', text: 'Low risk and above (most actions require approval)' },
@@ -368,12 +405,15 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
             onChange={e => setApprovalThreshold(e.target.value)}
             fullWidth
           />
+          <EuiSpacer size="s" />
         </EuiModalBody>
+
+        <EuiHorizontalRule margin="none" />
         <EuiModalFooter>
           <EuiButtonEmpty onClick={() => setIsConfigureOpen(false)}>Cancel</EuiButtonEmpty>
-          <EuiButtonEmpty color="primary" iconType="sparkles" onClick={() => setIsConfigureOpen(false)} style={{ color: '#7B61FF' }}>
+          <EuiButton fill color="primary" onClick={() => setIsConfigureOpen(false)}>
             Save configuration
-          </EuiButtonEmpty>
+          </EuiButton>
         </EuiModalFooter>
       </EuiModal>
     )}
@@ -396,42 +436,122 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
         </EuiFlyoutHeader>
 
         <EuiFlyoutBody>
-          {MOCK_LOGS.map((log, i) => (
-            <div key={log.id}>
-              <EuiPanel hasBorder={false} hasShadow={false} paddingSize="none" style={{ marginBottom: 4 }}>
-                <EuiFlexGroup gutterSize="s" alignItems="flexStart" responsive={false}>
-                  <EuiFlexItem grow={false} style={{ paddingTop: 2 }}>
-                    <EuiHealth color={log.status === 'success' ? 'success' : 'warning'} />
-                  </EuiFlexItem>
-                  <EuiFlexItem>
-                    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 4 }}>
-                      <EuiFlexItem grow={false}>
-                        <EuiBadge color={log.actionColor}>{log.action}</EuiBadge>
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiText size="xs" color="subdued">{log.timestamp}</EuiText>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
-                    <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>{log.rule}</EuiText>
-                    <EuiPanel color="subdued" hasBorder={false} hasShadow={false} paddingSize="s" style={{ borderRadius: 4, borderLeft: '3px solid #98A2B3' }}>
-                      <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 4 }}>Reasoning</EuiText>
-                      <EuiText size="s">{log.reasoning}</EuiText>
-                    </EuiPanel>
-                    <EuiButtonEmpty
-                      size="xs"
-                      iconType="productAgent"
-                      flush="left"
-                      style={{ color: '#7B61FF', marginTop: 4 }}
-                      onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}
+          {/* Search + Type filter */}
+          <EuiFlexGroup gutterSize="s" responsive={false} style={{ marginBottom: 16 }}>
+            <EuiFlexItem>
+              <EuiFieldSearch
+                placeholder="Search logs..."
+                value={logSearch}
+                onChange={e => setLogSearch(e.target.value)}
+                isClearable
+                fullWidth
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiFilterGroup>
+                <EuiPopover
+                  button={
+                    <EuiFilterButton
+                      iconType="filter"
+                      onClick={() => setIsTypePopoverOpen(!isTypePopoverOpen)}
+                      isSelected={isTypePopoverOpen}
+                      numFilters={typeFilterOptions.length}
+                      hasActiveFilters={typeFilterOptions.some((o: any) => o.checked === 'on')}
+                      numActiveFilters={typeFilterOptions.filter((o: any) => o.checked === 'on').length}
                     >
-                      Ask AI about this action
-                    </EuiButtonEmpty>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
+                      Type
+                    </EuiFilterButton>
+                  }
+                  isOpen={isTypePopoverOpen}
+                  closePopover={() => setIsTypePopoverOpen(false)}
+                  panelPaddingSize="none"
+                >
+                  <EuiSelectable
+                    searchable
+                    searchProps={{ placeholder: 'Filter list', compressed: true }}
+                    options={typeFilterOptions}
+                    onChange={opts => setTypeFilterOptions(opts)}
+                  >
+                    {(list, search) => (
+                      <div style={{ width: 260 }}>
+                        <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
+                        {list}
+                      </div>
+                    )}
+                  </EuiSelectable>
+                </EuiPopover>
+              </EuiFilterGroup>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+
+          {(() => {
+            const activeTypes = typeFilterOptions.filter((o: any) => o.checked === 'on').map(o => o.label);
+            const filtered = MOCK_LOGS.filter(log => {
+              const matchesSearch = !logSearch || log.rule.toLowerCase().includes(logSearch.toLowerCase()) || log.action.toLowerCase().includes(logSearch.toLowerCase());
+              const matchesType = activeTypes.length === 0 || activeTypes.includes(log.action);
+              return matchesSearch && matchesType;
+            });
+            return filtered.length === 0 ? (
+              <EuiText textAlign="center" color="subdued"><p>No logs match your filters.</p></EuiText>
+            ) : filtered.map((log, i) => (
+            <div key={log.id}>
+              {/* Row 1: check icon + action badge + timestamp */}
+              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 10 }}>
+                <EuiFlexItem grow={false}>
+                  <EuiIcon
+                    type={log.status === 'success' ? 'checkInCircleFilled' : 'clock'}
+                    color={log.status === 'success' ? 'success' : 'warning'}
+                    size="s"
+                  />
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiBadge color={log.actionColor}>{log.action}</EuiBadge>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiText size="xs" color="subdued">{log.timestamp}</EuiText>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+
+              {/* Row 2: rule name bold */}
+              <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>{log.rule}</EuiText>
+
+              {/* Row 3: reasoning panel */}
+              <EuiPanel
+                hasBorder
+                hasShadow={false}
+                paddingSize="m"
+                style={{ borderRadius: 6, background: '#F7F9FF', marginBottom: 10 }}
+              >
+                <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>
+                  Reasoning
+                </EuiText>
+                <EuiText size="s">{log.reasoning}</EuiText>
               </EuiPanel>
-              {i < MOCK_LOGS.length - 1 && <EuiHorizontalRule margin="s" />}
+
+              {/* Row 4: View rules + Add to chat — left-aligned, purple */}
+              <EuiFlexGroup gutterSize="s" responsive={false}>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty size="xs" iconType="inspect" color="primary" flush="left" onClick={() => {}}>
+                    View rules
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonEmpty
+                    size="xs"
+                    iconType="productAgent"
+                    flush="left"
+                    style={{ color: '#7B61FF' }}
+                    onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}
+                  >
+                    Add to chat
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+
+              {i < filtered.length - 1 && <EuiHorizontalRule margin="m" />}
             </div>
-          ))}
+          ));
+          })()}
         </EuiFlyoutBody>
 
         <EuiFlyoutFooter>
@@ -451,22 +571,24 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
       hasBorder
       hasShadow={false}
       paddingSize="none"
-      style={{ borderLeft: '3px solid #7B61FF', marginTop: 8, border: `1px solid #98A2B3`, borderLeft: '3px solid #7B61FF', overflow: 'hidden' }}
+      style={{ marginTop: 16, border: '1px solid #E3E8F2', borderLeft: '3px solid #7B61FF', overflow: 'hidden' }}
     >
-      <EuiFlexGroup gutterSize="none" alignItems="stretch" responsive={false}>
+      <EuiFlexGroup gutterSize="none" alignItems={isOn ? 'stretch' : 'center'} responsive={false}>
 
         {/* Anchor column — faint AI gradient background */}
         <EuiFlexItem
           grow={false}
           style={{
-            padding: '12px 20px',
+            padding: '16px 24px',
             background: 'linear-gradient(135deg, rgba(217,232,255,0.35) 0%, rgba(236,226,254,0.35) 100%)',
             borderRight: divider,
             flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
-          {/* Row 1 */}
-          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 4 }}>
+          {/* Top — name + toggle */}
+          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ flex: 1 }}>
             <EuiFlexItem grow={false}>
               <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
             </EuiFlexItem>
@@ -474,13 +596,12 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
               <EuiText size="s" style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>AutoDEX</EuiText>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              {isRunning
-                ? <EuiBadge color="success" iconType="check">Running</EuiBadge>
-                : <EuiBadge color="subdued">Idle</EuiBadge>}
+              <EuiSwitch label={isOn ? 'On' : 'Off'} checked={isOn} onChange={onToggle} compressed />
             </EuiFlexItem>
           </EuiFlexGroup>
-          {/* Row 2 */}
-          <EuiFlexGroup gutterSize="none" responsive={false}>
+
+          {/* Bottom — controls pinned to base */}
+          <EuiFlexGroup gutterSize="none" responsive={false} style={{ marginTop: 'auto', paddingTop: 8 }}>
             <EuiFlexItem grow={false}>
               <EuiButtonEmpty size="xs" iconType="controlsHorizontal" color="primary" flush="left" onClick={() => setIsConfigureOpen(true)}>
                 Configure
@@ -494,30 +615,52 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, onOpenAIAssistant 
           </EuiFlexGroup>
         </EuiFlexItem>
 
-        {/* Metric columns */}
-        {metrics.map((m, i) => (
+        {/* Off state — no events */}
+        {!isOn && (
+          <EuiFlexItem style={{ paddingLeft: 24 }}>
+            <EuiText size="s" color="subdued">No events to show</EuiText>
+          </EuiFlexItem>
+        )}
+
+        {/* Metric columns — only when on */}
+        {isOn && metrics.map((m, i) => (
           <EuiFlexItem
             key={m.label}
             grow={false}
             style={{
-              padding: '12px 28px 12px 24px',
+              padding: '16px 28px 16px 24px',
               borderRight: i < metrics.length - 1 ? divider : 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
             }}
           >
-            <EuiText size="s" style={{ marginBottom: 4, whiteSpace: 'nowrap' }}>{m.label}</EuiText>
-            <EuiButtonEmpty
-              size="xs"
-              iconType="popout"
-              color="primary"
-              flush="left"
-              style={{ marginLeft: 0, paddingLeft: 0 }}
-              onClick={() => onOpenAIAssistant(m.prompt)}
-            >
-              View details
-            </EuiButtonEmpty>
+
+            {/* Label + inline status icon */}
+            <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ marginBottom: 8 }}>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" style={{ whiteSpace: 'nowrap' }}>{m.label}</EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                {isHealthy
+                  ? <EuiIcon type="checkInCircleFilled" size="s" color="success" />
+                  : <EuiIcon type="clock" size="s" color="primary" />}
+              </EuiFlexItem>
+            </EuiFlexGroup>
+
+            {/* View details pinned to base */}
+            <div style={{ marginTop: 'auto' }}>
+              <EuiButtonEmpty
+                size="xs"
+                iconType="maximize"
+                color="primary"
+                flush="left"
+                style={{ marginLeft: 0, paddingLeft: 0 }}
+                onClick={() => onOpenAIAssistant(m.prompt)}
+              >
+                View details
+              </EuiButtonEmpty>
+            </div>
           </EuiFlexItem>
         ))}
 
@@ -541,10 +684,21 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
   onNavigateToRule,
 }) => {
   const [openDrill, setOpenDrill] = useState<DrillCategory>(null);
+  // 'off' | 'running' | 'healthy'
+  const [autoDexState, setAutoDexState] = useState<'off' | 'running' | 'healthy'>('off');
 
   const toggleDrill = (cat: NonNullable<DrillCategory>) => {
     setOpenDrill(prev => (prev === cat ? null : cat));
     onViewRules(cat);
+  };
+
+  const handleAutoDexToggle = () => {
+    if (autoDexState === 'off') {
+      setAutoDexState('running');
+      setTimeout(() => setAutoDexState('healthy'), 12000);
+    } else {
+      setAutoDexState('off');
+    }
   };
 
   const drillItems: Record<NonNullable<DrillCategory>, RuleSummaryItem[]> = {
@@ -554,83 +708,118 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
     updates:   ruleUpdates,
   };
 
-  const topFourTechniques = coverageGaps.slice(0, 4).map(g => g.techniqueId).join(', ');
+  const isOn = autoDexState !== 'off';
+  const isHealthy = autoDexState === 'healthy';
+  const isRunning = autoDexState === 'running';
+
+  // AutoDEX in-progress badge added to each card header when running
+  const autoDexBadge = isRunning ? (
+    <EuiBadge
+      iconType="sparkles"
+      iconSide="left"
+      style={{
+        background: 'linear-gradient(to right, #D9E8FF, #ECE2FE)',
+        color: '#3D4AB8',
+        border: 'none',
+        fontWeight: 600,
+      }}
+    >
+      AutoDEX in progress
+    </EuiBadge>
+  ) : null;
 
   return (
     <div>
       {/* ── Four signal cards ─────────────────────────────────────── */}
-      <EuiFlexGroup gutterSize="s" responsive={false} alignItems="stretch">
+      <EuiFlexGroup gutterSize="m" responsive={false} alignItems="stretch">
 
         {/* Card 1 — Execution failures */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor="#BD271E"
+            accentColor={isHealthy ? '#017D73' : '#BD271E'}
             title="Execution failures"
-            badge={<EuiBadge color="danger">Action needed</EuiBadge>}
-            count={executionFailures.length}
-            countColor="#BD271E"
-            subLine={`${executionFailures.length} rules failing silently — alerts may be missing`}
-            isEmpty={executionFailures.length === 0}
-            emptySubLine="No failures — all rules executing"
+            badge={
+              isHealthy
+                ? <EuiBadge color="success">Healthy</EuiBadge>
+                : <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center" style={{ flexWrap: 'nowrap' }}>
+                    <EuiFlexItem grow={false}><EuiBadge color="danger">Action needed</EuiBadge></EuiFlexItem>
+                    {autoDexBadge && <EuiFlexItem grow={false}>{autoDexBadge}</EuiFlexItem>}
+                  </EuiFlexGroup>
+            }
+            count={isHealthy ? 0 : executionFailures.length}
+            countColor={isHealthy ? '#017D73' : '#BD271E'}
+            subLine={isHealthy ? '0 rules failing — based on the last 24 hours' : `${executionFailures.length} rules failing silently — alerts may be missing`}
+            isEmpty={false}
             onViewRules={() => toggleDrill('failures')}
-            onAddToChat={() => onOpenAIAssistant(
-              `Show me the ${executionFailures.length} rules with execution failures and diagnose what is causing each one`
-            )}
+            onAddToChat={() => onOpenAIAssistant(`Show me the ${executionFailures.length} rules with execution failures and diagnose what is causing each one`)}
           />
         </EuiFlexItem>
 
-        {/* Card 2 — High false positive rate */}
+        {/* Card 2 — False positive rate */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor="#F5A700"
-            title="High false positive rate"
-            badge={<EuiBadge color="warning">High noise</EuiBadge>}
-            count={highNoiseRules.length}
-            countColor="#F5A700"
-            subLine={`${highNoiseRules.length} rules generating noise — SOC fatigue risk`}
-            isEmpty={highNoiseRules.length === 0}
-            emptySubLine="No noisy rules — signal quality is good"
+            accentColor={isHealthy ? '#017D73' : '#F5A700'}
+            title="False positive rate"
+            badge={
+              isHealthy
+                ? <EuiBadge color="success">Low</EuiBadge>
+                : <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center" style={{ flexWrap: 'nowrap' }}>
+                    <EuiFlexItem grow={false}><EuiBadge color="warning">High noise</EuiBadge></EuiFlexItem>
+                    {autoDexBadge && <EuiFlexItem grow={false}>{autoDexBadge}</EuiFlexItem>}
+                  </EuiFlexGroup>
+            }
+            count={isHealthy ? 0 : highNoiseRules.length}
+            countColor={isHealthy ? '#017D73' : '#F5A700'}
+            subLine={isHealthy ? '0 rules generating noise' : `${highNoiseRules.length} rules generating noise — SOC fatigue risk`}
+            isEmpty={false}
             onViewRules={() => toggleDrill('noise')}
-            onAddToChat={() => onOpenAIAssistant(
-              `Show me the ${highNoiseRules.length} high false positive rules with tuning recommendations for each one`
-            )}
+            onAddToChat={() => onOpenAIAssistant(`Show me the ${highNoiseRules.length} high false positive rules with tuning recommendations for each one`)}
           />
         </EuiFlexItem>
 
-        {/* Card 3 — MITRE coverage gaps */}
+        {/* Card 3 — Gaps detected */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor="#F5A700"
-            title="MITRE coverage gaps"
-            badge={<EuiBadge color="warning">{coveragePct}% covered</EuiBadge>}
+            accentColor={isHealthy ? '#017D73' : '#F5A700'}
+            title="Gaps detected"
+            badge={
+              isHealthy
+                ? <EuiBadge color="success">No gaps</EuiBadge>
+                : <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center" style={{ flexWrap: 'nowrap' }}>
+                    <EuiFlexItem grow={false}><EuiBadge color="#FEF3C7" style={{ color: '#92400E', border: '1px solid #FDE68A', borderRadius: 12 }}>Filling in progress</EuiBadge></EuiFlexItem>
+                    {autoDexBadge && <EuiFlexItem grow={false}>{autoDexBadge}</EuiFlexItem>}
+                  </EuiFlexGroup>
+            }
             count={coverageGaps.length}
-            countColor="#F5A700"
-            subLine={`${coverageGaps.length} high-priority gaps`}
-            isEmpty={coverageGaps.length === 0}
-            emptySubLine="Full MITRE coverage — no gaps detected"
-            viewLabel="View coverage map"
+            statText={isHealthy ? '0 mins' : '21 mins'}
+            countColor={isHealthy ? '#017D73' : '#F5A700'}
+            subLine={isHealthy ? 'Across 0 rules' : 'Across 6 rules'}
+            isEmpty={false}
+            viewLabel="View gaps"
             onViewRules={() => toggleDrill('coverage')}
-            onAddToChat={() => onOpenAIAssistant(
-              `Show me all ${coverageGaps.length} MITRE coverage gaps and which Elastic prebuilt rules would fill them`
-            )}
+            onAddToChat={() => onOpenAIAssistant(`Show me all ${coverageGaps.length} MITRE coverage gaps and which Elastic prebuilt rules would fill them`)}
           />
         </EuiFlexItem>
 
         {/* Card 4 — Rule updates */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor="#0077CC"
+            accentColor={isHealthy ? '#017D73' : '#0077CC'}
             title="Rule updates"
-            badge={<EuiBadge color="primary">{ruleUpdates.length} available</EuiBadge>}
-            count={ruleUpdates.length}
-            countColor="#0077CC"
+            badge={
+              isHealthy
+                ? <EuiBadge color="success">All rules are up to date</EuiBadge>
+                : <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center" style={{ flexWrap: 'nowrap' }}>
+                    <EuiFlexItem grow={false}><EuiBadge color="primary">{ruleUpdates.length} available</EuiBadge></EuiFlexItem>
+                    {autoDexBadge && <EuiFlexItem grow={false}>{autoDexBadge}</EuiFlexItem>}
+                  </EuiFlexGroup>
+            }
+            count={isHealthy ? 0 : ruleUpdates.length}
+            countColor={isHealthy ? '#017D73' : '#0077CC'}
             subLine="Elastic prebuilt rules with new versions"
-            isEmpty={ruleUpdates.length === 0}
-            emptySubLine="All prebuilt rules are up to date"
+            isEmpty={false}
             onViewRules={() => toggleDrill('updates')}
-            onAddToChat={() => onOpenAIAssistant(
-              `Review the ${ruleUpdates.length} available prebuilt rule updates and summarise what changed in each`
-            )}
+            onAddToChat={() => onOpenAIAssistant(`Review the ${ruleUpdates.length} available prebuilt rule updates and summarise what changed in each`)}
           />
         </EuiFlexItem>
 
@@ -647,7 +836,12 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
       )}
 
       {/* ── AutoDEX strip ───────────────────────────────────────────── */}
-      <AutoDexStrip autoDex={autoDex} onOpenAIAssistant={onOpenAIAssistant} />
+      <AutoDexStrip
+        autoDex={{ ...autoDex, isRunning: isOn }}
+        autoDexState={autoDexState}
+        onToggle={handleAutoDexToggle}
+        onOpenAIAssistant={onOpenAIAssistant}
+      />
     </div>
   );
 };

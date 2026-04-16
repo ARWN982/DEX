@@ -8,12 +8,25 @@ import {
   EuiFieldSearch,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiFlyout,
+  EuiFlyoutBody,
+  EuiFlyoutFooter,
+  EuiFlyoutHeader,
   EuiHealth,
+  EuiHorizontalRule,
   EuiBadge,
   EuiIcon,
   EuiLink,
+  EuiModal,
+  EuiModalBody,
+  EuiModalFooter,
+  EuiModalHeader,
+  EuiModalHeaderTitle,
   EuiPanel,
-  EuiHorizontalRule,
+  EuiRange,
+  EuiSelect,
+  EuiSpacer,
+  EuiSwitch,
   EuiText,
   EuiTitle,
   EuiBasicTable,
@@ -25,13 +38,6 @@ import RulesSecondaryNav from './components/RulesSecondaryNav';
 import parsedRulesData from '../../../data/parsedDetectionRules.json';
 
 const suggestionCards = [
-  {
-    icon: 'sparkles',
-    iconColor: '#7B61FF',
-    title: 'AI suggest discovery',
-    desc: "Let our AI discovery find the right rules for your environment, our agent will ask a few questions and present the rules you require.",
-    action: 'Begin discovery',
-  },
   {
     icon: 'addDataApp',
     iconColor: '#0077cc',
@@ -68,6 +74,13 @@ const filterSections = [
 const AddElasticRulesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState('');
+  const [isInstallConfigureOpen, setIsInstallConfigureOpen] = useState(false);
+  const [isInstallLogsOpen, setIsInstallLogsOpen] = useState(false);
+  const [installOn, setInstallOn] = useState(true);
+  const [installAutoNew, setInstallAutoNew] = useState(true);
+  const [installAutoUpdate, setInstallAutoUpdate] = useState(false);
+  const [installThreshold, setInstallThreshold] = useState('medium');
+  const [installLevel, setInstallLevel] = useState(2);
   const [activeView, setActiveView] = useState('suggestions');
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [openFilters, setOpenFilters] = useState<Record<string, boolean>>({});
@@ -76,7 +89,7 @@ const AddElasticRulesPage: React.FC = () => {
     setOpenFilters(prev => ({ ...prev, [id]: !prev[id] }));
 
   const rules = (parsedRulesData as any[]).slice(0, 40);
-  const pageRules = rules.slice(0, 10);
+  const pageRules = rules.slice(0, 20);
 
   const getSeverityColor = (s: string) => {
     switch (s?.toLowerCase()) {
@@ -234,21 +247,45 @@ const AddElasticRulesPage: React.FC = () => {
 
                       {/* Suggestion cards */}
                       <EuiFlexGroup gutterSize="m" responsive={false}>
+                        {/* AutoDEX install card */}
+                        <EuiFlexItem>
+                          <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 8, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                            <EuiIcon type="sparkles" size="l" style={{ color: '#7B61FF', marginBottom: 12 }} />
+                            <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 8 }}>
+                              <EuiFlexItem grow={false}>
+                                <EuiText size="s" style={{ fontWeight: 700 }}>AutoDEX install</EuiText>
+                              </EuiFlexItem>
+                              <EuiFlexItem grow={false}>
+                                <EuiBadge color="success">On</EuiBadge>
+                              </EuiFlexItem>
+                            </EuiFlexGroup>
+                            <EuiText size="xs" color="subdued" style={{ flex: 1, marginBottom: 12 }}>
+                              Let our agent discovery and install rules that are relevant to your organisation and set up as well as new threats.
+                            </EuiText>
+                            <EuiFlexGroup gutterSize="s" responsive={false}>
+                              <EuiFlexItem grow={false}>
+                                <EuiButtonEmpty size="xs" iconType="controlsHorizontal" color="primary" flush="left" onClick={() => setIsInstallConfigureOpen(true)}>
+                                  Configure
+                                </EuiButtonEmpty>
+                              </EuiFlexItem>
+                              <EuiFlexItem grow={false}>
+                                <EuiButtonEmpty size="xs" iconType="list" color="primary" flush="left" onClick={() => setIsInstallLogsOpen(true)}>
+                                  View logs
+                                </EuiButtonEmpty>
+                              </EuiFlexItem>
+                            </EuiFlexGroup>
+                          </EuiPanel>
+                        </EuiFlexItem>
+
+                        {/* Other suggestion cards */}
                         {suggestionCards.map((card) => (
                           <EuiFlexItem key={card.title}>
-                            <EuiPanel
-                              hasBorder
-                              hasShadow={false}
-                              paddingSize="m"
-                              style={{ borderRadius: 8, display: 'flex', flexDirection: 'column', height: '100%' }}
-                            >
+                            <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 8, display: 'flex', flexDirection: 'column', height: '100%' }}>
                               <EuiIcon type={card.icon} size="l" style={{ color: card.iconColor, marginBottom: 10 }} />
                               <EuiText size="s" style={{ fontWeight: 700, marginBottom: 6 }}>{card.title}</EuiText>
                               <EuiText size="xs" color="subdued" style={{ flex: 1, marginBottom: 12 }}>{card.desc}</EuiText>
                               <div>
-                                <EuiButtonEmpty size="xs" color="primary" flush="left">
-                                  {card.action}
-                                </EuiButtonEmpty>
+                                <EuiButtonEmpty size="xs" color="primary" flush="left">{card.action}</EuiButtonEmpty>
                               </div>
                             </EuiPanel>
                           </EuiFlexItem>
@@ -321,9 +358,9 @@ const AddElasticRulesPage: React.FC = () => {
                       }}
                       pagination={{
                         pageIndex: 0,
-                        pageSize: 10,
+                        pageSize: 20,
                         totalItemCount: rules.length,
-                        pageSizeOptions: [10, 25, 50],
+                        pageSizeOptions: [10, 20, 50],
                         showPerPageOptions: true,
                       }}
                       onChange={() => {}}
@@ -335,6 +372,112 @@ const AddElasticRulesPage: React.FC = () => {
           </EuiFlexItem>
         </EuiFlexGroup>
       </div>
+
+      {/* AutoDEX Install — Configure modal */}
+      {isInstallConfigureOpen && (
+        <EuiModal onClose={() => setIsInstallConfigureOpen(false)} style={{ width: 672 }}>
+          <EuiModalHeader>
+            <EuiModalHeaderTitle>
+              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                <EuiFlexItem grow={false}><EuiIcon type="sparkles" color="#7B61FF" /></EuiFlexItem>
+                <EuiFlexItem>AutoDEX Install Configuration</EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiModalHeaderTitle>
+          </EuiModalHeader>
+          <EuiHorizontalRule margin="none" />
+          <EuiModalBody>
+            <EuiSpacer size="s" />
+            <EuiTitle size="xs"><h3>Automatic installation scope</h3></EuiTitle>
+            <EuiSpacer size="xs" />
+            <EuiText size="s" color="subdued">Choose which rules AutoDEX can install automatically.</EuiText>
+            <EuiSpacer size="l" />
+            {[
+              { label: 'Install new Elastic prebuilt rules', desc: 'Automatically install rules that fill detected MITRE coverage gaps for your stack.', value: installAutoNew, set: setInstallAutoNew },
+              { label: 'Auto-update installed rules', desc: 'Apply new versions of installed prebuilt rules when they are released.', value: installAutoUpdate, set: setInstallAutoUpdate },
+            ].map(({ label, desc, value, set }) => (
+              <div key={label} style={{ marginBottom: 20 }}>
+                <EuiSwitch label={<strong>{label}</strong>} checked={value} onChange={e => set(e.target.checked)} />
+                <EuiText size="xs" color="subdued" style={{ marginTop: 6, marginLeft: 44 }}>{desc}</EuiText>
+              </div>
+            ))}
+            <EuiSpacer size="m" />
+            <EuiHorizontalRule margin="none" />
+            <EuiSpacer size="l" />
+            <EuiTitle size="xs"><h3>Automation level</h3></EuiTitle>
+            <EuiSpacer size="xs" />
+            <EuiText size="s" color="subdued">Control how much AutoDEX installs without approval.</EuiText>
+            <EuiSpacer size="l" />
+            <EuiRange min={1} max={3} value={installLevel} onChange={e => setInstallLevel(Number((e.target as HTMLInputElement).value))} showTicks tickInterval={1} ticks={[{ label: 'Suggest only', value: 1 }, { label: 'Semi-auto', value: 2 }, { label: 'Full auto', value: 3 }]} fullWidth />
+            <EuiSpacer size="m" />
+            <EuiText size="xs" color="subdued">
+              {installLevel === 1 && 'AutoDEX will only recommend rules to install. No changes made without your approval.'}
+              {installLevel === 2 && 'AutoDEX installs low-risk rules automatically and queues others for approval.'}
+              {installLevel === 3 && 'AutoDEX installs all matching rules automatically. Review them in logs at any time.'}
+            </EuiText>
+            <EuiSpacer size="m" />
+            <EuiHorizontalRule margin="none" />
+            <EuiSpacer size="l" />
+            <EuiTitle size="xs"><h3>Approval threshold</h3></EuiTitle>
+            <EuiSpacer size="m" />
+            <EuiSelect options={[{ value: 'low', text: 'Low risk and above' }, { value: 'medium', text: 'Medium risk and above (recommended)' }, { value: 'high', text: 'High risk only' }, { value: 'none', text: 'Never ask for approval' }]} value={installThreshold} onChange={e => setInstallThreshold(e.target.value)} fullWidth />
+            <EuiSpacer size="s" />
+          </EuiModalBody>
+          <EuiHorizontalRule margin="none" />
+          <EuiModalFooter>
+            <EuiButtonEmpty onClick={() => setIsInstallConfigureOpen(false)}>Cancel</EuiButtonEmpty>
+            <EuiButton fill color="primary" onClick={() => setIsInstallConfigureOpen(false)}>Save configuration</EuiButton>
+          </EuiModalFooter>
+        </EuiModal>
+      )}
+
+      {/* AutoDEX Install — View logs flyout */}
+      {isInstallLogsOpen && (
+        <EuiFlyout onClose={() => setIsInstallLogsOpen(false)} size="m" ownFocus={false}>
+          <EuiFlyoutHeader hasBorder>
+            <EuiTitle size="s">
+              <h2>
+                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                  <EuiFlexItem grow={false}><EuiIcon type="sparkles" style={{ color: '#7B61FF' }} /></EuiFlexItem>
+                  <EuiFlexItem>AutoDEX Install Activity Log</EuiFlexItem>
+                </EuiFlexGroup>
+              </h2>
+            </EuiTitle>
+            <EuiText size="xs" color="subdued" style={{ marginTop: 4 }}>Rules installed and updated automatically by AutoDEX.</EuiText>
+          </EuiFlyoutHeader>
+          <EuiFlyoutBody>
+            {[
+              { id: '1', timestamp: 'Apr 15, 2026 @ 14:22:07', action: 'Installed rule', actionColor: 'primary' as const, rule: 'AWS IAM Assume Role Policy Update', reasoning: 'Your environment has AWS CloudTrail data. This rule covers T1078.004 (Cloud Accounts), identified as a coverage gap. AutoDEX installed and enabled it automatically.' },
+              { id: '2', timestamp: 'Apr 15, 2026 @ 13:55:11', action: 'Installed rule', actionColor: 'primary' as const, rule: 'GCP Pub/Sub Subscription Deletion', reasoning: 'GCP audit logs detected in your environment. This rule covers T1562.008 (Disable Cloud Logs). AutoDEX installed it to fill the gap.' },
+              { id: '3', timestamp: 'Apr 15, 2026 @ 13:38:02', action: 'Updated rule', actionColor: 'primary' as const, rule: 'Potential Widespread Malware Infection', reasoning: 'Version 3.2→3.3: Elastic Security Labs released a fix for false positives caused by legitimate antivirus scanning. AutoDEX applied the update.' },
+              { id: '4', timestamp: 'Apr 15, 2026 @ 13:10:45', action: 'Installed rule', actionColor: 'primary' as const, rule: 'Kubernetes Pod Created in Kube Namespace', reasoning: 'Kubernetes audit logs present in your stack. Rule covers T1610 (Deploy Container). AutoDEX installed it as part of container coverage gap filling.' },
+            ].map((log, i, arr) => (
+              <div key={log.id}>
+                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 10 }}>
+                  <EuiFlexItem grow={false}><EuiIcon type="checkInCircleFilled" color="success" size="s" /></EuiFlexItem>
+                  <EuiFlexItem grow={false}><EuiBadge color={log.actionColor}>{log.action}</EuiBadge></EuiFlexItem>
+                  <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">{log.timestamp}</EuiText></EuiFlexItem>
+                </EuiFlexGroup>
+                <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>{log.rule}</EuiText>
+                <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6, background: '#F7F9FF', marginBottom: 10 }}>
+                  <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>Reasoning</EuiText>
+                  <EuiText size="s">{log.reasoning}</EuiText>
+                </EuiPanel>
+                <EuiFlexGroup gutterSize="s" responsive={false}>
+                  <EuiFlexItem grow={false}><EuiButtonEmpty size="xs" iconType="inspect" color="primary" flush="left">View rule</EuiButtonEmpty></EuiFlexItem>
+                  <EuiFlexItem grow={false}><EuiButtonEmpty size="xs" iconType="productAgent" flush="left" style={{ color: '#7B61FF' }}>Add to chat</EuiButtonEmpty></EuiFlexItem>
+                </EuiFlexGroup>
+                {i < arr.length - 1 && <EuiHorizontalRule margin="m" />}
+              </div>
+            ))}
+          </EuiFlyoutBody>
+          <EuiFlyoutFooter>
+            <EuiFlexGroup justifyContent="spaceBetween" responsive={false}>
+              <EuiFlexItem grow={false}><EuiButtonEmpty iconType="download" color="primary">Export logs</EuiButtonEmpty></EuiFlexItem>
+              <EuiFlexItem grow={false}><EuiButtonEmpty onClick={() => setIsInstallLogsOpen(false)}>Close</EuiButtonEmpty></EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlyoutFooter>
+        </EuiFlyout>
+      )}
     </>
   );
 };
