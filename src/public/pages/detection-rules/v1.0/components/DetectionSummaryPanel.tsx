@@ -221,11 +221,12 @@ const MOCK_LOGS = [
   {
     id: '1',
     timestamp: 'Apr 15, 2026 @ 14:22:07',
-    action: 'Fixed execution failure',
+    action: 'Execution failure',
     actionColor: 'danger' as const,
     rule: 'Unusual Network Destination Domain Name',
     reasoning: 'Rule was timing out due to a missing index alias. AutoDEX updated the index pattern from logs-endpoint.* to logs-endpoint.events.* to match the installed data stream.',
     status: 'success' as const,
+    needsApproval: true,
   },
   {
     id: '2',
@@ -235,6 +236,7 @@ const MOCK_LOGS = [
     rule: 'Potential PowerShell HackTool Script by Author',
     reasoning: 'Rule generated 340 alerts/week with 98% originating from the backup-agent process. AutoDEX added an exception for process.name: "backup-agent.exe" on host groups matching "backup-*".',
     status: 'success' as const,
+    needsApproval: false,
   },
   {
     id: '3',
@@ -244,6 +246,7 @@ const MOCK_LOGS = [
     rule: 'Unusual Execution via Microsoft Common Console File',
     reasoning: '210 alerts/week — 94% from developer workstations. Added exception for user.name matching internal dev group "corp-dev-*". This pattern was verified against 30 days of historical data.',
     status: 'success' as const,
+    needsApproval: true,
   },
   {
     id: '4',
@@ -253,6 +256,7 @@ const MOCK_LOGS = [
     rule: 'AWS IAM Assume Role Policy Update',
     reasoning: 'Your environment has AWS CloudTrail data in logs-aws.cloudtrail-*. This prebuilt rule covers T1078.004 (Cloud Accounts) which was identified as a coverage gap. AutoDEX installed and enabled it.',
     status: 'success' as const,
+    needsApproval: false,
   },
   {
     id: '5',
@@ -262,6 +266,7 @@ const MOCK_LOGS = [
     rule: 'Potential Widespread Malware Infection Across Multiple Hosts',
     reasoning: 'Version 3.2→3.3: Elastic Security Labs released a fix for false positives caused by legitimate antivirus scanning. AutoDEX applied the update after verifying no active suppressions would be affected.',
     status: 'success' as const,
+    needsApproval: true,
   },
 ];
 
@@ -283,15 +288,24 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
   const [isConfigureOpen, setIsConfigureOpen] = useState(false);
   const [autoFixFailures, setAutoFixFailures] = useState(true);
   const [autoTuneNoise, setAutoTuneNoise] = useState(true);
-  const [autoInstallRules, setAutoInstallRules] = useState(false);
+  const [autoInstallRules, setAutoInstallRules] = useState(true);
   const [autoUpdateRules, setAutoUpdateRules] = useState(true);
-  const [automationLevel, setAutomationLevel] = useState(2);
-  const [approvalThreshold, setApprovalThreshold] = useState('medium');
+  const [levelFixFailures, setLevelFixFailures] = useState(3);
+  const [levelTuneNoise, setLevelTuneNoise] = useState(3);
+  const [levelInstallRules, setLevelInstallRules] = useState(3);
+  const [levelUpdateRules, setLevelUpdateRules] = useState(3);
 
   // View logs flyout state
   const [isLogsOpen, setIsLogsOpen] = useState(false);
   const [logSearch, setLogSearch] = useState('');
   const [isTypePopoverOpen, setIsTypePopoverOpen] = useState(false);
+  const [approvalPopoverOpen, setApprovalPopoverOpen] = useState<Record<string, boolean>>({});
+  const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
+  const toggleApprovalPopover = (id: string) => setApprovalPopoverOpen(prev => ({ ...prev, [id]: !prev[id] }));
+  const decide = (id: string, decision: 'approved' | 'dismissed') => {
+    setApprovalDecisions(prev => ({ ...prev, [id]: decision }));
+    setApprovalPopoverOpen(prev => ({ ...prev, [id]: false }));
+  };
   const [typeFilterOptions, setTypeFilterOptions] = useState([
     { label: 'Fixed execution failure' },
     { label: 'Tuned false positives' },
@@ -324,6 +338,10 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
 
   const divider = '1px solid #d3dae6';
 
+  // Approval mode: true when at least one automation level is NOT full-auto
+  const requiresApproval = levelFixFailures < 3 || levelTuneNoise < 3 || levelInstallRules < 3 || levelUpdateRules < 3;
+  const pendingApprovalCount = MOCK_LOGS.filter(l => l.needsApproval && !approvalDecisions[l.id]).length;
+
   return (
     <>
     {/* ── Configure modal ──────────────────────────────────────────── */}
@@ -340,72 +358,51 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
         <EuiHorizontalRule margin="none" />
 
         <EuiModalBody>
-          <EuiSpacer size="s" />
-          <EuiTitle size="xs"><h3>Automation scope</h3></EuiTitle>
+          <EuiSpacer size="xl" />
+          <EuiTitle size="s"><h3>Automation scope</h3></EuiTitle>
           <EuiSpacer size="xs" />
           <EuiText size="s" color="subdued">Choose which actions AutoDEX can perform automatically.</EuiText>
           <EuiSpacer size="l" />
+
           {[
-            { label: 'Fix execution failures', desc: 'Automatically resolve index pattern mismatches and query errors.', value: autoFixFailures, set: setAutoFixFailures },
-            { label: 'Tune high false positive rules', desc: 'Add exceptions and threshold adjustments based on alert patterns.', value: autoTuneNoise, set: setAutoTuneNoise },
-            { label: 'Install new Elastic prebuilt rules', desc: 'Install rules that fill detected MITRE coverage gaps.', value: autoInstallRules, set: setAutoInstallRules },
-            { label: 'Update existing Elastic rules', desc: 'Apply new versions of installed prebuilt rules automatically.', value: autoUpdateRules, set: setAutoUpdateRules },
-          ].map(({ label, desc, value, set }) => (
-            <div key={label} style={{ marginBottom: 20 }}>
+            { label: 'Fix execution failures', desc: 'Automatically resolve index pattern mismatches and query errors.', value: autoFixFailures, set: setAutoFixFailures, level: levelFixFailures, setLevel: setLevelFixFailures },
+            { label: 'Tune high false positive rules', desc: 'Add exceptions and threshold adjustments based on alert patterns.', value: autoTuneNoise, set: setAutoTuneNoise, level: levelTuneNoise, setLevel: setLevelTuneNoise },
+            { label: 'Install new Elastic prebuilt rules', desc: 'Install rules that fill detected MITRE coverage gaps.', value: autoInstallRules, set: setAutoInstallRules, level: levelInstallRules, setLevel: setLevelInstallRules },
+            { label: 'Update existing Elastic rules', desc: 'Apply new versions of installed prebuilt rules automatically.', value: autoUpdateRules, set: setAutoUpdateRules, level: levelUpdateRules, setLevel: setLevelUpdateRules },
+          ].map(({ label, desc, value, set, level, setLevel }, i, arr) => (
+            <div key={label} style={{ marginBottom: i < arr.length - 1 ? 28 : 8 }}>
+              {/* Toggle + label */}
               <EuiSwitch label={<strong>{label}</strong>} checked={value} onChange={e => set(e.target.checked)} />
-              <EuiText size="xs" color="subdued" style={{ marginTop: 6, marginLeft: 44 }}>{desc}</EuiText>
+              {/* Description */}
+              <EuiText size="s" color="subdued" style={{ marginTop: 4, marginLeft: 44, marginBottom: 16 }}>{desc}</EuiText>
+              {/* Per-item automation level */}
+              <div style={{ marginLeft: 44 }}>
+                <EuiText size="s" style={{ fontWeight: 700, marginBottom: 8 }}>Automation level</EuiText>
+                <EuiRange
+                  min={1}
+                  max={3}
+                  value={level}
+                  onChange={e => setLevel(Number((e.target as HTMLInputElement).value))}
+                  showTicks
+                  tickInterval={1}
+                  ticks={[
+                    { label: 'Suggest only', value: 1 },
+                    { label: 'Semi-auto', value: 2 },
+                    { label: 'Full auto', value: 3 },
+                  ]}
+                  fullWidth
+                  disabled={!value}
+                />
+                <EuiSpacer size="s" />
+                <EuiText size="xs" color="subdued">
+                  {level === 1 && 'AutoDEX will only surface recommendations. No changes are made without your approval.'}
+                  {level === 2 && 'AutoDEX applies low-risk changes automatically and queues high-risk actions for your approval.'}
+                  {level === 3 && 'AutoDEX applies all changes automatically. You can review them in the logs at any time.'}
+                </EuiText>
+              </div>
             </div>
           ))}
-
-          <EuiSpacer size="m" />
-          <EuiHorizontalRule margin="none" />
-          <EuiSpacer size="l" />
-
-          <EuiTitle size="xs"><h3>Automation level</h3></EuiTitle>
-          <EuiSpacer size="xs" />
-          <EuiText size="s" color="subdued">Control how much AutoDEX acts without your approval.</EuiText>
-          <EuiSpacer size="l" />
-          <EuiRange
-            min={1}
-            max={3}
-            value={automationLevel}
-            onChange={e => setAutomationLevel(Number((e.target as HTMLInputElement).value))}
-            showTicks
-            tickInterval={1}
-            ticks={[
-              { label: 'Suggest only', value: 1 },
-              { label: 'Semi-auto', value: 2 },
-              { label: 'Full auto', value: 3 },
-            ]}
-            fullWidth
-          />
-          <EuiSpacer size="m" />
-          <EuiText size="xs" color="subdued">
-            {automationLevel === 1 && 'AutoDEX will only surface recommendations. No changes are made without explicit approval.'}
-            {automationLevel === 2 && 'AutoDEX applies low-risk changes automatically and queues high-risk actions for your approval.'}
-            {automationLevel === 3 && 'AutoDEX applies all changes automatically. You can review them in the logs at any time.'}
-          </EuiText>
-
-          <EuiSpacer size="m" />
-          <EuiHorizontalRule margin="none" />
-          <EuiSpacer size="l" />
-
-          <EuiTitle size="xs"><h3>Approval threshold</h3></EuiTitle>
-          <EuiSpacer size="xs" />
-          <EuiText size="s" color="subdued">Define what risk level requires your manual approval.</EuiText>
-          <EuiSpacer size="m" />
-          <EuiSelect
-            options={[
-              { value: 'low', text: 'Low risk and above (most actions require approval)' },
-              { value: 'medium', text: 'Medium risk and above (recommended)' },
-              { value: 'high', text: 'High risk only (fewer approvals needed)' },
-              { value: 'none', text: 'Never ask for approval (full automation)' },
-            ]}
-            value={approvalThreshold}
-            onChange={e => setApprovalThreshold(e.target.value)}
-            fullWidth
-          />
-          <EuiSpacer size="s" />
+          <EuiSpacer size="xl" />
         </EuiModalBody>
 
         <EuiHorizontalRule margin="none" />
@@ -493,64 +490,151 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
             });
             return filtered.length === 0 ? (
               <EuiText textAlign="center" color="subdued"><p>No logs match your filters.</p></EuiText>
-            ) : filtered.map((log, i) => (
-            <div key={log.id}>
-              {/* Row 1: check icon + action badge + timestamp */}
-              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 10 }}>
-                <EuiFlexItem grow={false}>
-                  <EuiIcon
-                    type={log.status === 'success' ? 'checkInCircleFilled' : 'clock'}
-                    color={log.status === 'success' ? 'success' : 'warning'}
-                    size="s"
-                  />
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiBadge color={log.actionColor}>{log.action}</EuiBadge>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiText size="xs" color="subdued">{log.timestamp}</EuiText>
-                </EuiFlexItem>
-              </EuiFlexGroup>
+            ) : filtered.map((log, i) => {
+              const decision = approvalDecisions[log.id];
+              const isApprovalOpen = !!approvalPopoverOpen[log.id];
+              const pendingApproval = requiresApproval && log.needsApproval && !decision;
+              return (
+              <div key={log.id}>
+                {/* Row 1: icon + badge + timestamp + [approval button] */}
+                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 10 }}>
+                  <EuiFlexItem grow={false}>
+                    <EuiIcon
+                      type={pendingApproval ? 'warning' : decision === 'approved' ? 'checkInCircleFilled' : decision === 'dismissed' ? 'minusInCircle' : 'checkInCircleFilled'}
+                      color={pendingApproval ? 'warning' : decision === 'approved' ? 'success' : decision === 'dismissed' ? 'subdued' : 'success'}
+                      size="s"
+                    />
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiBadge color={log.actionColor}>{log.action}</EuiBadge>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiText size="xs" color="subdued">{log.timestamp}</EuiText>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={true} />
+                  {/* Approval button — only when NOT full-auto and entry needs approval */}
+                  {requiresApproval && log.needsApproval && (
+                    <EuiFlexItem grow={false}>
+                      {!decision ? (
+                        <EuiPopover
+                          isOpen={isApprovalOpen}
+                          closePopover={() => setApprovalPopoverOpen(prev => ({ ...prev, [log.id]: false }))}
+                          button={
+                            <EuiButtonEmpty
+                              size="xs"
+                              iconType="arrowDown"
+                              iconSide="right"
+                              color="primary"
+                              onClick={() => toggleApprovalPopover(log.id)}
+                              style={{
+                                border: '1px solid #D3DAE6',
+                                borderRadius: 4,
+                                paddingLeft: 8,
+                                paddingRight: 8,
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              Approval required
+                            </EuiButtonEmpty>
+                          }
+                          panelPaddingSize="none"
+                          anchorPosition="downRight"
+                        >
+                          <div style={{ minWidth: 160 }}>
+                            <button
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                width: '100%',
+                                padding: '10px 16px',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                color: '#007871',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => decide(log.id, 'approved')}
+                            >
+                              <EuiIcon type="checkInCircleFilled" color="success" size="s" />
+                              Approve
+                            </button>
+                            <div style={{ borderTop: '1px solid #E3E8F2' }} />
+                            <button
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                width: '100%',
+                                padding: '10px 16px',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                color: '#BD271E',
+                                fontWeight: 500,
+                              }}
+                              onClick={() => decide(log.id, 'dismissed')}
+                            >
+                              <EuiIcon type="minusInCircle" color="danger" size="s" />
+                              Dismiss
+                            </button>
+                          </div>
+                        </EuiPopover>
+                      ) : (
+                        <EuiBadge
+                          color={decision === 'approved' ? 'success' : 'default'}
+                          iconType={decision === 'approved' ? 'checkInCircleFilled' : 'minusInCircle'}
+                        >
+                          {decision === 'approved' ? 'Approved' : 'Dismissed'}
+                        </EuiBadge>
+                      )}
+                    </EuiFlexItem>
+                  )}
+                </EuiFlexGroup>
 
-              {/* Row 2: rule name bold */}
-              <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>{log.rule}</EuiText>
+                {/* Row 2: rule name bold */}
+                <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>{log.rule}</EuiText>
 
-              {/* Row 3: reasoning panel */}
-              <EuiPanel
-                hasBorder
-                hasShadow={false}
-                paddingSize="m"
-                style={{ borderRadius: 6, background: '#F7F9FF', marginBottom: 10 }}
-              >
-                <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>
-                  Reasoning
-                </EuiText>
-                <EuiText size="s">{log.reasoning}</EuiText>
-              </EuiPanel>
+                {/* Row 3: reasoning panel */}
+                <EuiPanel
+                  hasBorder
+                  hasShadow={false}
+                  paddingSize="m"
+                  style={{ borderRadius: 6, background: '#F7F9FF', marginBottom: 10 }}
+                >
+                  <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>
+                    Reasoning
+                  </EuiText>
+                  <EuiText size="s">{log.reasoning}</EuiText>
+                </EuiPanel>
 
-              {/* Row 4: View rules + Add to chat — left-aligned, purple */}
-              <EuiFlexGroup gutterSize="s" responsive={false}>
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty size="xs" iconType="inspect" color="primary" flush="left" onClick={() => {}}>
-                    View rules
-                  </EuiButtonEmpty>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty
-                    size="xs"
-                    iconType="productAgent"
-                    flush="left"
-                    style={{ color: '#7B61FF' }}
-                    onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}
-                  >
-                    Add to chat
-                  </EuiButtonEmpty>
-                </EuiFlexItem>
-              </EuiFlexGroup>
+                {/* Row 4: View rules + Add to chat — left-aligned */}
+                <EuiFlexGroup gutterSize="s" responsive={false}>
+                  <EuiFlexItem grow={false}>
+                    <EuiButtonEmpty size="xs" iconType="inspect" color="primary" flush="left" onClick={() => {}}>
+                      View rules
+                    </EuiButtonEmpty>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiButtonEmpty
+                      size="xs"
+                      iconType="productAgent"
+                      flush="left"
+                      style={{ color: '#7B61FF' }}
+                      onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}
+                    >
+                      Add to chat
+                    </EuiButtonEmpty>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
 
-              {i < filtered.length - 1 && <EuiHorizontalRule margin="m" />}
-            </div>
-          ));
+                {i < filtered.length - 1 && <EuiHorizontalRule margin="m" />}
+              </div>
+              );
+            });
           })()}
         </EuiFlyoutBody>
 
@@ -629,7 +713,7 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
             grow={false}
             style={{
               padding: '16px 28px 16px 24px',
-              borderRight: i < metrics.length - 1 ? divider : 'none',
+              borderRight: (i < metrics.length - 1 || requiresApproval) ? divider : 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'flex-start',
@@ -663,6 +747,55 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
             </div>
           </EuiFlexItem>
         ))}
+
+        {/* Approval needed cell — only when semi/suggest-only mode is active */}
+        {isOn && requiresApproval && (
+          <EuiFlexItem
+            grow={false}
+            style={{
+              padding: '16px 28px 16px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              minWidth: 180,
+            }}
+          >
+            <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ marginBottom: 8 }}>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap', color: '#BD271E' }}>
+                  {pendingApprovalCount} action{pendingApprovalCount !== 1 ? 's' : ''} need{pendingApprovalCount === 1 ? 's' : ''} approval
+                </EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <div style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'rgba(189, 39, 30, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <EuiIcon type="warning" size="s" color="danger" />
+                </div>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+
+            <div style={{ marginTop: 'auto' }}>
+              <EuiButtonEmpty
+                size="xs"
+                iconType="popout"
+                iconSide="left"
+                color="primary"
+                flush="left"
+                style={{ marginLeft: 0, paddingLeft: 0 }}
+                onClick={() => setIsLogsOpen(true)}
+              >
+                View actions to approve
+              </EuiButtonEmpty>
+            </div>
+          </EuiFlexItem>
+        )}
 
       </EuiFlexGroup>
     </EuiPanel>
