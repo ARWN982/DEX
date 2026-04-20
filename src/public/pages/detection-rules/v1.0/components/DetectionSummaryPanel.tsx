@@ -505,137 +505,25 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
     {isLogsOpen && (
       <EuiFlyout
         onClose={() => { setIsLogsOpen(false); setFullReasoningLogId(null); }}
-        size={fullReasoningLogId ? 960 : 480}
+        size="m"
         ownFocus={false}
-        style={{ transition: 'width 0.25s ease' }}
       >
         <EuiFlyoutHeader hasBorder>
-          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-            <EuiFlexItem>
-              <EuiTitle size="s">
-                <h2>
-                  <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                    <EuiFlexItem grow={false}><EuiIcon type="sparkles" style={{ color: '#7B61FF' }} /></EuiFlexItem>
-                    <EuiFlexItem>AutoDEX Activity Log</EuiFlexItem>
-                  </EuiFlexGroup>
-                </h2>
-              </EuiTitle>
-              <EuiText size="xs" color="subdued" style={{ marginTop: 4 }}>
-                Actions taken automatically — with full reasoning for each decision.
-              </EuiText>
-            </EuiFlexItem>
-          </EuiFlexGroup>
+          <EuiTitle size="s">
+            <h2>
+              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                <EuiFlexItem grow={false}><EuiIcon type="sparkles" style={{ color: '#7B61FF' }} /></EuiFlexItem>
+                <EuiFlexItem>AutoDEX Activity Log</EuiFlexItem>
+              </EuiFlexGroup>
+            </h2>
+          </EuiTitle>
+          <EuiText size="xs" color="subdued" style={{ marginTop: 4 }}>
+            Actions taken automatically — with full reasoning for each decision.
+          </EuiText>
         </EuiFlyoutHeader>
 
-        {/* Two-column body: left = full reasoning (when open), right = log list */}
-        <EuiFlyoutBody style={{ padding: 0 }}>
-          <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-
-            {/* ── LEFT: Full reasoning panel ────────────────────────── */}
-            {fullReasoningLogId && (() => {
-              const frLog = MOCK_LOGS.find(l => l.id === fullReasoningLogId);
-              if (!frLog || !frLog.fullReasoning) return null;
-              const fr = frLog.fullReasoning;
-              return (
-                <div style={{
-                  width: 500,
-                  flexShrink: 0,
-                  borderRight: '1px solid #E3E8F2',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  background: '#fff',
-                }}>
-                  {/* Left panel sub-header */}
-                  <div style={{ padding: '16px 20px', borderBottom: '1px solid #E3E8F2', flexShrink: 0 }}>
-                    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 4 }}>
-                      <EuiFlexItem grow={false}>
-                        <EuiIcon type="chevronLimitLeft" size="m" color="primary" />
-                      </EuiFlexItem>
-                      <EuiFlexItem>
-                        <EuiTitle size="xs"><h3>Full reasoning</h3></EuiTitle>
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiButtonIcon
-                          iconType="cross"
-                          aria-label="Close full reasoning"
-                          size="xs"
-                          color="subdued"
-                          onClick={() => setFullReasoningLogId(null)}
-                        />
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
-                    <EuiText size="xs" color="subdued">{frLog.action} · {frLog.timestamp}</EuiText>
-                  </div>
-
-                  {/* Left panel scrollable content */}
-                  <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 40px' }}>
-                    <EuiText size="s" style={{ fontWeight: 700, marginBottom: 6 }}>{frLog.rule}</EuiText>
-                    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 20 }}>
-                      <EuiFlexItem grow={false}><EuiBadge color={frLog.actionColor}>{frLog.action}</EuiBadge></EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiBadge color={fr.riskLevel.startsWith('Low') ? 'success' : fr.riskLevel.startsWith('Medium') ? 'warning' : 'danger'}>
-                          {fr.riskLevel}
-                        </EuiBadge>
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiText size="xs" color="subdued">Confidence: <strong>{fr.confidence}%</strong></EuiText>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
-
-                    {/* AI summary */}
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6, marginBottom: 20, background: 'linear-gradient(135deg, rgba(217,232,255,0.2) 0%, rgba(236,226,254,0.2) 100%)' }}>
-                      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 8 }}>
-                        <EuiFlexItem grow={false}><EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} /></EuiFlexItem>
-                        <EuiFlexItem><EuiText size="s" style={{ fontWeight: 700, color: '#7B61FF' }}>AI summary</EuiText></EuiFlexItem>
-                      </EuiFlexGroup>
-                      <EuiText size="s">{fr.summary}</EuiText>
-                    </EuiPanel>
-
-                    <EuiTitle size="xs"><h4 style={{ marginBottom: 10 }}>Diagnosis</h4></EuiTitle>
-                    {fr.diagnosis.map((para, idx) => (
-                      <EuiText key={idx} size="s" style={{ marginBottom: 10, color: '#343741' }}><p>{para}</p></EuiText>
-                    ))}
-
-                    <EuiHorizontalRule margin="m" />
-
-                    <EuiTitle size="xs"><h4 style={{ marginBottom: 10 }}>Decision rationale</h4></EuiTitle>
-                    {fr.decision.map((para, idx) => (
-                      <EuiText key={idx} size="s" style={{ marginBottom: 10, color: '#343741' }}><p>{para}</p></EuiText>
-                    ))}
-
-                    <EuiHorizontalRule margin="m" />
-
-                    <EuiTitle size="xs"><h4 style={{ marginBottom: 10 }}>Changes made</h4></EuiTitle>
-                    {fr.changesMade.map((change, idx) => (
-                      <EuiPanel key={idx} hasBorder hasShadow={false} paddingSize="s" style={{ borderRadius: 4, marginBottom: 8, background: '#F5F7FA', borderLeft: '3px solid #0077CC' }}>
-                        <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#343741' }}>{change}</EuiText>
-                      </EuiPanel>
-                    ))}
-
-                    <EuiHorizontalRule margin="m" />
-
-                    <EuiTitle size="xs"><h4 style={{ marginBottom: 10 }}>Related MITRE ATT&CK™</h4></EuiTitle>
-                    {fr.relatedMitreIds.map((m, idx) => (
-                      <EuiBadge key={idx} color="hollow" style={{ marginRight: 6, marginBottom: 6 }}>{m}</EuiBadge>
-                    ))}
-
-                    <EuiSpacer size="l" />
-
-                    <EuiButtonEmpty
-                      iconType="productAgent"
-                      style={{ color: '#7B61FF' }}
-                      onClick={() => onOpenAIAssistant(`Explain the full AutoDEX reasoning for: ${frLog.action} on rule "${frLog.rule}"`)}
-                    >
-                      Add to chat
-                    </EuiButtonEmpty>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── RIGHT: Log list (always visible) ────────────────── */}
-            <div style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: '16px 24px' }}>
+        <EuiFlyoutBody>
+          <div style={{ padding: '0' }}>
           {/* Search + Type filter */}
           <EuiFlexGroup gutterSize="s" responsive={false} style={{ marginBottom: 16 }}>
             <EuiFlexItem>
@@ -801,7 +689,7 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
                 {/* Row 2: rule name bold */}
                 <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>{log.rule}</EuiText>
 
-                {/* Row 3: reasoning summary panel */}
+                {/* Row 3: reasoning summary panel with inline-expandable full reasoning */}
                 <EuiPanel
                   hasBorder
                   hasShadow={false}
@@ -812,15 +700,73 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
                     Reasoning summary
                   </EuiText>
                   <EuiText size="s" style={{ marginBottom: 10 }}>{log.reasoning}</EuiText>
+
+                  {/* Full reasoning toggle */}
                   <EuiButtonEmpty
                     size="xs"
-                    iconType="chevronLimitLeft"
+                    iconType={fullReasoningLogId === log.id ? 'chevronSingleDown' : 'chevronSingleRight'}
                     color="primary"
                     flush="left"
-                    onClick={() => setFullReasoningLogId(log.id)}
+                    onClick={() => setFullReasoningLogId(fullReasoningLogId === log.id ? null : log.id)}
                   >
                     Full reasoning
                   </EuiButtonEmpty>
+
+                  {/* Inline expanded content */}
+                  {fullReasoningLogId === log.id && log.fullReasoning && (() => {
+                    const fr = log.fullReasoning;
+                    return (
+                      <div style={{ marginTop: 16 }}>
+                        <EuiHorizontalRule margin="s" />
+
+                        {/* Diagnosis */}
+                        <EuiText size="xs" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#69707D', marginBottom: 8 }}>
+                          Diagnosis
+                        </EuiText>
+                        {fr.diagnosis.map((para, idx) => (
+                          <EuiText key={idx} size="s" style={{ marginBottom: 8, color: '#343741' }}>
+                            <p>{para}</p>
+                          </EuiText>
+                        ))}
+
+                        <EuiHorizontalRule margin="s" />
+
+                        {/* Decision rationale */}
+                        <EuiText size="xs" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#69707D', marginBottom: 8 }}>
+                          Decision rationale
+                        </EuiText>
+                        {fr.decision.map((para, idx) => (
+                          <EuiText key={idx} size="s" style={{ marginBottom: 8, color: '#343741' }}>
+                            <p>{para}</p>
+                          </EuiText>
+                        ))}
+
+                        <EuiHorizontalRule margin="s" />
+
+                        {/* Changes made */}
+                        <EuiText size="xs" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#69707D', marginBottom: 8 }}>
+                          Changes made
+                        </EuiText>
+                        {fr.changesMade.map((change, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              padding: '8px 12px',
+                              marginBottom: 6,
+                              background: '#F0F4FF',
+                              borderLeft: '3px solid #0077CC',
+                              borderRadius: 4,
+                              fontFamily: 'monospace',
+                              fontSize: 12,
+                              color: '#343741',
+                            }}
+                          >
+                            {change}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </EuiPanel>
 
                 {/* Row 4: Add to chat only */}
@@ -843,8 +789,7 @@ const AutoDexStrip: React.FC<AutoDexStripProps> = ({ autoDex, autoDexState, onTo
               );
             });
           })()}
-            </div>{/* end right log list */}
-          </div>{/* end two-column flex */}
+          </div>
         </EuiFlyoutBody>
 
         <EuiFlyoutFooter>
