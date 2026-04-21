@@ -1,11 +1,10 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   EuiFlexItem,
   EuiText,
-  EuiSpacer,
   EuiIcon,
   EuiFlexGroup,
-  EuiHorizontalRule,
 } from '@elastic/eui';
 
 interface SecuritySideNavProps {
@@ -18,9 +17,10 @@ interface NavItemProps {
   label: string;
   isActive?: boolean;
   customIcon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, customIcon }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, customIcon, onClick }) => {
   return (
     <EuiFlexGroup 
       direction="column" 
@@ -32,6 +32,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, custom
         cursor: 'pointer',
       }}
       responsive={false}
+      onClick={onClick}
     >
       <EuiFlexItem grow={false}>
         <div
@@ -74,6 +75,10 @@ const SecurityLogo: React.FC = () => {
 };
 
 const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname.startsWith(path);
+
   return (
     <div
       style={{ 
@@ -131,10 +136,23 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
               <NavItem icon="discoverApp" label="Discover" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
+              <NavItem
+                icon="mail"
+                label="Inbox"
+                isActive={isActive('/inbox')}
+                onClick={() => navigate('/inbox')}
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
               <NavItem icon="dashboardApp" label="Dashboards" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <NavItem icon="radar" label="Rules" isActive />
+              <NavItem
+                icon="radar"
+                label="Rules"
+                isActive={isActive('/detection-rules')}
+                onClick={() => navigate('/detection-rules')}
+              />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <NavItem icon="alert" label="Alerts" />

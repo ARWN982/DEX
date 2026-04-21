@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DetectionSummaryPanel } from './components/DetectionSummaryPanel';
+import AutoDexTabView from './components/AutoDexTabView';
+import AutoDexConfigureModal from './components/AutoDexConfigureModal';
 import {
   EuiPage,
   EuiPageBody,
@@ -116,6 +118,10 @@ const DetectionRulesPage: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [openFilters, setOpenFilters] = useState<Record<string, boolean>>({});
+  const [primaryTab, setPrimaryTab] = useState<'autodex' | 'rules'>('rules');
+  const [rulesSubView, setRulesSubView] = useState<'summary' | 'errors' | 'performance'>('summary');
+  const [autoDexHeaderEnabled, setAutoDexHeaderEnabled] = useState(true);
+  const [configureModalOpen, setConfigureModalOpen] = useState(false);
 
   const toggleFilterOpen = (filterId: string) => {
     setOpenFilters((prev) => ({ ...prev, [filterId]: !prev[filterId] }));
@@ -429,24 +435,6 @@ const DetectionRulesPage: React.FC = () => {
   };
 
 
-  const tabs = [
-    {
-      id: 'installed' as const,
-      label: 'Installed rules',
-      count: mockRules.length,
-    },
-    {
-      id: 'monitoring' as const,
-      label: 'Rule monitoring',
-      count: mockMonitoringRules.length,
-    },
-    {
-      id: 'updates' as const,
-      label: 'Rule updates',
-      count: 0,
-    },
-  ];
-
   return (
     <>
       <SecurityHeader onMenuClick={() => {}} />
@@ -504,11 +492,48 @@ const DetectionRulesPage: React.FC = () => {
         {/* Page Header */}
         <div style={{ marginLeft: '-24px', marginRight: '-24px', paddingLeft: '24px', paddingRight: '24px' }}>
           <EuiPageHeader
-            pageTitle="Detection rules (SIEM)"
+            pageTitle="Detection rules"
             responsive={false}
             paddingSize="none"
             rightSideItems={[
-              <EuiFlexGroup gutterSize="s" responsive={false} wrap={false} key="buttons-group">
+              <EuiFlexGroup gutterSize="m" responsive={false} wrap={false} alignItems="center" key="header-actions">
+                <EuiFlexItem grow={false}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'nowrap',
+                      gap: 10,
+                      padding: '6px 14px 6px 12px',
+                      borderRadius: 20,
+                      background: 'linear-gradient(135deg, rgba(217,232,255,0.45) 0%, rgba(236,226,254,0.5) 100%)',
+                      border: '1px solid #E3E8F2',
+                      borderLeft: '3px solid #7B61FF',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <EuiIcon type="sparkles" size="m" style={{ color: '#7B61FF', flexShrink: 0 }} />
+                    <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      AutoDEX
+                    </EuiText>
+                    <EuiSwitch
+                      label={autoDexHeaderEnabled ? 'On' : 'Off'}
+                      checked={autoDexHeaderEnabled}
+                      onChange={() => setAutoDexHeaderEnabled(!autoDexHeaderEnabled)}
+                      compressed
+                      disabled={false}
+                    />
+                    <EuiButtonEmpty
+                      size="xs"
+                      iconType="controlsHorizontal"
+                      color="primary"
+                      flush="left"
+                      onClick={() => setConfigureModalOpen(true)}
+                    >
+                      Configure
+                    </EuiButtonEmpty>
+                  </div>
+                </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiButtonEmpty iconType="gear" size="s">
                     Settings
@@ -572,74 +597,83 @@ const DetectionRulesPage: React.FC = () => {
           />
         </div>
 
-        <EuiSpacer size="xl" />
+        <EuiSpacer size="l" />
 
-        {/* Detection Summary Panel (AI signal cards + AutoDEX strip) */}
-        <DetectionSummaryPanel
-          executionFailures={[
-            { id: 'r1', name: 'Unusual Network Destination Domain Name', severity: 'high', contextLabel: 'Timeout after 30s · logs-endpoint.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Unusual Network Destination Domain Name"' },
-            { id: 'r2', name: 'Route53 Resolver Query Log Configuration Deleted', severity: 'medium', contextLabel: 'Index not found · logs-aws.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Route53 Resolver Query Log Configuration Deleted"' },
-            { id: 'r3', name: 'Suspicious File Renamed via SMB', severity: 'high', contextLabel: 'EQL parse error · logs-system.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Suspicious File Renamed via SMB"' },
-          ]}
-          highNoiseRules={[
-            { id: 'n1', name: 'Potential PowerShell HackTool Script by Author', severity: 'medium', contextLabel: '340 alerts/week · 98% from backup-agent', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "Potential PowerShell HackTool Script by Author"' },
-            { id: 'n2', name: 'Unusual Execution via Microsoft Common Console File', severity: 'low', contextLabel: '210 alerts/week · 94% from dev-hosts', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "Unusual Execution via Microsoft Common Console File"' },
-            { id: 'n3', name: 'EC2 AMI Shared with Another Account', severity: 'medium', contextLabel: '180 alerts/week · 91% from ci-pipeline', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "EC2 AMI Shared with Another Account"' },
-          ]}
-          coverageGaps={[
-            { id: 'g1', name: 'Credential Dumping via Reg.exe', severity: 'critical', techniqueId: 'T1003', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1003 Credential Dumping via Reg.exe?' },
-            { id: 'g2', name: 'DLL Side-Loading', severity: 'high', techniqueId: 'T1574.002', contextLabel: 'Partial coverage only', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1574.002 DLL Side-Loading?' },
-            { id: 'g3', name: 'Scheduled Task Creation', severity: 'high', techniqueId: 'T1053.005', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1053.005 Scheduled Task Creation?' },
-            { id: 'g4', name: 'Token Impersonation', severity: 'high', techniqueId: 'T1134', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1134 Token Impersonation?' },
-          ]}
-          coveragePct={67}
-          ruleUpdates={[
-            { id: 'u1', name: 'Unusual Network Destination Domain Name', severity: 'high', contextLabel: 'v8.11 → v8.12 · 3 changes', changeDescription: 'Updated MITRE mapping and query performance', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "Unusual Network Destination Domain Name"' },
-            { id: 'u2', name: 'Potential Widespread Malware Infection', severity: 'high', contextLabel: 'v3.2 → v3.3 · 1 change', changeDescription: 'Fixed false positive on backup processes', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "Potential Widespread Malware Infection"' },
-            { id: 'u3', name: 'AWS EC2 Admin Credential Fetch', severity: 'medium', contextLabel: 'v2.1 → v2.2 · 2 changes', changeDescription: 'Improved detection coverage', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "AWS EC2 Admin Credential Fetch"' },
-          ]}
-          autoDex={{
-            isRunning: true,
-            lastRunAt: '3 min ago',
-            fixedCount: 2,
-            tunedCount: 5,
-            installedCount: 4,
-            updatedCount: 5,
-          }}
-          onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
-          onViewRules={(category) => console.log('View rules:', category)}
-          onNavigateToRule={(id) => navigate(`/detection-rules/${id}`)}
-        />
+        <EuiTabs size="l">
+          <EuiTab isSelected={primaryTab === 'autodex'} onClick={() => setPrimaryTab('autodex')}>
+            AutoDEX
+          </EuiTab>
+          <EuiTab isSelected={primaryTab === 'rules'} onClick={() => setPrimaryTab('rules')}>
+            Rules
+          </EuiTab>
+        </EuiTabs>
 
         <EuiSpacer size="m" />
 
-        {/* Tabs hidden on DEX-Vision branch */}
-        <div style={{ display: 'none' }}>
-          <EuiTabs size="l">
-            {tabs.map((tab) => (
-              <EuiTab
-                key={tab.id}
-                isSelected={selectedTab === tab.id}
-                onClick={() => {
-                  setSelectedTab(tab.id);
-                  setPageIndex(0);
+        {primaryTab === 'rules' && (
+          <>
+            <EuiButtonGroup
+              legend="Rules view"
+              options={[
+                { id: 'summary', label: 'Summary' },
+                { id: 'errors', label: 'Errors' },
+                { id: 'performance', label: 'Performance' },
+              ]}
+              idSelected={rulesSubView}
+              onChange={(id) => setRulesSubView(id as 'summary' | 'errors' | 'performance')}
+              buttonSize="s"
+              color="primary"
+            />
+            <EuiSpacer size="m" />
+            {rulesSubView === 'summary' && (
+              <DetectionSummaryPanel
+                executionFailures={[
+                  { id: 'r1', name: 'Unusual Network Destination Domain Name', severity: 'high', contextLabel: 'Timeout after 30s · logs-endpoint.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Unusual Network Destination Domain Name"' },
+                  { id: 'r2', name: 'Route53 Resolver Query Log Configuration Deleted', severity: 'medium', contextLabel: 'Index not found · logs-aws.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Route53 Resolver Query Log Configuration Deleted"' },
+                  { id: 'r3', name: 'Suspicious File Renamed via SMB', severity: 'high', contextLabel: 'EQL parse error · logs-system.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Suspicious File Renamed via SMB"' },
+                ]}
+                highNoiseRules={[
+                  { id: 'n1', name: 'Potential PowerShell HackTool Script by Author', severity: 'medium', contextLabel: '340 alerts/week · 98% from backup-agent', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "Potential PowerShell HackTool Script by Author"' },
+                  { id: 'n2', name: 'Unusual Execution via Microsoft Common Console File', severity: 'low', contextLabel: '210 alerts/week · 94% from dev-hosts', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "Unusual Execution via Microsoft Common Console File"' },
+                  { id: 'n3', name: 'EC2 AMI Shared with Another Account', severity: 'medium', contextLabel: '180 alerts/week · 91% from ci-pipeline', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "EC2 AMI Shared with Another Account"' },
+                ]}
+                coverageGaps={[
+                  { id: 'g1', name: 'Credential Dumping via Reg.exe', severity: 'critical', techniqueId: 'T1003', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1003 Credential Dumping via Reg.exe?' },
+                  { id: 'g2', name: 'DLL Side-Loading', severity: 'high', techniqueId: 'T1574.002', contextLabel: 'Partial coverage only', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1574.002 DLL Side-Loading?' },
+                  { id: 'g3', name: 'Scheduled Task Creation', severity: 'high', techniqueId: 'T1053.005', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1053.005 Scheduled Task Creation?' },
+                  { id: 'g4', name: 'Token Impersonation', severity: 'high', techniqueId: 'T1134', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1134 Token Impersonation?' },
+                ]}
+                coveragePct={67}
+                ruleUpdates={[
+                  { id: 'u1', name: 'Unusual Network Destination Domain Name', severity: 'high', contextLabel: 'v8.11 → v8.12 · 3 changes', changeDescription: 'Updated MITRE mapping and query performance', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "Unusual Network Destination Domain Name"' },
+                  { id: 'u2', name: 'Potential Widespread Malware Infection', severity: 'high', contextLabel: 'v3.2 → v3.3 · 1 change', changeDescription: 'Fixed false positive on backup processes', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "Potential Widespread Malware Infection"' },
+                  { id: 'u3', name: 'AWS EC2 Admin Credential Fetch', severity: 'medium', contextLabel: 'v2.1 → v2.2 · 2 changes', changeDescription: 'Improved detection coverage', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "AWS EC2 Admin Credential Fetch"' },
+                ]}
+                autoDex={{
+                  isRunning: true,
+                  lastRunAt: '3 min ago',
+                  fixedCount: 2,
+                  tunedCount: 5,
+                  installedCount: 4,
+                  updatedCount: 5,
                 }}
-              >
-                {tab.label}
-                <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
-                  {tab.count}
-                </EuiBadge>
-              </EuiTab>
-            ))}
-          </EuiTabs>
-        </div>
+                onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
+                onViewRules={(category) => console.log('View rules:', category)}
+                onNavigateToRule={(id) => navigate(`/detection-rules/${id}`)}
+              />
+            )}
+          </>
+        )}
               </div>
 
-        {/* Scrollable section — filter + table only */}
+        {/* Scrollable section */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px', minHeight: 0 }}>
+        {primaryTab === 'autodex' ? (
+          <AutoDexTabView onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)} />
+        ) : rulesSubView === 'summary' ? (
+        <>
         <EuiSpacer size="m" />
 
-        {/* Main content: Filter panel + Table */}
         <EuiFlexGroup gutterSize="none" alignItems="stretch" responsive={false} style={{ flex: 1 }}>
 
           {/* Facet Filter Panel */}
@@ -1112,11 +1146,29 @@ const DetectionRulesPage: React.FC = () => {
 
           </EuiFlexItem>
         </EuiFlexGroup>
+        </>
+        ) : (
+          <>
+            <EuiSpacer size="m" />
+            <EuiCallOut
+              title={rulesSubView === 'errors' ? 'Errors' : 'Performance'}
+              iconType="iInCircle"
+              color="primary"
+            >
+              <p>
+                {rulesSubView === 'errors'
+                  ? 'Cross-rule execution failures, noisy signals, and remediation status will appear here.'
+                  : 'Query latency, rule execution cost, and capacity trends will appear here.'}
+              </p>
+            </EuiCallOut>
+          </>
+        )}
         </div>
             </EuiPanel>
           </EuiFlexItem>
         </EuiFlexGroup>
       </div>
+      <AutoDexConfigureModal isOpen={configureModalOpen} onClose={() => setConfigureModalOpen(false)} />
     </>
   );
 };

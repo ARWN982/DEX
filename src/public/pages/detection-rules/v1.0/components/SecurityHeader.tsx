@@ -15,10 +15,10 @@ import {
 import AIAgentPanel from './AIAgentPanel';
 
 interface SecurityHeaderProps {
-  onMenuClick: () => void;
+  onMenuClick?: () => void;
 }
 
-const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
+const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick = () => {} }) => {
   const [isAgentOpen, setIsAgentOpen] = useState(false);
   const breadcrumbs = [
     {
