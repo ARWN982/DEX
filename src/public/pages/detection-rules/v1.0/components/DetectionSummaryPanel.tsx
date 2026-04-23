@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   EuiBadge,
   EuiBasicTable,
   EuiButtonEmpty,
   EuiButtonIcon,
+  EuiCallOut,
   EuiFlexGroup,
   EuiFlexItem,
   EuiHealth,
@@ -77,6 +79,8 @@ interface SignalCardProps {
   onViewRules: () => void;
   onAddToChat: () => void;
   viewLabel?: string;
+  /** Part 1 (Option A): AutoDEX resolution line shown between sub-line and actions. */
+  autoDexLine?: React.ReactNode;
 }
 
 const SignalCard: React.FC<SignalCardProps> = ({
@@ -92,6 +96,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
   onViewRules,
   onAddToChat,
   viewLabel = 'View rules',
+  autoDexLine,
 }) => (
   <EuiPanel
     hasBorder
@@ -118,6 +123,18 @@ const SignalCard: React.FC<SignalCardProps> = ({
     <EuiText size="s" color={isEmpty ? 'subdued' : 'default'} style={{ marginTop: 4, flex: 1, lineHeight: '20px' }}>
       {isEmpty ? emptySubLine : subLine}
     </EuiText>
+
+    {/* Part 1 (Option A): AutoDEX resolution line */}
+    {autoDexLine && (
+      <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ marginTop: 8 }}>
+        <EuiFlexItem grow={false}>
+          <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <EuiText size="xs" color="success">{autoDexLine}</EuiText>
+        </EuiFlexItem>
+      </EuiFlexGroup>
+    )}
 
     {/* Actions */}
     <EuiFlexGroup gutterSize="xs" responsive={false} style={{ marginTop: 10 }}>
@@ -202,11 +219,12 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
   coverageGaps,
   coveragePct,
   ruleUpdates,
-  autoDex: _autoDex,
+  autoDex,
   onOpenAIAssistant,
   onViewRules,
   onNavigateToRule,
 }) => {
+  const navigate = useNavigate();
   const [openDrill, setOpenDrill] = useState<DrillCategory>(null);
   // 'off' | 'running' | 'healthy'
   const [autoDexState, setAutoDexState] = useState<'off' | 'running' | 'healthy'>('off');
@@ -227,6 +245,26 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
   const isHealthy = autoDexState === 'healthy';
   const isRunning = autoDexState === 'running';
 
+  // Part 1 (Option A): AutoDEX resolution lines + conditional accent override
+  const AUTODEX_SUCCESS = '#017D73';
+  const failuresAutoDexLine = autoDex.fixedCount > 0
+    ? `AutoDEX fixed ${autoDex.fixedCount} today` : undefined;
+  const noiseAutoDexLine = autoDex.tunedCount > 0
+    ? `AutoDEX tuned ${autoDex.tunedCount} today` : undefined;
+  const gapsAutoDexLine = autoDex.installedCount > 0
+    ? `AutoDEX installed ${autoDex.installedCount} rules` : undefined;
+  const updatesAutoDexLine = autoDex.updatedCount > 0
+    ? `AutoDEX applied ${autoDex.updatedCount} updates` : undefined;
+
+  // Part 2 (Option D): callout title segments
+  const calloutSegments: string[] = [];
+  if (autoDex.fixedCount > 0) calloutSegments.push(`fixed ${autoDex.fixedCount} failure${autoDex.fixedCount > 1 ? 's' : ''}`);
+  if (autoDex.tunedCount > 0) calloutSegments.push(`tuned ${autoDex.tunedCount} rule${autoDex.tunedCount > 1 ? 's' : ''}`);
+  if (autoDex.installedCount > 0) calloutSegments.push(`installed ${autoDex.installedCount} rule${autoDex.installedCount > 1 ? 's' : ''}`);
+  if (autoDex.updatedCount > 0) calloutSegments.push(`updated ${autoDex.updatedCount} rule${autoDex.updatedCount > 1 ? 's' : ''}`);
+  const showCallout = calloutSegments.length > 0;
+  const calloutTitle = `AutoDEX activity today: ${calloutSegments.join(' · ')}`;
+
   // AutoDEX in-progress badge added to each card header when running
   const autoDexBadge = isRunning ? (
     <EuiBadge
@@ -245,13 +283,32 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
 
   return (
     <div>
+      {/* ── Part 2 (Option D): AutoDEX activity callout strip — above cards ── */}
+      {showCallout && (
+        <EuiCallOut
+          color="success"
+          iconType="sparkles"
+          title={calloutTitle}
+          style={{ marginBottom: 16 }}
+        >
+          <EuiButtonEmpty
+            size="s"
+            iconType="popout"
+            color="success"
+            onClick={() => navigate('/autodex')}
+          >
+            View in AutoDEX
+          </EuiButtonEmpty>
+        </EuiCallOut>
+      )}
+
       {/* ── Four signal cards ─────────────────────────────────────── */}
       <EuiFlexGroup gutterSize="m" responsive={false} alignItems="stretch">
 
         {/* Card 1 — Execution failures */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor={isHealthy ? '#017D73' : '#BD271E'}
+            accentColor={isHealthy ? '#017D73' : failuresAutoDexLine ? AUTODEX_SUCCESS : '#BD271E'}
             title="Execution failures"
             badge={
               isHealthy
@@ -267,13 +324,14 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
             isEmpty={false}
             onViewRules={() => toggleDrill('failures')}
             onAddToChat={() => onOpenAIAssistant(`Show me the ${executionFailures.length} rules with execution failures and diagnose what is causing each one`)}
+            autoDexLine={failuresAutoDexLine}
           />
         </EuiFlexItem>
 
         {/* Card 2 — False positive rate */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor={isHealthy ? '#017D73' : '#F5A700'}
+            accentColor={isHealthy ? '#017D73' : noiseAutoDexLine ? AUTODEX_SUCCESS : '#F5A700'}
             title="False positive rate"
             badge={
               isHealthy
@@ -289,13 +347,14 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
             isEmpty={false}
             onViewRules={() => toggleDrill('noise')}
             onAddToChat={() => onOpenAIAssistant(`Show me the ${highNoiseRules.length} high false positive rules with tuning recommendations for each one`)}
+            autoDexLine={noiseAutoDexLine}
           />
         </EuiFlexItem>
 
         {/* Card 3 — Gaps detected */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor={isHealthy ? '#017D73' : '#F5A700'}
+            accentColor={isHealthy ? '#017D73' : gapsAutoDexLine ? AUTODEX_SUCCESS : '#F5A700'}
             title="Gaps detected"
             badge={
               isHealthy
@@ -313,13 +372,14 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
             viewLabel="View gaps"
             onViewRules={() => toggleDrill('coverage')}
             onAddToChat={() => onOpenAIAssistant(`Show me all ${coverageGaps.length} MITRE coverage gaps and which Elastic prebuilt rules would fill them`)}
+            autoDexLine={gapsAutoDexLine}
           />
         </EuiFlexItem>
 
         {/* Card 4 — Rule updates */}
         <EuiFlexItem grow={1}>
           <SignalCard
-            accentColor={isHealthy ? '#017D73' : '#0077CC'}
+            accentColor={isHealthy ? '#017D73' : updatesAutoDexLine ? AUTODEX_SUCCESS : '#0077CC'}
             title="Rule updates"
             badge={
               isHealthy
@@ -335,6 +395,7 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
             isEmpty={false}
             onViewRules={() => toggleDrill('updates')}
             onAddToChat={() => onOpenAIAssistant(`Review the ${ruleUpdates.length} available prebuilt rule updates and summarise what changed in each`)}
+            autoDexLine={updatesAutoDexLine}
           />
         </EuiFlexItem>
 
@@ -349,6 +410,7 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
           onNavigateToRule={onNavigateToRule}
         />
       )}
+
 
     </div>
   );

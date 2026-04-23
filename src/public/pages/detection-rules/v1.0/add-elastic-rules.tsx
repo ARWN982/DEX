@@ -119,7 +119,7 @@ const AddElasticRulesPage: React.FC = () => {
           {/* Secondary Nav */}
           <EuiFlexItem grow={false} style={{ height: '100%' }}>
             <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'hidden', height: '100%' }}>
-              <RulesSecondaryNav selectedSection="installed" onSectionChange={() => {}} />
+              <RulesSecondaryNav />
             </EuiPanel>
           </EuiFlexItem>
 

@@ -19,6 +19,7 @@ import RuleDetailsPage from "./pages/detection-rules/v1.0/rule-details";
 import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
 import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules";
 import InboxPage from "./pages/detection-rules/v1.0/inbox";
+import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -86,8 +87,11 @@ const App: React.FC = () => {
               element={<TemplateLoaderWithParams />}
             />
             
-            {/* Inbox */}
+            {/* Inbox / AI Briefing */}
             <Route path="/inbox" element={<InboxPage />} />
+
+            {/* AutoDEX */}
+            <Route path="/autodex" element={<AutoDexPage />} />
 
             {/* Rule details route - must come before the catch-all */}
             <Route

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DetectionSummaryPanel } from './components/DetectionSummaryPanel';
-import AutoDexTabView from './components/AutoDexTabView';
 import AutoDexConfigureModal from './components/AutoDexConfigureModal';
 import {
   EuiPage,
@@ -12,8 +11,6 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiSpacer,
-  EuiTabs,
-  EuiTab,
   EuiFieldSearch,
   EuiBasicTable,
   EuiBasicTableColumn,
@@ -118,9 +115,7 @@ const DetectionRulesPage: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [openFilters, setOpenFilters] = useState<Record<string, boolean>>({});
-  const [primaryTab, setPrimaryTab] = useState<'autodex' | 'rules'>('autodex');
   const [rulesSubView, setRulesSubView] = useState<'summary' | 'errors' | 'performance'>('summary');
-  const [autoDexHeaderEnabled, setAutoDexHeaderEnabled] = useState(true);
   const [configureModalOpen, setConfigureModalOpen] = useState(false);
 
   const toggleFilterOpen = (filterId: string) => {
@@ -462,15 +457,7 @@ const DetectionRulesPage: React.FC = () => {
                 height: '100%',
               }}
             >
-              <RulesSecondaryNav 
-                selectedSection="installed"
-                onSectionChange={(section) => {
-                  // Keep on Detection rules (SIEM) section since all tabs are part of it
-                  if (section === 'installed') {
-                    setSelectedTab('installed');
-                  }
-                }}
-              />
+              <RulesSecondaryNav />
             </EuiPanel>
           </EuiFlexItem>
 
@@ -498,41 +485,9 @@ const DetectionRulesPage: React.FC = () => {
             rightSideItems={[
               <EuiFlexGroup gutterSize="m" responsive={false} wrap={false} alignItems="center" key="header-actions">
                 <EuiFlexItem grow={false}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      flexWrap: 'nowrap',
-                      gap: 10,
-                      padding: '6px 14px 6px 12px',
-                      borderRadius: 20,
-                      background: 'linear-gradient(135deg, rgba(217,232,255,0.45) 0%, rgba(236,226,254,0.5) 100%)',
-                      border: '1px solid #E3E8F2',
-                      borderLeft: '3px solid #7B61FF',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <EuiIcon type="sparkles" size="m" style={{ color: '#7B61FF', flexShrink: 0 }} />
-                    <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      AutoDEX
-                    </EuiText>
-                    <EuiSwitch
-                      label={autoDexHeaderEnabled ? 'On' : 'Off'}
-                      checked={autoDexHeaderEnabled}
-                      onChange={() => setAutoDexHeaderEnabled(!autoDexHeaderEnabled)}
-                      compressed
-                      disabled={false}
-                    />
-                    <EuiButtonEmpty
-                      size="xs"
-                      iconType="controlsHorizontal"
-                      color="primary"
-                      flush="left"
-                      onClick={() => setConfigureModalOpen(true)}
-                    >
-                      Configure
-                    </EuiButtonEmpty>
-                  </div>
+                  <EuiBadge color="success" iconType="sparkles">
+                    AutoDEX Running
+                  </EuiBadge>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiButtonEmpty iconType="gear" size="s">
@@ -599,20 +554,7 @@ const DetectionRulesPage: React.FC = () => {
 
         <EuiSpacer size="l" />
 
-        <EuiTabs size="l">
-          <EuiTab isSelected={primaryTab === 'autodex'} onClick={() => setPrimaryTab('autodex')}>
-            AutoDEX
-          </EuiTab>
-          <EuiTab isSelected={primaryTab === 'rules'} onClick={() => setPrimaryTab('rules')}>
-            Rules
-          </EuiTab>
-        </EuiTabs>
-
-        <EuiSpacer size="m" />
-
-        {primaryTab === 'rules' && (
-          <>
-            <EuiButtonGroup
+        <EuiButtonGroup
               legend="Rules view"
               options={[
                 { id: 'summary', label: 'Summary' },
@@ -710,15 +652,10 @@ const DetectionRulesPage: React.FC = () => {
                 onNavigateToRule={(id) => navigate(`/detection-rules/${id}`)}
               />
             )}
-          </>
-        )}
               </div>
 
         {/* Scrollable section */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px', minHeight: 0 }}>
-        {primaryTab === 'autodex' ? (
-          <AutoDexTabView onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)} />
-        ) : (
         <>
         <EuiSpacer size="m" />
 
@@ -1195,7 +1132,6 @@ const DetectionRulesPage: React.FC = () => {
           </EuiFlexItem>
         </EuiFlexGroup>
         </>
-        )}
         </div>
             </EuiPanel>
           </EuiFlexItem>
