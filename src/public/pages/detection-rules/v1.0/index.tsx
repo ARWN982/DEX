@@ -118,7 +118,7 @@ const DetectionRulesPage: React.FC = () => {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [hoveredFilter, setHoveredFilter] = useState<string | null>(null);
   const [openFilters, setOpenFilters] = useState<Record<string, boolean>>({});
-  const [primaryTab, setPrimaryTab] = useState<'autodex' | 'rules'>('rules');
+  const [primaryTab, setPrimaryTab] = useState<'autodex' | 'rules'>('autodex');
   const [rulesSubView, setRulesSubView] = useState<'summary' | 'errors' | 'performance'>('summary');
   const [autoDexHeaderEnabled, setAutoDexHeaderEnabled] = useState(true);
   const [configureModalOpen, setConfigureModalOpen] = useState(false);
@@ -625,6 +625,54 @@ const DetectionRulesPage: React.FC = () => {
               color="primary"
             />
             <EuiSpacer size="m" />
+            {/* ── Errors summary cards ── */}
+            {rulesSubView === 'errors' && (() => {
+              const CARDS = [
+                { accent: '#BD271E', value: '3', label: 'Rules failing', sub: '2 critical · 1 medium', btnLabel: 'View failures', btnIcon: 'alert' },
+                { accent: '#F5A700', value: 'Timeout ×2', label: 'Top error type', sub: 'Index not found ×1 · Parse error ×1', btnLabel: 'View logs', btnIcon: 'inspect' },
+                { accent: '#F5A700', value: '2', label: 'Coverage impact', sub: 'MITRE techniques now uncovered', btnLabel: 'View gaps', btnIcon: 'eyeClosed' },
+                { accent: '#017D73', value: '2 rules', label: 'AutoDEX remediated', sub: 'Fixed automatically today', btnLabel: 'View actions', btnIcon: 'checkInCircleFilled' },
+              ];
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gridTemplateRows: 'minmax(148px, auto)', gap: 8, alignItems: 'stretch' }}>
+                  {CARDS.map((c) => (
+                    <EuiPanel key={c.label} hasBorder hasShadow={false} paddingSize="m" style={{ borderLeft: `3px solid ${c.accent}`, borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
+                      <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>{c.label}</EuiText>
+                      <div style={{ fontSize: 26, fontWeight: 700, color: c.accent, lineHeight: 1.15, marginBottom: 6 }}>{c.value}</div>
+                      <EuiText size="xs" color="subdued" style={{ flex: 1 }}>{c.sub}</EuiText>
+                      <div style={{ marginTop: 'auto', paddingTop: 10 }}>
+                        <EuiButtonEmpty size="xs" iconType={c.btnIcon} flush="left" color="primary">{c.btnLabel}</EuiButtonEmpty>
+                      </div>
+                    </EuiPanel>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* ── Performance summary cards ── */}
+            {rulesSubView === 'performance' && (() => {
+              const CARDS = [
+                { accent: '#0077CC', value: '2.4s', label: 'Avg execution time', sub: '↑ 0.6s slower vs last week', btnLabel: 'View breakdown', btnIcon: 'clock' },
+                { accent: '#F5A700', value: '4 rules', label: 'Exceeding threshold', sub: 'Rules taking >5s to execute', btnLabel: 'View slow rules', btnIcon: 'inspect' },
+                { accent: '#0077CC', value: '14.2k', label: 'Daily executions', sub: 'Across 1,200 enabled rules today', btnLabel: 'View schedule', btnIcon: 'tableDensityExpanded' },
+                { accent: '#017D73', value: '0.8%', label: 'Timeout rate', sub: '↓ Down from 1.2% last week', btnLabel: 'View timeouts', btnIcon: 'visGauge' },
+              ];
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gridTemplateRows: 'minmax(148px, auto)', gap: 8, alignItems: 'stretch' }}>
+                  {CARDS.map((c) => (
+                    <EuiPanel key={c.label} hasBorder hasShadow={false} paddingSize="m" style={{ borderLeft: `3px solid ${c.accent}`, borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
+                      <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>{c.label}</EuiText>
+                      <div style={{ fontSize: 26, fontWeight: 700, color: c.accent, lineHeight: 1.15, marginBottom: 6 }}>{c.value}</div>
+                      <EuiText size="xs" color="subdued" style={{ flex: 1 }}>{c.sub}</EuiText>
+                      <div style={{ marginTop: 'auto', paddingTop: 10 }}>
+                        <EuiButtonEmpty size="xs" iconType={c.btnIcon} flush="left" color="primary">{c.btnLabel}</EuiButtonEmpty>
+                      </div>
+                    </EuiPanel>
+                  ))}
+                </div>
+              );
+            })()}
+
             {rulesSubView === 'summary' && (
               <DetectionSummaryPanel
                 executionFailures={[
@@ -670,7 +718,7 @@ const DetectionRulesPage: React.FC = () => {
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px', minHeight: 0 }}>
         {primaryTab === 'autodex' ? (
           <AutoDexTabView onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)} />
-        ) : rulesSubView === 'summary' ? (
+        ) : (
         <>
         <EuiSpacer size="m" />
 
@@ -1147,21 +1195,6 @@ const DetectionRulesPage: React.FC = () => {
           </EuiFlexItem>
         </EuiFlexGroup>
         </>
-        ) : (
-          <>
-            <EuiSpacer size="m" />
-            <EuiCallOut
-              title={rulesSubView === 'errors' ? 'Errors' : 'Performance'}
-              iconType="iInCircle"
-              color="primary"
-            >
-              <p>
-                {rulesSubView === 'errors'
-                  ? 'Cross-rule execution failures, noisy signals, and remediation status will appear here.'
-                  : 'Query latency, rule execution cost, and capacity trends will appear here.'}
-              </p>
-            </EuiCallOut>
-          </>
         )}
         </div>
             </EuiPanel>

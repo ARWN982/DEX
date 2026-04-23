@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   EuiBadge,
-  EuiButton,
   EuiButtonEmpty,
   EuiButtonIcon,
-  EuiContextMenu,
+  EuiFieldSearch,
   EuiFieldText,
+  EuiFilterButton,
+  EuiFilterGroup,
   EuiFlexGroup,
   EuiFlexItem,
   EuiHorizontalRule,
@@ -64,7 +65,7 @@ const PERSONAS: Persona[] = [
 // ─── Feed types ───────────────────────────────────────────────────────────────
 
 type Severity = 'critical' | 'high' | 'medium' | 'low';
-type Category = 'attacks' | 'attention' | 'noise' | 'gaps' | 'autodex';
+type Category = 'attention' | 'noise' | 'gaps' | 'autodex';
 
 interface FeedItem {
   id: string;
@@ -91,341 +92,289 @@ const SEVERITY_CONFIG: Record<Severity, { label: string; bg: string; color: stri
 // ─── Category config ──────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<Category, { label: string; icon: string; bg: string; color: string }> = {
-  attacks:  { label: 'Active attacks',    icon: 'securitySignalDetected', bg: '#FBEAEA', color: '#BD271E' },
-  attention:{ label: 'Needs attention',   icon: 'alert',                  bg: '#FEF3E2', color: '#F5A700' },
-  noise:    { label: 'Noise',             icon: 'minusInCircle',          bg: '#FFF8E6', color: '#AD6800' },
-  gaps:     { label: 'Detection gaps',    icon: 'eyeClosed',              bg: '#E6F1FA', color: '#0077CC' },
-  autodex:  { label: 'AutoDEX approval',  icon: 'sparkles',               bg: '#F0EBFF', color: '#7B61FF' },
+  attention:{ label: 'Rule health',       icon: 'alert',         bg: '#FEF3E2', color: '#F5A700' },
+  noise:    { label: 'Noise / FP',        icon: 'minusInCircle', bg: '#FFF8E6', color: '#AD6800' },
+  gaps:     { label: 'Coverage gaps',     icon: 'eyeClosed',     bg: '#E6F1FA', color: '#0077CC' },
+  autodex:  { label: 'AutoDEX',           icon: 'sparkles',      bg: '#F0EBFF', color: '#7B61FF' },
 };
 
-// ─── Feed data ────────────────────────────────────────────────────────────────
+// ─── Feed data (detection-engineering focused) ────────────────────────────────
 
 const ALL_FEED_ITEMS: FeedItem[] = [
-  // Active attacks
-  {
-    id: 'a1', type: 'Alert', category: 'attacks',
-    title: 'LSASS credential dump — WKSTN-047',
-    description: 'Unassigned · no analyst has touched this · 47 min old',
-    whyInFeed: 'Unassigned P1. Matches active credential chain on same host.',
-    age: '47m ago', severity: 'critical',
-    primaryAction: { label: 'Open in timeline', icon: 'timeline' },
-  },
-  {
-    id: 'a2', type: 'Alert', category: 'attacks',
-    title: 'Lateral movement — PsExec on DC-01',
-    description: 'Unassigned · high-value target · correlates with failed auth 8 min prior',
-    whyInFeed: 'Domain controller targeted. Correlated with WKSTN-047 chain.',
-    age: '1h ago', severity: 'critical',
-    primaryAction: { label: 'Investigate', icon: 'inspect' },
-  },
-  {
-    id: 'a3', type: 'Alert', category: 'attacks',
-    title: 'AWS S3 bucket ACL changed to public',
-    description: 'Unassigned · outside business hours · potential data exposure',
-    whyInFeed: 'Outside business hours. No owner assigned. Data exfil risk.',
-    age: '2h ago', severity: 'high',
-    primaryAction: { label: 'Assign to me', icon: 'user' },
-  },
-  {
-    id: 'a4', type: 'Alert', category: 'attacks',
-    title: 'Okta MFA disabled — 3 accounts in 10 min',
-    description: 'Pattern suggests automated attack · outside business hours',
-    whyInFeed: 'Automated pattern. Identity provider threat.',
-    age: '3h ago', severity: 'high',
-    primaryAction: { label: 'Investigate', icon: 'inspect' },
-  },
-  // Detection health
+  // ── Rule health ──────────────────────────────────────────────────────────────
   {
     id: 'b1', type: 'Rule failure', category: 'attention',
     title: 'DNS activity rule — failing silently',
-    description: 'Field schema mismatch · DNS tunneling now unmonitored',
-    whyInFeed: 'Rule is your ownership. Blind spot opened 14 min ago.',
+    description: 'Field schema mismatch after Agent 8.14 upgrade · DNS tunneling now unmonitored',
+    whyInFeed: 'Rule is your ownership. Blind spot opened 14 min ago. AutoDEX detected index_not_found_exception in execution log.',
     age: '14m ago', severity: 'critical',
     primaryAction: { label: 'Fix rule', icon: 'wrench' },
   },
   {
     id: 'b2', type: 'Rule failure', category: 'attention',
     title: 'FTP activity rule — index pattern not found',
-    description: 'Rule enabled but not executing · FTP transfers unmonitored',
-    whyInFeed: 'Index pattern removed after data stream rename.',
+    description: 'Rule enabled but not executing · FTP transfers unmonitored · data stream renamed',
+    whyInFeed: 'Index pattern removed after data stream migration. AutoDEX identified the correct target index and proposed a fix.',
     age: '2h ago', severity: 'critical',
     primaryAction: { label: 'Fix rule', icon: 'wrench' },
   },
   {
-    id: 'b3', type: 'Coverage gap', category: 'attention',
-    title: 'MITRE T1486 — ransomware impact uncovered',
-    description: 'No active rules · endpoint file telemetry available · 3 rules ready to install',
-    whyInFeed: 'Active ransomware campaign targeting your sector. No coverage.',
+    id: 'b3', type: 'Rule failure', category: 'attention',
+    title: 'SMB lateral movement rule — field mapping broken',
+    description: 'process.parent.executable field path changed in Agent 8.14 · rule returns zero results',
+    whyInFeed: 'Upgrade-related regression. Lateral movement on Windows now has a blind spot. AutoDEX flagged the field mismatch.',
+    age: '1h ago', severity: 'critical',
+    primaryAction: { label: 'Fix rule', icon: 'wrench' },
+  },
+  {
+    id: 'b4', type: 'Rule failure', category: 'attention',
+    title: 'PowerShell encoded command rule — consistent execution timeout',
+    description: 'Query too broad for current data volume · execution times out every run',
+    whyInFeed: 'AutoDEX detected 100% timeout rate over 24 hours. Query needs scoping or time-window reduction.',
+    age: '4h ago', severity: 'high',
+    primaryAction: { label: 'Optimise query', icon: 'wrench' },
+  },
+  {
+    id: 'b5', type: 'Version update', category: 'attention',
+    title: 'Potential Widespread Malware rule — v3.3 available',
+    description: 'Elastic Security Labs patch · fixes AV scanning false positives · your version: v3.2',
+    whyInFeed: 'AutoDEX verified no active suppressions conflict with v3.3. Low-risk update ready to apply.',
+    age: '3h ago', severity: 'low',
+    primaryAction: { label: 'Review update', icon: 'inspect' },
+  },
+  // ── Coverage gaps ─────────────────────────────────────────────────────────────
+  {
+    id: 'g1', type: 'Coverage gap', category: 'gaps',
+    title: 'T1055 — Process Injection: no detection coverage',
+    description: 'High-priority technique · endpoint telemetry available · 3 candidate prebuilt rules identified',
+    whyInFeed: 'AutoDEX identified this gap in the latest MITRE coverage audit. In-progress gap fill — 65% complete.',
+    age: '6h ago', severity: 'high',
+    primaryAction: { label: 'View gap', icon: 'eye' },
+  },
+  {
+    id: 'g2', type: 'Coverage gap', category: 'gaps',
+    title: 'T1003 — OS Credential Dumping: LSASS rule missing',
+    description: 'Partial coverage only · Mimikatz variant undetected · endpoint telemetry confirmed active',
+    whyInFeed: 'AutoDEX correlated with recent threat intel feed. Gap fill in progress — LSASS memory protection rule being staged.',
+    age: '1 day ago', severity: 'critical',
+    primaryAction: { label: 'Install rules', icon: 'plusInCircle' },
+  },
+  {
+    id: 'g3', type: 'Coverage gap', category: 'gaps',
+    title: 'T1486 — Data Encrypted for Impact: no active rules',
+    description: 'No active rules · endpoint file telemetry available · 3 prebuilt rules ready to install',
+    whyInFeed: 'Active ransomware campaigns targeting your sector. AutoDEX has 3 Elastic prebuilt rules ready with no noise concerns.',
     age: 'new', severity: 'high',
     primaryAction: { label: 'Install rules', icon: 'plusInCircle' },
   },
-  // Noise
+  // ── Noise / FP tuning ────────────────────────────────────────────────────────
   {
-    id: 'c1', type: 'Noise', category: 'noise',
+    id: 'c1', type: 'False positive', category: 'noise',
     title: '"Potential PowerShell HackTool" — 334 alerts/week from backup-agent.exe',
-    description: '98% false positive rate · same process ancestry on all 72 affected hosts',
-    whyInFeed: 'AutoDEX proposed a scoped exception. Pending your approval.',
+    description: '98% false positive rate · same process ancestry on all 72 affected hosts · backup-agent signed by internal CA',
+    whyInFeed: 'AutoDEX proposed a scoped exception (process.name: backup-agent.exe AND host.name: backup-*). Pending your approval.',
     age: '2 days ago', severity: 'medium',
     primaryAction: { label: 'Review exception', icon: 'eye' },
   },
   {
-    id: 'c2', type: 'Noise', category: 'noise',
+    id: 'c2', type: 'False positive', category: 'noise',
     title: '"Unusual Execution via MMC" — 197 alerts from developer workstations',
-    description: 'Visual Studio build tooling · corp-dev-* machines · 94% false positive',
-    whyInFeed: 'Pattern consistent for 30 days. Safe to suppress for dev group.',
+    description: 'Visual Studio build tooling · corp-dev-* machines · 94% false positive · consistent for 30 days',
+    whyInFeed: 'AutoDEX proposed exception: user.name: corp-dev-*. Preserves detection on non-dev hosts. Pending your approval.',
     age: '3 days ago', severity: 'low',
-    primaryAction: { label: 'Review', icon: 'eye' },
+    primaryAction: { label: 'Review exception', icon: 'eye' },
   },
-  // AutoDEX approval
   {
-    id: 'd1', type: 'AutoDEX', category: 'autodex',
-    title: 'Tuning proposal — backup-agent FP suppression',
-    description: '340 alerts/week · 98% from backup-agent · exception list entry proposed',
-    whyInFeed: 'AutoDEX confidence: 96%. Semi-auto mode requires your sign-off.',
+    id: 'c3', type: 'False positive', category: 'noise',
+    title: '"Windows Registry Modification via reg.exe" — 312 alerts/week from SCCM',
+    description: '89% FP from sccm-agent.exe · all on managed endpoints · IT confirmed as approved tooling',
+    whyInFeed: 'AutoDEX identified SCCM as the source via fleet API. Scoped exception proposed for managed endpoint group.',
+    age: '1 day ago', severity: 'medium',
+    primaryAction: { label: 'Review exception', icon: 'eye' },
+  },
+  // ── AutoDEX actions ───────────────────────────────────────────────────────────
+  {
+    id: 'd1', type: 'AutoDEX approval', category: 'autodex',
+    title: 'Tuning proposal — backup-agent.exe FP suppression on PowerShell rule',
+    description: '334 alerts/week suppressed · scoped to host.name: backup-* · confidence 96%',
+    whyInFeed: 'AutoDEX confidence: 96%. Semi-auto mode requires your sign-off before applying the exception.',
     age: '1h ago', severity: 'medium', needsApproval: true,
     primaryAction: { label: 'Approve', icon: 'check' },
   },
   {
-    id: 'd2', type: 'AutoDEX', category: 'autodex',
-    title: 'New rule proposed — Okta impossible travel',
-    description: 'T1078.004 gap · matches your Okta integration · low noise estimate',
-    whyInFeed: 'AutoDEX confidence: 91%. Rule install scoped to your Okta data stream.',
+    id: 'd2', type: 'AutoDEX approval', category: 'autodex',
+    title: 'New rule install — Okta impossible travel detection',
+    description: 'T1078.004 coverage gap · matches your Okta integration · low noise estimate from similar environments',
+    whyInFeed: 'AutoDEX confidence: 91%. Rule install scoped to your Okta data stream. No existing suppressions conflict.',
     age: '2h ago', severity: 'high', needsApproval: true,
     primaryAction: { label: 'Approve', icon: 'check' },
   },
   {
-    id: 'd3', type: 'AutoDEX', category: 'autodex',
-    title: 'T1486 rules — install proposal',
-    description: '3 prebuilt rules available · all required fields present',
-    whyInFeed: 'AutoDEX confidence: 99%. Zero suppressions would be affected.',
+    id: 'd3', type: 'AutoDEX approval', category: 'autodex',
+    title: 'Rule install proposal — T1486 Data Destruction (3 rules)',
+    description: '3 prebuilt rules · all required fields present · zero suppressions affected',
+    whyInFeed: 'AutoDEX confidence: 99%. Closes ransomware impact gap immediately. Requires your approval under Semi-auto mode.',
     age: '3h ago', severity: 'high', needsApproval: true,
     primaryAction: { label: 'Approve', icon: 'check' },
   },
+  {
+    id: 'd4', type: 'AutoDEX approval', category: 'autodex',
+    title: 'Rule version update — Potential Widespread Malware v3.2→v3.3',
+    description: 'Elastic Security Labs patch · adds AV process exclusions · narrows detection scope',
+    whyInFeed: 'AutoDEX verified no suppressions conflict with v3.3. Low-risk, false-positive-reducing update awaiting sign-off.',
+    age: '30m ago', severity: 'low', needsApproval: true,
+    primaryAction: { label: 'Approve', icon: 'check' },
+  },
+  {
+    id: 'd5', type: 'AutoDEX action', category: 'autodex',
+    title: 'Exception applied — Unusual Execution via MMC (corp-dev-* workstations)',
+    description: 'user.name: corp-dev-* exception applied · 197 alerts/week suppressed · Full-auto action',
+    whyInFeed: 'AutoDEX Full-auto applied based on 30-day validated pattern. Detection preserved on all non-dev hosts.',
+    age: '2h ago', severity: 'low',
+    primaryAction: { label: 'View action log', icon: 'inspect' },
+  },
+  {
+    id: 'd6', type: 'AutoDEX action', category: 'autodex',
+    title: 'Index pattern corrected — DNS activity rule restored',
+    description: 'AutoDEX updated logs-endpoint.* → logs-endpoint.events.* · rule now executing successfully',
+    whyInFeed: 'AutoDEX fixed execution failure on your owned rule. Verified next scheduled run returned results.',
+    age: '12m ago', severity: 'low',
+    primaryAction: { label: 'View action log', icon: 'inspect' },
+  },
 ];
 
-// ─── Section config ───────────────────────────────────────────────────────────
 
-const FEED_SECTIONS: Array<{ id: Category; showReviewAll?: boolean }> = [
-  { id: 'attacks' },
-  { id: 'attention' },
-  { id: 'noise' },
-  { id: 'autodex', showReviewAll: true },
-];
-
-// ─── Severity icon badge ──────────────────────────────────────────────────────
-
-const SeverityIcon: React.FC<{ severity: Severity }> = ({ severity }) => {
-  const cfg = SEVERITY_CONFIG[severity];
-  return (
-    <div style={{
-      width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-      background: cfg.bg,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <EuiIcon type={cfg.icon} size="m" style={{ color: cfg.color }} />
-    </div>
-  );
-};
-
-// ─── FeedRow ──────────────────────────────────────────────────────────────────
+// ─── FeedRow — matches AutoDEX activity log card pattern ─────────────────────
 
 const FeedRow: React.FC<{ item: FeedItem }> = ({ item }) => {
-  const [actionsOpen, setActionsOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [approved, setApproved] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const sevCfg = SEVERITY_CONFIG[item.severity];
+  const pendingApproval = !!item.needsApproval && !approved;
 
   if (dismissed) return null;
 
-  const contextPanels = [{
-    id: 0,
-    items: [
-      { name: 'Investigate in timeline', icon: 'timeline',      onClick: () => setActionsOpen(false) },
-      { name: 'Add to case',             icon: 'folderClosed',  onClick: () => setActionsOpen(false) },
-      { name: 'Add to chat',             icon: 'productAgent',  onClick: () => setActionsOpen(false) },
-      { name: 'Bookmark',                icon: 'starEmpty',     onClick: () => setActionsOpen(false) },
-      { name: 'Dismiss',                 icon: 'minusInCircle', onClick: () => setDismissed(true) },
-    ],
-  }];
-
   return (
-    <EuiFlexGroup alignItems="flexStart" responsive={false} gutterSize="m" style={{ padding: '14px 0' }}>
-      {/* Severity icon */}
-      <EuiFlexItem grow={false}>
-        <SeverityIcon severity={item.severity} />
-      </EuiFlexItem>
+    <div style={{ padding: '12px 0' }}>
+      {/* ── Header row: icon | type badge | approval badge | title | age | approval buttons ── */}
+      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 10 }}>
+        <EuiFlexItem grow={false}>
+          <EuiIcon
+            type={pendingApproval ? 'warningFilled' : approved ? 'checkInCircleFilled' : 'checkInCircleFilled'}
+            color={pendingApproval ? 'warning' : 'success'}
+            size="s"
+          />
+        </EuiFlexItem>
 
-      {/* Content */}
-      <EuiFlexItem grow={true} style={{ minWidth: 0 }}>
-        <EuiText size="s" style={{ fontWeight: 600, marginBottom: 3 }}>{item.title}</EuiText>
-        <EuiText size="s" color="subdued" style={{ marginBottom: 8 }}>{item.description}</EuiText>
+        {/* Type badge — hollow, no colour */}
+        <EuiFlexItem grow={false}>
+          <EuiBadge color="hollow">{item.type}</EuiBadge>
+        </EuiFlexItem>
 
-        {/* Badge row */}
-        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ flexWrap: 'wrap' }}>
-          {/* Severity badge */}
+        {/* Approvals needed badge sits immediately after type badge */}
+        {pendingApproval && (
           <EuiFlexItem grow={false}>
-            <EuiBadge style={{ background: sevCfg.bg, color: sevCfg.color, border: `1px solid ${sevCfg.color}33` }}>
-              {sevCfg.label}
-            </EuiBadge>
+            <EuiBadge color="warning">Approvals needed</EuiBadge>
           </EuiFlexItem>
-          {/* Type badge */}
-          <EuiFlexItem grow={false}>
-            <EuiBadge color="hollow">{item.type}</EuiBadge>
-          </EuiFlexItem>
-          {/* Needs approval badge */}
-          {item.needsApproval && !approved && (
-            <EuiFlexItem grow={false}>
-              <EuiBadge
-                style={{ background: '#F0EBFF', color: '#7B61FF', border: '1px solid #C9B8FF', fontWeight: 600 }}
-                iconType="sparkles"
-              >
-                Needs approval
-              </EuiBadge>
-            </EuiFlexItem>
-          )}
-          {item.needsApproval && !approved && (
-            <EuiFlexItem grow={false}>
-              <EuiBadge color="hollow" style={{ fontSize: 11, color: '#69707D' }}>AutoDEX · pending</EuiBadge>
-            </EuiFlexItem>
-          )}
-          {approved && (
-            <EuiFlexItem grow={false}>
-              <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
-            </EuiFlexItem>
-          )}
-        </EuiFlexGroup>
-      </EuiFlexItem>
-
-      {/* Age + actions */}
-      <EuiFlexItem grow={false} style={{ flexShrink: 0, textAlign: 'right' }}>
-        <EuiText size="xs" color="subdued" style={{ marginBottom: 8, whiteSpace: 'nowrap' }}>{item.age}</EuiText>
-        {!approved && (
-          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} justifyContent="flexEnd">
-            <EuiFlexItem grow={false}>
-              {item.needsApproval ? (
-                <EuiFlexGroup gutterSize="xs" responsive={false}>
-                  <EuiFlexItem grow={false}>
-                    <EuiButton size="s" iconType="check" fill color="primary" onClick={() => setApproved(true)}>
-                      Approve
-                    </EuiButton>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false}>
-                    <EuiButton size="s" iconType="minusInCircle" color="text" onClick={() => setDismissed(true)}>
-                      Dismiss
-                    </EuiButton>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-              ) : (
-                <EuiFlexGroup gutterSize="xs" responsive={false}>
-                  <EuiFlexItem grow={false}>
-                    <EuiButton size="s" iconType={item.primaryAction.icon}>
-                      {item.primaryAction.label}
-                    </EuiButton>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false}>
-                    <EuiPopover
-                      isOpen={actionsOpen}
-                      closePopover={() => setActionsOpen(false)}
-                      button={
-                        <EuiButton size="s" iconType="arrowDown" iconSide="right" onClick={() => setActionsOpen(!actionsOpen)}>
-                          Take actions
-                        </EuiButton>
-                      }
-                      panelPaddingSize="none"
-                      anchorPosition="downRight"
-                    >
-                      <EuiContextMenu initialPanelId={0} panels={contextPanels} />
-                    </EuiPopover>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-              )}
-            </EuiFlexItem>
-          </EuiFlexGroup>
         )}
-      </EuiFlexItem>
-    </EuiFlexGroup>
-  );
-};
+        {approved && (
+          <EuiFlexItem grow={false}>
+            <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
+          </EuiFlexItem>
+        )}
 
-// ─── FeedSection ──────────────────────────────────────────────────────────────
+        <EuiFlexItem grow={true}>
+          <EuiText size="s" style={{ fontWeight: 700 }}>{item.title}</EuiText>
+        </EuiFlexItem>
 
-const FeedSectionBlock: React.FC<{
-  categoryId: Category;
-  items: FeedItem[];
-  defaultOpen?: boolean;
-  showReviewAll?: boolean;
-}> = ({ categoryId, items, defaultOpen = false, showReviewAll }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const cfg = CATEGORY_CONFIG[categoryId];
-  if (items.length === 0) return null;
+        <EuiFlexItem grow={false}>
+          <EuiText size="xs" color="subdued" style={{ whiteSpace: 'nowrap' }}>{item.age}</EuiText>
+        </EuiFlexItem>
 
-  return (
-    <div style={{ marginBottom: 4 }}>
-      {/* Section header */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
+        {/* Approval action buttons in header (approval items only) */}
+        {pendingApproval && (
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup gutterSize="none" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty
+                  size="xs" iconType="check" color="primary"
+                  onClick={() => setApproved(true)}
+                  style={{ border: '1px solid #D3DAE6', borderRadius: 4, paddingLeft: 8, paddingRight: 8, fontSize: 12, fontWeight: 600 }}
+                >
+                  Approve
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        )}
+      </EuiFlexGroup>
+
+      {/* ── Reasoning panel — left stroke yellow if pending approval, grey otherwise ── */}
+      <EuiPanel
+        hasBorder
+        hasShadow={false}
+        paddingSize="m"
         style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '10px 0',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left',
+          borderRadius: 6,
+          background: '#F7F9FF',
+          marginBottom: 4,
+          borderLeft: `3px solid ${pendingApproval ? '#F5A700' : '#D3DAE6'}`,
         }}
       >
-        <EuiIcon type={isOpen ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" />
-
-        {/* Category icon with colored bg */}
-        <div style={{
-          width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-          background: cfg.bg,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <EuiIcon type={cfg.icon} size="s" style={{ color: cfg.color }} />
-        </div>
-
-        <EuiText size="xs" style={{
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.07em',
-          color: '#343741',
-        }}>
-          {cfg.label}
+        <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>
+          Why in your feed
         </EuiText>
-        <EuiBadge color="hollow" style={{ fontSize: 11 }}>{items.length}</EuiBadge>
+        <EuiText size="s" style={{ marginBottom: 10 }}>{item.whyInFeed}</EuiText>
 
-        {/* Review all for AutoDEX */}
-        {showReviewAll && isOpen && (
-          <div style={{ marginLeft: 'auto' }} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            <EuiBadge
-              color="warning"
-              iconType="popout"
-              iconSide="right"
-              style={{ cursor: 'pointer', fontWeight: 600 }}
-            >
-              Review all
-            </EuiBadge>
-          </div>
-        )}
-      </button>
-
-      {/* Items */}
-      {isOpen && (
-        <div style={{ paddingLeft: 32 }}>
-          {items.map((item, i) => (
-            <div key={item.id}>
-              <FeedRow item={item} />
-              {i < items.length - 1 && <EuiHorizontalRule margin="none" />}
-            </div>
-          ))}
+        {/* Severity badge */}
+        <div style={{ marginBottom: 8 }}>
+          <EuiBadge style={{ background: sevCfg.bg, color: sevCfg.color, border: `1px solid ${sevCfg.color}33` }}>
+            {sevCfg.label}
+          </EuiBadge>
         </div>
-      )}
+
+        {/* Expand for description */}
+        <EuiButtonEmpty
+          size="xs"
+          iconType={expanded ? 'chevronSingleDown' : 'chevronSingleRight'}
+          color="primary"
+          flush="left"
+          onClick={() => setExpanded(!expanded)}
+        >
+          Details
+        </EuiButtonEmpty>
+        {expanded && (
+          <EuiText size="s" color="subdued" style={{ marginTop: 8, marginBottom: 4 }}>
+            {item.description}
+          </EuiText>
+        )}
+
+        {/* Action buttons */}
+        <EuiFlexGroup gutterSize="xs" responsive={false} style={{ marginTop: 8 }}>
+          {!pendingApproval && !approved && (
+            <EuiFlexItem grow={false}>
+              <EuiButtonEmpty size="xs" iconType={item.primaryAction.icon} flush="left" color="primary">
+                {item.primaryAction.label}
+              </EuiButtonEmpty>
+            </EuiFlexItem>
+          )}
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty size="xs" iconType="productAgent" flush="left" style={{ color: '#7B61FF' }}>
+              Add to chat
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty size="xs" iconType="minusInCircle" flush="left" color="text" onClick={() => setDismissed(true)}>
+              Dismiss
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiPanel>
     </div>
   );
 };
+
 
 // ─── Persona selector ─────────────────────────────────────────────────────────
 
@@ -509,7 +458,7 @@ const PersonaSelector: React.FC<{ persona: Persona; onChange: (p: Persona) => vo
   );
 };
 
-// ─── Filter popover ───────────────────────────────────────────────────────────
+// ─── Filter popover (EuiFilterButton style — matches AutoDEX activity log) ────
 
 const FilterPopover: React.FC<{
   label: string;
@@ -523,38 +472,155 @@ const FilterPopover: React.FC<{
     <EuiPopover
       isOpen={open}
       closePopover={() => setOpen(false)}
-      button={
-        <EuiButtonEmpty
-          size="xs"
-          iconType="filter"
-          iconSide="left"
-          onClick={() => setOpen(!open)}
-          style={{ fontWeight: activeCount > 0 ? 700 : 400 }}
-        >
-          {label}{activeCount > 0 ? ` (${activeCount})` : ''}
-        </EuiButtonEmpty>
-      }
       panelPaddingSize="none"
-      anchorPosition="downRight"
+      button={
+        <EuiFilterButton
+          iconType="arrowDown"
+          onClick={() => setOpen(!open)}
+          isSelected={open}
+          numFilters={options.length}
+          hasActiveFilters={activeCount > 0}
+          numActiveFilters={activeCount}
+        >
+          {label}
+        </EuiFilterButton>
+      }
     >
       <EuiSelectable options={options} onChange={onChange}>
-        {(list) => <div style={{ width: 200, padding: 8 }}>{list}</div>}
+        {(list) => <div style={{ width: 220 }}>{list}</div>}
       </EuiSelectable>
     </EuiPopover>
   );
 };
 
+// ─── Feed grouping ────────────────────────────────────────────────────────────
+
+const GROUP_ORDER = [
+  'Rule failure',
+  'Version update',
+  'Coverage gap',
+  'False positive',
+  'AutoDEX approval',
+  'AutoDEX action',
+];
+
+const FEED_GROUP_CONFIG: Record<string, { description: string; color: string; bg: string }> = {
+  'Rule failure':     { description: 'Rules that have failed executions and AutoDEX has a suggested fix for the issues', color: '#BD271E', bg: '#FBEAEA' },
+  'Version update':   { description: 'Elastic prebuilt rule updates AutoDEX has verified are safe to apply', color: '#F5A700', bg: '#FEF3E2' },
+  'Coverage gap':     { description: 'MITRE ATT&CK techniques with no detection coverage in your environment', color: '#0077CC', bg: '#E6F1FA' },
+  'False positive':   { description: 'High-volume false positive patterns with AutoDEX exception proposals pending review', color: '#AD6800', bg: '#FFF8E6' },
+  'AutoDEX approval': { description: 'AutoDEX proposals in semi-auto mode that require your sign-off before being applied', color: '#7B61FF', bg: '#F0EBFF' },
+  'AutoDEX action':   { description: 'AutoDEX fully automated actions applied to your ruleset — logged for your review', color: '#017D73', bg: '#E6F6F0' },
+};
+
+const FeedGroup: React.FC<{
+  typeLabel: string;
+  items: FeedItem[];
+  defaultOpen?: boolean;
+}> = ({ typeLabel, items, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const cfg = FEED_GROUP_CONFIG[typeLabel] ?? { description: typeLabel, color: '#69707D', bg: '#F5F7FA' };
+  const pendingCount = items.filter((i) => i.needsApproval).length;
+
+  if (items.length === 0) return null;
+
+  return (
+    <EuiPanel
+      hasBorder
+      hasShadow={false}
+      paddingSize="none"
+      style={{ borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}
+    >
+      {/* ── Header row ── */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '10px 14px', background: isOpen ? '#FAFBFD' : '#fff',
+          border: 'none', cursor: 'pointer', textAlign: 'left',
+          borderBottom: isOpen ? '1px solid #EEF0F3' : 'none',
+        }}
+      >
+        <EuiIcon type={isOpen ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" style={{ flexShrink: 0 }} />
+        <EuiBadge color="hollow" style={{ flexShrink: 0 }}>{typeLabel}</EuiBadge>
+        {pendingCount > 0 && (
+          <EuiBadge color="warning" iconType="warningFilled" style={{ flexShrink: 0 }}>
+            {pendingCount} Approvals needed
+          </EuiBadge>
+        )}
+        {/* Description inline when collapsed */}
+        {!isOpen && (
+          <EuiText
+            size="xs"
+            color="subdued"
+            style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {cfg.description}
+          </EuiText>
+        )}
+        {/* Right meta */}
+        <div
+          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {isOpen && (
+            <EuiText size="xs" color="subdued">
+              Tasks:&nbsp;<strong>{items.length}</strong>
+            </EuiText>
+          )}
+          <EuiButtonEmpty
+            size="xs"
+            iconType="arrowDown"
+            iconSide="right"
+            color="text"
+            style={{ border: '1px solid #D3DAE6', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
+          >
+            Take action
+          </EuiButtonEmpty>
+        </div>
+      </button>
+
+      {/* Description below header in expanded state */}
+      {isOpen && (
+        <div style={{ padding: '6px 14px 8px', borderBottom: '1px solid #EEF0F3' }}>
+          <EuiText size="xs" color="subdued">{cfg.description}</EuiText>
+        </div>
+      )}
+
+      {/* Items */}
+      {isOpen && (
+        <div>
+          {items.map((item, i) => (
+            <div key={item.id} style={{ padding: '0 14px' }}>
+              <FeedRow item={item} />
+              {i < items.length - 1 && <EuiHorizontalRule margin="none" />}
+            </div>
+          ))}
+        </div>
+      )}
+    </EuiPanel>
+  );
+};
+
 // ─── Main page ────────────────────────────────────────────────────────────────
+
+const METRIC_CARDS = [
+  { num: '03', numColor: '#F5A700', label: 'Rules failing',          sub: 'Silent failures since last check',         action: 'Review all', actionIcon: 'wrench', catLabel: 'Rule health' },
+  { num: '4',  numColor: '#017D73', label: 'Execution gaps',         sub: 'AutoDEX filling 4 MITRE techniques',       action: 'View gaps',  actionIcon: 'eye',    catLabel: 'Coverage gaps' },
+  { num: '10', numColor: '#AD6800', label: 'Noise / FP',             sub: 'Exception proposals pending approval',     action: 'Review all', actionIcon: 'check',  catLabel: 'Noise / FP' },
+  { num: '72%',numColor: '#0077CC', label: 'MITRE ATT&CK coverage',  sub: '5 techniques without detection coverage',  action: 'View gaps',  actionIcon: 'eyeClosed', catLabel: 'Coverage gaps' },
+];
 
 const InboxPage: React.FC = () => {
   const [persona, setPersona] = useState<Persona>(PERSONAS[0]);
   const [aiQuery, setAiQuery] = useState('');
+  const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState([
-    { label: 'Active attacks',   checked: undefined as 'on' | undefined },
-    { label: 'Needs attention',  checked: undefined as 'on' | undefined },
-    { label: 'Noise',            checked: undefined as 'on' | undefined },
-    { label: 'Detection gaps',   checked: undefined as 'on' | undefined },
-    { label: 'AutoDEX approval', checked: undefined as 'on' | undefined },
+    { label: 'Rule health',   checked: undefined as 'on' | undefined },
+    { label: 'Noise / FP',    checked: undefined as 'on' | undefined },
+    { label: 'Coverage gaps', checked: undefined as 'on' | undefined },
+    { label: 'AutoDEX',       checked: undefined as 'on' | undefined },
   ]);
   const [approvalFilter, setApprovalFilter] = useState([
     { label: 'Needs approval', checked: undefined as 'on' | undefined },
@@ -564,28 +630,47 @@ const InboxPage: React.FC = () => {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-  // Derive filtered items
-  const activeCats = categoryFilter.filter(o => o.checked === 'on').map(o => o.label.toLowerCase().replace(' ', '_'));
-  const activeApprovals = approvalFilter.filter(o => o.checked === 'on').map(o => o.label);
+  const filteredItems = useMemo(() => {
+    const activeCatLabels = categoryFilter.filter(o => o.checked === 'on').map(o => o.label);
+    const wantNeedsApproval = approvalFilter.find(o => o.label === 'Needs approval')?.checked === 'on';
+    const hasApprovalFilter = approvalFilter.some(o => o.checked === 'on');
 
-  const getItems = (cat: Category) => {
-    let items = ALL_FEED_ITEMS.filter(i => i.category === cat);
-    if (activeCats.length > 0 && !activeCats.some(c => CATEGORY_CONFIG[cat].label.toLowerCase().includes(c.replace('_', ' ')))) return [];
-    if (activeApprovals.includes('Needs approval')) items = items.filter(i => i.needsApproval);
-    return items;
+    return ALL_FEED_ITEMS.filter(item => {
+      if (search) {
+        const q = search.toLowerCase();
+        if (!item.title.toLowerCase().includes(q) && !item.type.toLowerCase().includes(q)) return false;
+      }
+      if (activeCatLabels.length > 0) {
+        const itemCatLabel = CATEGORY_CONFIG[item.category].label;
+        if (!activeCatLabels.includes(itemCatLabel)) return false;
+      }
+      if (hasApprovalFilter && wantNeedsApproval) {
+        if (!item.needsApproval) return false;
+      }
+      return true;
+    });
+  }, [search, categoryFilter, approvalFilter]);
+
+  const hasActiveFilters = search.length > 0 || categoryFilter.some(o => o.checked === 'on') || approvalFilter.some(o => o.checked === 'on');
+
+  const groupedItems = useMemo(
+    () =>
+      GROUP_ORDER.map(type => ({
+        type,
+        items: filteredItems.filter(item => item.type === type),
+      })).filter(g => g.items.length > 0),
+    [filteredItems]
+  );
+
+  const clearAllFilters = () => {
+    setSearch('');
+    setCategoryFilter(f => f.map(o => ({ ...o, checked: undefined })));
+    setApprovalFilter(f => f.map(o => ({ ...o, checked: undefined })));
   };
 
-  const totalItems = FEED_SECTIONS.reduce((sum, s) => sum + getItems(s.id).length, 0);
-
-  const METRIC_CARDS = [
-    { num: '01', numColor: '#BD271E', label: 'Active attacks',  sub: 'Unassigned P1 on WKSTN-047',         action: 'Assign to me',  actionIcon: 'user',        sectionId: 'attacks' },
-    { num: '02', numColor: '#F5A700', label: 'Rules failing',   sub: 'Silent failures since last check',    action: 'Review all',    actionIcon: 'wrench',      sectionId: 'attention' },
-    { num: '10', numColor: '#F5A700', label: 'Noise',           sub: 'Exceptions ready for approval',       action: 'Approve all',   actionIcon: 'check',       sectionId: 'noise' },
-    { num: '5',  numColor: '#0077CC', label: 'Coverage gaps',   sub: 'MITRE techniques uncovered',          action: 'Review',        actionIcon: 'eye',         sectionId: 'gaps' },
-  ];
-
-  const scrollToSection = (id: string) => {
-    document.getElementById(`feed-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /** Clicking a metric card activates its category filter */
+  const filterByCategory = (catLabel: string) => {
+    setCategoryFilter(prev => prev.map(o => ({ ...o, checked: o.label === catLabel ? 'on' : undefined })));
   };
 
   return (
@@ -597,17 +682,16 @@ const InboxPage: React.FC = () => {
         <div style={{ flex: 1, marginLeft: 80, overflowY: 'auto', background: '#F6F9FC', padding: 16 }}>
           <div style={{ background: '#fff', borderRadius: 8, border: '1px solid #E3E8F2', minHeight: 'calc(100vh - 80px)', overflow: 'hidden' }}>
 
-            {/* ── Persona selector ─────────────────────────────── */}
             <PersonaSelector persona={persona} onChange={setPersona} />
 
             <div style={{ padding: '24px 32px 48px' }}>
 
-              {/* ── Page header ──────────────────────────────────── */}
+              {/* ── Page header ── */}
               <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s" style={{ marginBottom: 20 }}>
                 <EuiFlexItem>
                   <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                     <EuiFlexItem grow={false}>
-                      <EuiTitle size="l"><h1>Inbox</h1></EuiTitle>
+                      <EuiTitle size="l"><h1>AI Briefing</h1></EuiTitle>
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
                       <EuiBadge color="hollow" style={{ fontSize: 11 }}>
@@ -624,7 +708,7 @@ const InboxPage: React.FC = () => {
                 <EuiFlexItem grow={false}>
                   <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
                     <EuiFlexItem grow={false}>
-                      <EuiToolTip content="Feed history">
+                      <EuiToolTip content="History">
                         <EuiButtonIcon iconType="clock" aria-label="History" color="text" />
                       </EuiToolTip>
                     </EuiFlexItem>
@@ -638,41 +722,14 @@ const InboxPage: React.FC = () => {
                 </EuiFlexItem>
               </EuiFlexGroup>
 
-              {/* ── AI Briefing panel ────────────────────────────── */}
-              <EuiPanel hasBorder hasShadow={false} paddingSize="l" style={{ borderRadius: 8, marginBottom: 20, borderLeft: '3px solid #7B61FF' }}>
-                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 12 }}>
-                  <EuiFlexItem grow={false}><EuiIcon type="sparkles" size="m" style={{ color: '#7B61FF' }} /></EuiFlexItem>
-                  <EuiFlexItem><EuiTitle size="s"><h2 style={{ color: '#7B61FF' }}>Today's briefing</h2></EuiTitle></EuiFlexItem>
-                  <EuiFlexItem grow={false}><EuiBadge color="hollow" style={{ fontSize: 11 }}>Detection Engineer view</EuiBadge></EuiFlexItem>
-                </EuiFlexGroup>
-                <EuiText size="s" style={{ marginBottom: 16, lineHeight: 1.8 }}>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    <li>Your environment has an <strong>active intrusion</strong> in progress on WKSTN-047. A rule covering the lateral movement phase has been <strong>silently failing for 6 hours</strong> due to an index alias mismatch. <EuiBadge color="danger" iconType="alert" style={{ verticalAlign: 'middle' }}>Immediate action needed</EuiBadge></li>
-                    <li>AutoDEX has <strong>3 proposals</strong> pending your approval — 2 tuning exceptions and 1 rule install — that reduce noise by ~531 alerts/week.</li>
-                    <li>You have <strong>5 MITRE ATT&amp;CK sub-techniques</strong> with no detection coverage. 4 have prebuilt Elastic rules available today.</li>
-                  </ul>
-                </EuiText>
-                <div style={{ position: 'relative' }}>
-                  <EuiFieldText
-                    placeholder="Ask AI about your detection coverage..."
-                    value={aiQuery}
-                    onChange={e => setAiQuery(e.target.value)}
-                    fullWidth
-                    style={{ paddingRight: 160, background: '#FAFBFC' }}
-                  />
-                  <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
-                    <EuiButtonEmpty size="xs" iconType="sparkles" style={{ color: '#7B61FF', fontWeight: 600 }}>Elastic AI Agent</EuiButtonEmpty>
-                  </div>
-                </div>
-              </EuiPanel>
-
-              {/* ── Metric cards ─────────────────────────────────── */}
-              <EuiFlexGroup gutterSize="m" responsive={false} style={{ marginBottom: 28 }}>
+              {/* ── 1. Metric cards (top) ── */}
+              <EuiFlexGroup gutterSize="m" responsive={false} style={{ marginBottom: 24 }}>
                 {METRIC_CARDS.map(card => (
                   <EuiFlexItem key={card.label} grow={1}>
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="m"
-                      style={{ borderRadius: 8, cursor: 'pointer', borderTop: `3px solid ${card.numColor}` }}
-                      onClick={() => scrollToSection(card.sectionId)}
+                    <EuiPanel
+                      hasBorder hasShadow={false} paddingSize="m"
+                      style={{ borderRadius: 8, cursor: 'pointer', borderLeft: `3px solid ${card.numColor}`, display: 'flex', flexDirection: 'column' }}
+                      onClick={() => filterByCategory(card.catLabel)}
                     >
                       <EuiFlexGroup gutterSize="s" alignItems="baseline" responsive={false} style={{ marginBottom: 4 }}>
                         <EuiFlexItem grow={false}>
@@ -682,88 +739,99 @@ const InboxPage: React.FC = () => {
                           <EuiText size="s" style={{ fontWeight: 600 }}>{card.label}</EuiText>
                         </EuiFlexItem>
                       </EuiFlexGroup>
-                      <EuiText size="xs" color="subdued" style={{ marginBottom: 14 }}>{card.sub}</EuiText>
-                      <EuiButton
-                        size="s"
-                        iconType={card.actionIcon}
-                        fullWidth
-                        style={{ fontSize: 12 }}
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
-                      >
-                        {card.action}
-                      </EuiButton>
+                      <EuiText size="xs" color="subdued" style={{ marginBottom: 8, flex: 1 }}>{card.sub}</EuiText>
+                      <div>
+                        <EuiButtonEmpty
+                          size="xs" iconType={card.actionIcon} flush="left" color="primary"
+                          onClick={(e: React.MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
+                        >
+                          {card.action}
+                        </EuiButtonEmpty>
+                      </div>
                     </EuiPanel>
                   </EuiFlexItem>
                 ))}
               </EuiFlexGroup>
 
-              {/* ── Feed header ──────────────────────────────────── */}
-              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 12 }}>
+              {/* ── 2. Today's briefing (below cards) ── */}
+              <EuiPanel hasBorder hasShadow={false} paddingSize="l" style={{ borderRadius: 8, marginBottom: 24, borderLeft: '3px solid #7B61FF' }}>
+                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 12 }}>
+                  <EuiFlexItem grow={false}><EuiIcon type="sparkles" size="m" style={{ color: '#7B61FF' }} /></EuiFlexItem>
+                  <EuiFlexItem><EuiTitle size="s"><h2 style={{ color: '#7B61FF' }}>Today's briefing</h2></EuiTitle></EuiFlexItem>
+                  <EuiFlexItem grow={false}><EuiBadge color="hollow" style={{ fontSize: 11 }}>Detection Engineer view</EuiBadge></EuiFlexItem>
+                </EuiFlexGroup>
+                <EuiText size="s" style={{ marginBottom: 16, lineHeight: 1.8 }}>
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    <li><strong>3 rules are failing silently</strong> — DNS, FTP, and SMB lateral movement rules have execution errors. Blind spots have been open for up to 6 hours. AutoDEX has identified the root causes. <EuiBadge color="danger" iconType="alert" style={{ verticalAlign: 'middle' }}>Immediate action needed</EuiBadge></li>
+                    <li>AutoDEX has <strong>4 proposals</strong> pending your approval — 3 tuning exceptions and 1 rule install — estimated to reduce noise by ~531 alerts/week.</li>
+                    <li>You have <strong>3 MITRE ATT&amp;CK techniques</strong> with no detection coverage. AutoDEX is actively filling 4 gaps; 2 are ready to install today.</li>
+                  </ul>
+                </EuiText>
+                <div style={{ position: 'relative' }}>
+                  <EuiFieldText
+                    placeholder="Ask AI about your detection coverage..."
+                    value={aiQuery}
+                    onChange={e => setAiQuery(e.target.value)}
+                    fullWidth
+                    style={{ paddingRight: 140, background: '#FAFBFC' }}
+                  />
+                  <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
+                    <EuiButtonEmpty size="xs" iconType="sparkles" style={{ color: '#7B61FF', fontWeight: 600 }}>Add to chat</EuiButtonEmpty>
+                  </div>
+                </div>
+              </EuiPanel>
+
+              {/* ── 3. Feed header: search + filters ── */}
+              <EuiFlexGroup gutterSize="s" responsive={false} alignItems="center" style={{ marginBottom: 10 }}>
                 <EuiFlexItem grow={false}>
                   <EuiTitle size="xs"><h2>Feed</h2></EuiTitle>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
-                  <EuiToolTip content="Items are ranked by urgency and relevance to your workflow. Dismissed items are hidden but remain in history.">
-                    <EuiButtonIcon iconType="info" aria-label="Feed info" color="text" size="xs" />
-                  </EuiToolTip>
+                  <EuiBadge color="hollow" style={{ fontSize: 11 }}>{filteredItems.length} items</EuiBadge>
                 </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiBadge color="hollow">{totalItems} items</EuiBadge>
-                </EuiFlexItem>
-
-                {/* Filters — far right */}
                 <EuiFlexItem grow={true} />
                 <EuiFlexItem grow={false}>
                   <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                    <EuiFlexItem grow={false}>
-                      <EuiText size="xs" color="subdued">Filter:</EuiText>
-                    </EuiFlexItem>
-                    <EuiFlexItem grow={false}>
-                      <FilterPopover
-                        label="Approval"
-                        options={approvalFilter}
-                        onChange={setApprovalFilter}
+                    <EuiFlexItem grow={true}>
+                      <EuiFieldSearch
+                        placeholder="Search"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        isClearable
                       />
                     </EuiFlexItem>
                     <EuiFlexItem grow={false}>
-                      <FilterPopover
-                        label="Category"
-                        options={categoryFilter}
-                        onChange={setCategoryFilter}
-                      />
+                      <EuiFilterGroup>
+                        <FilterPopover label="Category" options={categoryFilter} onChange={setCategoryFilter} />
+                        <FilterPopover label="Approval" options={approvalFilter} onChange={setApprovalFilter} />
+                      </EuiFilterGroup>
                     </EuiFlexItem>
-                    {(approvalFilter.some(o => o.checked === 'on') || categoryFilter.some(o => o.checked === 'on')) && (
+                    {hasActiveFilters && (
                       <EuiFlexItem grow={false}>
-                        <EuiButtonEmpty
-                          size="xs"
-                          color="danger"
-                          onClick={() => {
-                            setCategoryFilter(f => f.map(o => ({ ...o, checked: undefined })));
-                            setApprovalFilter(f => f.map(o => ({ ...o, checked: undefined })));
-                          }}
-                        >
-                          Clear
-                        </EuiButtonEmpty>
+                        <EuiButtonEmpty size="xs" color="danger" onClick={clearAllFilters}>Clear</EuiButtonEmpty>
                       </EuiFlexItem>
                     )}
                   </EuiFlexGroup>
                 </EuiFlexItem>
               </EuiFlexGroup>
 
-              <EuiHorizontalRule margin="none" style={{ marginBottom: 12 }} />
+              <EuiHorizontalRule margin="none" style={{ marginBottom: 4 }} />
 
-              {/* ── Feed sections ────────────────────────────────── */}
-              {FEED_SECTIONS.map(s => (
-                <div key={s.id} id={`feed-${s.id}`}>
-                  <FeedSectionBlock
-                    categoryId={s.id}
-                    items={getItems(s.id)}
-                    defaultOpen={s.id === 'attacks' || s.id === 'attention'}
-                    showReviewAll={s.showReviewAll}
+              {/* ── 4. Grouped feed ── */}
+              {groupedItems.length === 0 ? (
+                <EuiText textAlign="center" color="subdued" style={{ marginTop: 40 }}>
+                  <p>No items match your filters.</p>
+                </EuiText>
+              ) : (
+                groupedItems.map(group => (
+                  <FeedGroup
+                    key={group.type}
+                    typeLabel={group.type}
+                    items={group.items}
+                    defaultOpen={group.type === 'Rule failure' || group.type === 'AutoDEX approval'}
                   />
-                  <EuiHorizontalRule margin="none" style={{ marginBottom: 4 }} />
-                </div>
-              ))}
+                ))
+              )}
 
             </div>
           </div>

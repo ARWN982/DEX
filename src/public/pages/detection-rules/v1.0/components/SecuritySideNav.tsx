@@ -138,7 +138,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
             <EuiFlexItem grow={false}>
               <NavItem
                 icon="mail"
-                label="Inbox"
+                label="AI Briefing"
                 isActive={isActive('/inbox')}
                 onClick={() => navigate('/inbox')}
               />
