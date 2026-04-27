@@ -4,24 +4,35 @@ import type { Router as RouterType } from 'express';
 const router: RouterType = Router();
 
 // ── GET /api/siem_readiness/get_categories ────────────────────────────────────
-// Returns CategoriesResponse (matching @kbn/siem-readiness types)
 router.get('/siem_readiness/get_categories', (_req: Request, res: Response) => {
-  res.json({
-    rawCategoriesMap: [
-      { category: 'Endpoint',         indices: [{ indexName: 'logs-endpoint.events.process-default', docs: 12400 }, { indexName: 'logs-endpoint.alerts-default', docs: 320 }] },
-      { category: 'Identity',         indices: [{ indexName: 'logs-okta.system-default', docs: 0 }] },
-      { category: 'Network',          indices: [{ indexName: 'logs-network_traffic.flow-default', docs: 0 }, { indexName: 'logs-zeek.connection-default', docs: 0 }] },
-      { category: 'Cloud',            indices: [{ indexName: 'logs-aws.cloudtrail-default', docs: 0 }] },
-      { category: 'Application/SaaS', indices: [{ indexName: 'logs-google_workspace.admin-default', docs: 0 }] },
-    ],
-    mainCategoriesMap: [
-      { category: 'Endpoint',         indices: [{ indexName: 'logs-endpoint.events.process-default', docs: 12400 }, { indexName: 'logs-endpoint.alerts-default', docs: 320 }] },
-      { category: 'Identity',         indices: [{ indexName: 'logs-okta.system-default', docs: 0 }] },
-      { category: 'Network',          indices: [{ indexName: 'logs-network_traffic.flow-default', docs: 0 }, { indexName: 'logs-zeek.connection-default', docs: 0 }] },
-      { category: 'Cloud',            indices: [{ indexName: 'logs-aws.cloudtrail-default', docs: 0 }] },
-      { category: 'Application/SaaS', indices: [{ indexName: 'logs-google_workspace.admin-default', docs: 0 }] },
-    ],
-  });
+  const versions = ['8.15.1-2025.03.17','8.16.0-2025.02.20','8.16.0-2025.03.22','8.16.0-2025.04.21',
+    '8.16.0-2025.05.21','8.16.0-2025.06.20','9.1.0-2025.07.92','9.1.0-2025.07.21',
+    '9.1.0-2025.08.08','9.1.0-2025.08.27','9.1.0-2025.09.10','9.1.0-2025.09.25',
+    '9.1.0-2025.10.01','9.1.0-2025.10.15','9.1.0-2025.11.02'];
+  const epVers = ['8.15.0','8.15.1','8.16.0','8.16.1','9.0.0','9.1.0','9.1.1','9.1.2','9.2.0','9.2.1'];
+  const months = ['2025.01','2025.02','2025.03','2025.04','2025.05','2025.06','2025.07'];
+
+  const mainCategoriesMap = [
+    { category: 'Network', indices: [
+        ...versions.map((v, i) => ({ indexName: `ds-auditbeat-${v}-000${String(i+1).padStart(3,'0')}`, docs: i < 5 ? 5000 + i * 200 : 0 })),
+    ]},
+    { category: 'Endpoint', indices: [
+        ...epVers.map((v) => ({ indexName: `logs-endpoint.events.process-${v}-default`, docs: 12400 })),
+        { indexName: 'logs-endpoint.alerts-default', docs: 320 },
+        { indexName: 'logs-endpoint.events.network-default', docs: 180 },
+    ]},
+    { category: 'Identity', indices: months.map((v, i) => ({ indexName: `logs-okta.system-${v}-default`, docs: i < 4 ? 1200 + i * 300 : 0 })) },
+    { category: 'Cloud', indices: [
+        ...['2025.01','2025.02','2025.03','2025.04','2025.05','2025.06'].map((v, i) => ({ indexName: `logs-aws.cloudtrail-${v}-default`, docs: 8000 + i * 500 })),
+        { indexName: 'logs-aws.s3access-default', docs: 19500 },
+    ]},
+    { category: 'Application/SaaS', indices: [
+        ...['2025.01','2025.02','2025.03','2025.04','2025.05'].map((v, i) => ({ indexName: `logs-google_workspace.admin-${v}-default`, docs: 800 + i * 200 })),
+        { indexName: 'logs-salesforce.login-default', docs: 2100 },
+    ]},
+  ];
+
+  res.json({ rawCategoriesMap: mainCategoriesMap, mainCategoriesMap });
 });
 
 // ── GET /api/fleet/epm/packages ───────────────────────────────────────────────
@@ -73,8 +84,21 @@ router.get('/detection_engine/rules/_find', (_req: Request, res: Response) => {
 // ── GET /api/siem_readiness/get_pipelines ─────────────────────────────────────
 router.get('/siem_readiness/get_pipelines', (_req: Request, res: Response) => {
   res.json([
-    { name: 'logs-endpoint.events.process@pipeline', indices: ['logs-endpoint.events.process-default'], docsCount: 12400, failedDocsCount: 0, statsAvailable: true },
-    { name: 'logs-endpoint.alerts@pipeline',         indices: ['logs-endpoint.alerts-default'],         docsCount: 320,   failedDocsCount: 0, statsAvailable: true },
+    // Endpoint — healthy
+    { name: 'logs-endpoint.events.process@pipeline', indices: ['logs-endpoint.events.process-9.2.0-default', 'logs-endpoint.events.process-9.1.0-default'], docsCount: 245800, failedDocsCount: 0,    statsAvailable: true },
+    { name: 'logs-endpoint.alerts@pipeline',         indices: ['logs-endpoint.alerts-default'],   docsCount: 12400,  failedDocsCount: 0,    statsAvailable: true },
+    { name: 'logs-endpoint.events.network@pipeline', indices: ['logs-endpoint.events.network-default'], docsCount: 98000, failedDocsCount: 0, statsAvailable: true },
+    // Network — critical failure rate
+    { name: 'ds-auditbeat@pipeline',                 indices: ['ds-auditbeat-9.1.0-2025.11.02-000015'], docsCount: 55000,  failedDocsCount: 1320, statsAvailable: true },
+    { name: 'logs-zeek.connection@pipeline',         indices: ['ds-auditbeat-9.1.0-2025.10.15-000014'], docsCount: 31000,  failedDocsCount: 0,    statsAvailable: true },
+    // Identity — healthy
+    { name: 'logs-okta.system@pipeline',             indices: ['logs-okta.system-2025.07-default', 'logs-okta.system-2025.06-default'], docsCount: 8800, failedDocsCount: 0, statsAvailable: true },
+    // Cloud — critical
+    { name: 'logs-aws.cloudtrail@pipeline',          indices: ['logs-aws.cloudtrail-2025.06-default', 'logs-aws.cloudtrail-2025.05-default'], docsCount: 62000, failedDocsCount: 890, statsAvailable: true },
+    { name: 'logs-aws.s3access@pipeline',            indices: ['logs-aws.s3access-default'],       docsCount: 19500,  failedDocsCount: 0,    statsAvailable: true },
+    // Application/SaaS — healthy
+    { name: 'logs-google_workspace.admin@pipeline',  indices: ['logs-google_workspace.admin-2025.05-default'], docsCount: 4200, failedDocsCount: 0, statsAvailable: true },
+    { name: 'logs-salesforce.login@pipeline',        indices: ['logs-salesforce.login-default'],   docsCount: 2100,   failedDocsCount: 0,    statsAvailable: true },
   ]);
 });
 
@@ -82,10 +106,60 @@ router.get('/siem_readiness/get_pipelines', (_req: Request, res: Response) => {
 router.get('/siem_readiness/get_retention', (_req: Request, res: Response) => {
   res.json({
     items: [
-      { indexName: 'logs-endpoint.events.process-default', isDataStream: true, retentionType: 'ilm', retentionPeriod: '30d', retentionDays: 30, policyName: 'logs-default-policy', status: 'healthy' },
-      { indexName: 'logs-endpoint.alerts-default',         isDataStream: true, retentionType: 'ilm', retentionPeriod: '90d', retentionDays: 90, policyName: 'logs-default-policy', status: 'healthy' },
+      // Endpoint — healthy (meets 365-day baseline)
+      { indexName: 'logs-endpoint.events.process', isDataStream: true, retentionType: 'ilm', retentionPeriod: '365d', retentionDays: 365, policyName: 'security-data-policy', status: 'healthy' },
+      { indexName: 'logs-endpoint.alerts',         isDataStream: true, retentionType: 'ilm', retentionPeriod: '400d', retentionDays: 400, policyName: 'security-data-policy', status: 'healthy' },
+      { indexName: 'logs-endpoint.events.network', isDataStream: true, retentionType: 'ilm', retentionPeriod: '365d', retentionDays: 365, policyName: 'security-data-policy', status: 'healthy' },
+      // Network — non-compliant (too short)
+      { indexName: 'ds-auditbeat',                 isDataStream: true, retentionType: 'ilm', retentionPeriod: '30d',  retentionDays: 30,  policyName: 'logs-default-policy',  status: 'non-compliant' },
+      // Identity — non-compliant
+      { indexName: 'logs-okta.system',             isDataStream: true, retentionType: 'dsl', retentionPeriod: '90d',  retentionDays: 90,  policyName: null,                   status: 'non-compliant' },
+      // Cloud — mixed
+      { indexName: 'logs-aws.cloudtrail',          isDataStream: true, retentionType: 'ilm', retentionPeriod: '365d', retentionDays: 365, policyName: 'security-data-policy', status: 'healthy' },
+      { indexName: 'logs-aws.s3access',            isDataStream: true, retentionType: null,  retentionPeriod: null,   retentionDays: null, policyName: null,                  status: 'non-compliant' },
+      // Application/SaaS — healthy
+      { indexName: 'logs-google_workspace.admin',  isDataStream: true, retentionType: 'dsl', retentionPeriod: '365d', retentionDays: 365, policyName: null,                   status: 'healthy' },
+      { indexName: 'logs-salesforce.login',        isDataStream: true, retentionType: 'ilm', retentionPeriod: '180d', retentionDays: 180, policyName: 'logs-default-policy',  status: 'non-compliant' },
     ],
   });
+});
+
+// ── GET /internal/ecs_data_quality_dashboard/results_latest/* ────────────────
+router.get('/ecs_data_quality_dashboard/results_latest/:pattern', (_req: Request, res: Response) => {
+  const now = Date.now();
+  const min = 60000;
+
+  const mkIndex = (name: string, incompatible: number, minsAgo: number) => ({
+    indexName: name,
+    incompatibleFieldCount: incompatible,
+    checkedAt: now - minsAgo * min,
+    docsCount: Math.floor(Math.random() * 50000),
+  });
+
+  res.json([
+    // Network (auditbeat-like)
+    ...['8.15.1-2025.03.17','8.16.0-2025.02.20','8.16.0-2025.03.22','8.16.0-2025.04.21',
+        '8.16.0-2025.05.21','8.16.0-2025.06.20','9.1.0-2025.07.92','9.1.0-2025.07.21',
+        '9.1.0-2025.08.08','9.1.0-2025.08.27','9.1.0-2025.09.10','9.1.0-2025.09.25',
+        '9.1.0-2025.10.01','9.1.0-2025.10.15','9.1.0-2025.11.02'].map((v, i) =>
+          mkIndex(`ds-auditbeat-${v}-000${String(i+1).padStart(3,'0')}`, i < 7 ? 2 : i < 11 ? 1 : 0, 21 + i)),
+    // Endpoint
+    ...['8.15.0','8.15.1','8.16.0','8.16.1','9.0.0','9.1.0','9.1.1','9.1.2','9.2.0','9.2.1'].map((v, i) =>
+          mkIndex(`logs-endpoint.events.process-${v}-default`, i < 5 ? 2 : 1, 22 + i * 3)),
+    mkIndex('logs-endpoint.alerts-default', 2, 28),
+    mkIndex('logs-endpoint.events.network-default', 1, 29),
+    // Identity
+    ...['2025.01','2025.02','2025.03','2025.04','2025.05','2025.06','2025.07'].map((v, i) =>
+          mkIndex(`logs-okta.system-${v}-default`, i < 4 ? 1 : 0, 25 + i * 2)),
+    // Cloud
+    ...['2025.01','2025.02','2025.03','2025.04','2025.05','2025.06'].map((v, i) =>
+          mkIndex(`logs-aws.cloudtrail-${v}-default`, i < 3 ? 1 : 0, 30 + i * 5)),
+    mkIndex('logs-aws.s3access-default', 0, 40),
+    // Application/SaaS
+    ...['2025.01','2025.02','2025.03','2025.04','2025.05'].map((v, i) =>
+          mkIndex(`logs-google_workspace.admin-${v}-default`, i < 2 ? 1 : 0, 20 + i * 4)),
+    mkIndex('logs-salesforce.login-default', 0, 32),
+  ]);
 });
 
 export default router;
