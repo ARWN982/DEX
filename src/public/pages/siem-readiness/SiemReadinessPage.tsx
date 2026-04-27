@@ -377,15 +377,15 @@ const CategoryAccordion: React.FC<CategoryAccordionProps> = ({ category, items, 
         buttonContent={
           <EuiText size="s" style={{ fontWeight: 600 }}>{category}</EuiText>
         }
-        extraAction={renderBadge(items)}
+        extraAction={<div style={{ paddingRight: 16 }}>{renderBadge(items)}</div>}
+        style={{ padding: '14px 16px' }}
         paddingSize="none"
         borders="none"
         forceState={isOpen ? 'open' : 'closed'}
         onToggle={() => setIsOpen((v) => !v)}
       >
         {isOpen && (
-          <>
-            <EuiSpacer size="s" />
+          <div style={{ padding: '0 16px 16px' }}>
             <EuiInMemoryTable
               items={items}
               columns={columns}
@@ -393,7 +393,7 @@ const CategoryAccordion: React.FC<CategoryAccordionProps> = ({ category, items, 
               sorting={false}
               tableLayout="auto"
             />
-          </>
+          </div>
         )}
       </EuiAccordion>
       <EuiHorizontalRule margin="none" />
@@ -966,32 +966,35 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
               <EuiAccordion
                 id={`quality-accordion-${cat.category}`}
                 buttonContent={
-                  <EuiText size="s" style={{ fontWeight: 600, padding: '2px 0' }}>{cat.category}</EuiText>
+                  <EuiText size="s" style={{ fontWeight: 600 }}>{cat.category}</EuiText>
                 }
                 extraAction={
-                  <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ paddingRight: 8 }}>
+                  <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false} style={{ paddingRight: 16 }}>
                     <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Status:</EuiText></EuiFlexItem>
                     <EuiFlexItem grow={false}><EuiBadge color={incompatFields > 0 ? 'warning' : 'success'}>{incompatFields > 0 ? 'Actions required' : 'Healthy'}</EuiBadge></EuiFlexItem>
-                    <EuiFlexItem grow={false}><EuiText size="xs" color="subdued" style={{ margin: '0 4px' }}>|</EuiText></EuiFlexItem>
+                    <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">|</EuiText></EuiFlexItem>
                     <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Incompatible Fields:</EuiText></EuiFlexItem>
                     <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontWeight: 600 }}>{incompatFields}</EuiText></EuiFlexItem>
-                    <EuiFlexItem grow={false}><EuiText size="xs" color="subdued" style={{ margin: '0 4px' }}>|</EuiText></EuiFlexItem>
+                    <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">|</EuiText></EuiFlexItem>
                     <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Affected indices:</EuiText></EuiFlexItem>
                     <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontWeight: 600 }}>{affected}/{cat.items.length}</EuiText></EuiFlexItem>
                   </EuiFlexGroup>
                 }
-                paddingSize="m"
+                style={{ padding: '14px 16px' }}
+                paddingSize="none"
                 borders="none"
                 forceState={isOpen ? 'open' : 'closed'}
                 onToggle={() => setOpenAccordions((prev) => ({ ...prev, [cat.category]: !prev[cat.category] }))}
               >
-                <EuiInMemoryTable
-                  items={cat.items}
-                  columns={qualityColumns}
-                  pagination={{ pageSize: 10, pageSizeOptions: [5, 10, 20] }}
-                  sorting={{ sort: { field: 'indexName', direction: 'asc' } }}
-                  tableLayout="auto"
-                />
+                <div style={{ padding: '0 16px 16px' }}>
+                  <EuiInMemoryTable
+                    items={cat.items}
+                    columns={qualityColumns}
+                    pagination={{ pageSize: 10, pageSizeOptions: [5, 10, 20] }}
+                    sorting={{ sort: { field: 'indexName', direction: 'asc' } }}
+                    tableLayout="auto"
+                  />
+                </div>
               </EuiAccordion>
               {idx < filteredCategories.length - 1 && <EuiHorizontalRule margin="none" />}
             </div>
@@ -1050,18 +1053,18 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ categories, pipelines, lo
     const rate = totalDocs > 0 ? ((totalFailed / totalDocs) * 100).toFixed(1) : '0.0';
     const isCritical = parseFloat(rate) >= 1;
     return (
-      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+      <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Status:</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiBadge color={isCritical ? 'warning' : 'success'}>{isCritical ? 'Actions required' : 'Healthy'}</EuiBadge></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">|</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Pipelines:</EuiText></EuiFlexItem>
-        <EuiFlexItem grow={false}><EuiBadge color="hollow">{cat.items.length}</EuiBadge></EuiFlexItem>
+        <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontWeight: 600 }}>{cat.items.length}</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">|</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Docs Ingested:</EuiText></EuiFlexItem>
-        <EuiFlexItem grow={false}><EuiBadge color="hollow">{totalDocs.toLocaleString()}</EuiBadge></EuiFlexItem>
+        <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontWeight: 600 }}>{totalDocs.toLocaleString()}</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">|</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Failure Rate:</EuiText></EuiFlexItem>
-        <EuiFlexItem grow={false}><EuiBadge color="hollow">{rate}%</EuiBadge></EuiFlexItem>
+        <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontWeight: 600 }}>{rate}%</EuiText></EuiFlexItem>
       </EuiFlexGroup>
     );
   };
@@ -1099,15 +1102,19 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ categories, pipelines, lo
       {categorizedPipelines.length === 0 ? (
         <EuiText size="s" color="subdued" textAlign="center" style={{ padding: 40 }}>No pipeline data available.</EuiText>
       ) : (
-        categorizedPipelines.map((cat) => (
-          <CategoryAccordion
-            key={cat.category}
-            category={cat.category}
-            items={cat.items as Array<CategoryAccordionItem & PipelineStats & { failureRate: string; status: 'healthy' | 'critical' }>}
-            renderBadge={() => renderExtraAction(cat)}
-            columns={columns as Array<EuiBasicTableColumn<CategoryAccordionItem>>}
-          />
-        ))
+        <EuiPanel hasBorder paddingSize="none" style={{ overflow: 'hidden' }}>
+          {categorizedPipelines.map((cat, idx) => (
+            <div key={cat.category}>
+              <CategoryAccordion
+                category={cat.category}
+                items={cat.items as Array<CategoryAccordionItem & PipelineStats & { failureRate: string; status: 'healthy' | 'critical' }>}
+                renderBadge={() => renderExtraAction(cat)}
+                columns={columns as Array<EuiBasicTableColumn<CategoryAccordionItem>>}
+              />
+              {idx === categorizedPipelines.length - 1 && <div style={{ marginBottom: -1 }} />}
+            </div>
+          ))}
+        </EuiPanel>
       )}
     </EuiPanel>
   );
@@ -1154,12 +1161,12 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
   const renderExtraAction = (cat: { category: string; items: RetentionItem[] }) => {
     const nonCompliant = cat.items.filter((i) => i.status === 'non-compliant').length;
     return (
-      <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+      <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Status:</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiBadge color={nonCompliant > 0 ? 'warning' : 'success'}>{nonCompliant > 0 ? 'Actions required' : 'Healthy'}</EuiBadge></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">|</EuiText></EuiFlexItem>
         <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Data streams:</EuiText></EuiFlexItem>
-        <EuiFlexItem grow={false}><EuiBadge color="hollow">{cat.items.length}</EuiBadge></EuiFlexItem>
+        <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontWeight: 600 }}>{cat.items.length}</EuiText></EuiFlexItem>
       </EuiFlexGroup>
     );
   };
@@ -1209,15 +1216,19 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
       {categorizedRetention.length === 0 ? (
         <EuiText size="s" color="subdued" textAlign="center" style={{ padding: 40 }}>No retention data available.</EuiText>
       ) : (
-        categorizedRetention.map((cat) => (
-          <CategoryAccordion
-            key={cat.category}
-            category={cat.category}
-            items={cat.items as unknown as CategoryAccordionItem[]}
-            renderBadge={() => renderExtraAction(cat)}
-            columns={columns as Array<EuiBasicTableColumn<CategoryAccordionItem>>}
-          />
-        ))
+        <EuiPanel hasBorder paddingSize="none" style={{ overflow: 'hidden' }}>
+          {categorizedRetention.map((cat, idx) => (
+            <div key={cat.category}>
+              <CategoryAccordion
+                category={cat.category}
+                items={cat.items as unknown as CategoryAccordionItem[]}
+                renderBadge={() => renderExtraAction(cat)}
+                columns={columns as Array<EuiBasicTableColumn<CategoryAccordionItem>>}
+              />
+              {idx === categorizedRetention.length - 1 && <div style={{ marginBottom: -1 }} />}
+            </div>
+          ))}
+        </EuiPanel>
       )}
     </EuiPanel>
   );
