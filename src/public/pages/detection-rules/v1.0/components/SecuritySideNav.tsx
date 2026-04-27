@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   EuiFlexItem,
   EuiText,
@@ -18,9 +19,10 @@ interface NavItemProps {
   label: string;
   isActive?: boolean;
   customIcon?: React.ReactNode;
+  onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, customIcon }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, customIcon, onClick }) => {
   return (
     <EuiFlexGroup 
       direction="column" 
@@ -29,9 +31,10 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, custom
       style={{
         gap: '3px',
         padding: '0',
-        cursor: 'pointer',
+        cursor: onClick ? 'pointer' : 'default',
       }}
       responsive={false}
+      onClick={onClick}
     >
       <EuiFlexItem grow={false}>
         <div
@@ -74,6 +77,10 @@ const SecurityLogo: React.FC = () => {
 };
 
 const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname.startsWith(path);
+
   return (
     <div
       style={{ 
@@ -134,7 +141,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
               <NavItem icon="dashboardApp" label="Dashboards" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <NavItem icon="radar" label="Rules" isActive />
+              <NavItem icon="radar" label="Rules" isActive={isActive('/detection-rules') || isActive('/autodex')} onClick={() => navigate('/detection-rules')} />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <NavItem icon="alert" label="Alerts" />
@@ -186,9 +193,11 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
                   height: '32px',
                   borderRadius: '4px',
                   cursor: 'pointer',
+                  backgroundColor: isActive('/siem-readiness') ? '#e6f1fa' : 'transparent',
                 }}
+                onClick={() => navigate('/siem-readiness')}
               >
-                <EuiIcon type="launch" size="m" color="text" />
+                <EuiIcon type="launch" size="m" color={isActive('/siem-readiness') ? 'primary' : 'text'} />
               </div>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
