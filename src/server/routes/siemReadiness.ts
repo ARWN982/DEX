@@ -162,4 +162,18 @@ router.get('/ecs_data_quality_dashboard/results_latest/:pattern', (_req: Request
   ]);
 });
 
+// ── GET /api/siem_readiness/get_rule_field_issues ─────────────────────────────
+router.get('/siem_readiness/get_rule_field_issues', (_req: Request, res: Response) => {
+  res.json([
+    { id: '1', ruleName: 'Windows Process Injection via CreateRemoteThread', field: 'process.parent.entity_id', issueType: 'missing',      indexPattern: 'logs-endpoint.events.process-*' },
+    { id: '2', ruleName: 'Okta User Locked Out',                            field: 'okta.actor.alternate_id',  issueType: 'type_mismatch', indexPattern: 'logs-okta.system-*' },
+    { id: '3', ruleName: 'AWS CloudTrail Unauthorized API Call',             field: 'aws.cloudtrail.error_code', issueType: 'sparse',       indexPattern: 'logs-aws.cloudtrail-*' },
+    { id: '4', ruleName: 'Suspicious Network Connection by Process',        field: 'network.bytes',            issueType: 'missing',       indexPattern: 'logs-endpoint.events.network-*' },
+    { id: '5', ruleName: 'Google Workspace Admin Role Assigned',            field: 'google_workspace.admin.event.name', issueType: 'type_mismatch', indexPattern: 'logs-google_workspace.admin-*' },
+    { id: '6', ruleName: 'Auditbeat Unusual Process Execution',             field: 'process.code_signature.valid', issueType: 'sparse',    indexPattern: 'ds-auditbeat-*' },
+    { id: '7', ruleName: 'AWS S3 Bucket Policy Changed',                   field: 'aws.s3access.bucket_name', issueType: 'missing',       indexPattern: 'logs-aws.s3access-*' },
+    { id: '8', ruleName: 'Endpoint Defense Evasion via Timestomping',      field: 'file.mtime',               issueType: 'type_mismatch', indexPattern: 'logs-endpoint.events.process-*' },
+  ]);
+});
+
 export default router;
