@@ -34,8 +34,8 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import type { EuiBasicTableColumn } from '@elastic/eui';
-import SecurityHeader from '../detection-rules/v1.0/components/SecurityHeader';
-import SecuritySideNav from '../detection-rules/v1.0/components/SecuritySideNav';
+import SecurityHeader from './components/SecurityHeader';
+import SecuritySideNav from './components/SecuritySideNav';
 
 // ─── Types (mirroring @kbn/siem-readiness) ───────────────────────────────────
 
@@ -122,39 +122,108 @@ interface SiemReadinessData {
   ruleFieldIssues: RuleFieldIssue[];
 }
 
+// ─── Static mock data (no API calls needed in standalone preview) ──────────────
+
+const MOCK_INTEGRATIONS: SiemReadinessPackageInfo[] = [
+  { id: 'endpoint',        name: 'endpoint',        title: 'Endpoint Security',      version: '8.16.0', status: 'installed',     packagePoliciesInfo: { count: 1 } },
+  { id: 'elastic_agent',   name: 'elastic_agent',   title: 'Elastic Agent',          version: '8.16.0', status: 'installed',     packagePoliciesInfo: { count: 1 } },
+  { id: 'windows',         name: 'windows',         title: 'Windows',                version: '2.3.3',  status: 'installed',     packagePoliciesInfo: { count: 0 } },
+  { id: 'okta',            name: 'okta',            title: 'Okta',                   version: '3.3.2',  status: 'not_installed', packagePoliciesInfo: { count: 0 } },
+  { id: 'aws',             name: 'aws',             title: 'AWS',                    version: '2.14.1', status: 'not_installed', packagePoliciesInfo: { count: 0 } },
+  { id: 'network_traffic', name: 'network_traffic', title: 'Network Packet Capture', version: '1.33.0', status: 'not_installed', packagePoliciesInfo: { count: 0 } },
+  { id: 'google_workspace',name: 'google_workspace',title: 'Google Workspace',       version: '2.19.0', status: 'not_installed', packagePoliciesInfo: { count: 0 } },
+];
+
+const MOCK_RULES: RelatedIntegrationRuleResponse[] = [
+  { enabled: true, related_integrations: [{ package: 'endpoint',        version: '>=8.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'endpoint',        version: '>=8.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'elastic_agent',   version: '>=8.0.0' }] },
+  { enabled: true, related_integrations: [] },
+  { enabled: true, related_integrations: [] },
+  { enabled: true, related_integrations: [{ package: 'windows',         version: '>=1.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'okta',            version: '>=1.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'okta',            version: '>=1.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'network_traffic', version: '>=1.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'aws',             version: '>=1.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'aws',             version: '>=1.0.0' }] },
+  { enabled: true, related_integrations: [{ package: 'network_traffic', version: '>=1.0.0' }] },
+];
+
+const now = Date.now();
+const min = 60_000;
+
+const MOCK_CATEGORIES: CategoryGroup[] = [
+  { category: 'Network',  indices: [
+    { indexName: 'ds-auditbeat-9.1.0-2025.11.02-000015', docs: 5000 },
+    { indexName: 'ds-auditbeat-9.1.0-2025.10.15-000014', docs: 3200 },
+    { indexName: 'ds-auditbeat-8.16.0-2025.06.20-000006', docs: 0 },
+  ]},
+  { category: 'Endpoint', indices: [
+    { indexName: 'logs-endpoint.events.process-9.2.0-default', docs: 12400 },
+    { indexName: 'logs-endpoint.alerts-default',                docs: 320   },
+    { indexName: 'logs-endpoint.events.network-default',        docs: 180   },
+  ]},
+  { category: 'Identity',         indices: [{ indexName: 'logs-okta.system-2025.07-default', docs: 1200 }] },
+  { category: 'Cloud',            indices: [{ indexName: 'logs-aws.cloudtrail-2025.06-default', docs: 8000 }, { indexName: 'logs-aws.s3access-default', docs: 19500 }] },
+  { category: 'Application/SaaS',indices: [{ indexName: 'logs-google_workspace.admin-2025.05-default', docs: 800 }, { indexName: 'logs-salesforce.login-default', docs: 2100 }] },
+];
+
+const MOCK_QUALITY: QualityResult[] = [
+  { indexName: 'ds-auditbeat-9.1.0-2025.11.02-000015',         incompatibleFieldCount: 2,  checkedAt: now - 21 * min, docsCount: 5000  },
+  { indexName: 'ds-auditbeat-8.16.0-2025.06.20-000006',         incompatibleFieldCount: 2,  checkedAt: now - 22 * min, docsCount: 0     },
+  { indexName: 'logs-endpoint.events.process-9.2.0-default',    incompatibleFieldCount: 2,  checkedAt: now - 22 * min, docsCount: 12400 },
+  { indexName: 'logs-endpoint.events.process-8.15.0-default',   incompatibleFieldCount: 1,  checkedAt: now - 30 * min, docsCount: 5000  },
+  { indexName: 'logs-endpoint.alerts-default',                   incompatibleFieldCount: 2,  checkedAt: now - 28 * min, docsCount: 320   },
+  { indexName: 'logs-okta.system-2025.07-default',              incompatibleFieldCount: 1,  checkedAt: now - 25 * min, docsCount: 1200  },
+  { indexName: 'logs-okta.system-2025.06-default',              incompatibleFieldCount: 0,  checkedAt: now - 25 * min, docsCount: 1100  },
+  { indexName: 'logs-aws.cloudtrail-2025.06-default',           incompatibleFieldCount: 1,  checkedAt: now - 30 * min, docsCount: 8000  },
+  { indexName: 'logs-aws.cloudtrail-2025.05-default',           incompatibleFieldCount: 0,  checkedAt: now - 35 * min, docsCount: 7500  },
+  { indexName: 'logs-google_workspace.admin-2025.05-default',   incompatibleFieldCount: 1,  checkedAt: now - 20 * min, docsCount: 800   },
+  { indexName: 'logs-salesforce.login-default',                  incompatibleFieldCount: 0,  checkedAt: now - 32 * min, docsCount: 2100  },
+];
+
+const MOCK_PIPELINES: PipelineStats[] = [
+  { name: 'logs-endpoint.events.process@pipeline', indices: ['logs-endpoint.events.process-9.2.0-default'], docsCount: 245800, failedDocsCount: 0,    statsAvailable: true },
+  { name: 'logs-endpoint.alerts@pipeline',         indices: ['logs-endpoint.alerts-default'],                docsCount: 12400,  failedDocsCount: 0,    statsAvailable: true },
+  { name: 'ds-auditbeat@pipeline',                 indices: ['ds-auditbeat-9.1.0-2025.11.02-000015'],        docsCount: 55000,  failedDocsCount: 1320, statsAvailable: true },
+  { name: 'logs-okta.system@pipeline',             indices: ['logs-okta.system-2025.07-default'],             docsCount: 8800,   failedDocsCount: 0,    statsAvailable: true },
+  { name: 'logs-aws.cloudtrail@pipeline',          indices: ['logs-aws.cloudtrail-2025.06-default'],          docsCount: 62000,  failedDocsCount: 890,  statsAvailable: true },
+  { name: 'logs-google_workspace.admin@pipeline',  indices: ['logs-google_workspace.admin-2025.05-default'],  docsCount: 4200,   failedDocsCount: 0,    statsAvailable: true },
+];
+
+const MOCK_RETENTION: RetentionItem[] = [
+  { indexName: 'logs-endpoint.events.process', isDataStream: true, retentionType: 'ilm', retentionPeriod: '365d', retentionDays: 365, policyName: 'security-data-policy', status: 'healthy'      },
+  { indexName: 'logs-endpoint.alerts',         isDataStream: true, retentionType: 'ilm', retentionPeriod: '400d', retentionDays: 400, policyName: 'security-data-policy', status: 'healthy'      },
+  { indexName: 'ds-auditbeat',                 isDataStream: true, retentionType: 'ilm', retentionPeriod: '30d',  retentionDays: 30,  policyName: 'logs-default-policy',  status: 'non-compliant'},
+  { indexName: 'logs-okta.system',             isDataStream: true, retentionType: 'dsl', retentionPeriod: '90d',  retentionDays: 90,  policyName: null,                   status: 'non-compliant'},
+  { indexName: 'logs-aws.cloudtrail',          isDataStream: true, retentionType: 'ilm', retentionPeriod: '365d', retentionDays: 365, policyName: 'security-data-policy', status: 'healthy'      },
+  { indexName: 'logs-aws.s3access',            isDataStream: true, retentionType: null,  retentionPeriod: null,   retentionDays: null, policyName: null,                  status: 'non-compliant'},
+  { indexName: 'logs-google_workspace.admin',  isDataStream: true, retentionType: 'dsl', retentionPeriod: '365d', retentionDays: 365, policyName: null,                   status: 'healthy'      },
+];
+
+const MOCK_RULE_FIELD_ISSUES: RuleFieldIssue[] = [
+  { id: '1', ruleName: 'Windows Process Injection via CreateRemoteThread', field: 'process.parent.entity_id',      issueType: 'missing',      indexPattern: 'logs-endpoint.events.process-*' },
+  { id: '2', ruleName: 'Okta User Locked Out',                            field: 'okta.actor.alternate_id',        issueType: 'type_mismatch', indexPattern: 'logs-okta.system-*'             },
+  { id: '3', ruleName: 'AWS CloudTrail Unauthorized API Call',            field: 'aws.cloudtrail.error_code',      issueType: 'sparse',        indexPattern: 'logs-aws.cloudtrail-*'          },
+  { id: '4', ruleName: 'Suspicious Network Connection by Process',        field: 'network.bytes',                  issueType: 'missing',       indexPattern: 'logs-endpoint.events.network-*' },
+  { id: '5', ruleName: 'Google Workspace Admin Role Assigned',           field: 'google_workspace.admin.event.name', issueType: 'type_mismatch', indexPattern: 'logs-google_workspace.admin-*' },
+  { id: '6', ruleName: 'Auditbeat Unusual Process Execution',            field: 'process.code_signature.valid',   issueType: 'sparse',        indexPattern: 'ds-auditbeat-*'                 },
+  { id: '7', ruleName: 'AWS S3 Bucket Policy Changed',                   field: 'aws.s3access.bucket_name',       issueType: 'missing',       indexPattern: 'logs-aws.s3access-*'            },
+  { id: '8', ruleName: 'Endpoint Defense Evasion via Timestomping',      field: 'file.mtime',                     issueType: 'type_mismatch', indexPattern: 'logs-endpoint.events.process-*' },
+];
+
 function useSiemReadinessData(): SiemReadinessData {
-  const [loading, setLoading] = useState(true);
-  const [coverage, setCoverage] = useState<RuleIntegrationCoverage | null>(null);
-  const [categories, setCategories] = useState<CategoryGroup[]>([]);
-  const [integrations, setIntegrations] = useState<SiemReadinessPackageInfo[]>([]);
-  const [qualityResults, setQualityResults] = useState<QualityResult[]>([]);
-  const [pipelines, setPipelines] = useState<PipelineStats[]>([]);
-  const [retentionItems, setRetentionItems] = useState<RetentionItem[]>([]);
-  const [ruleFieldIssues, setRuleFieldIssues] = useState<RuleFieldIssue[]>([]);
-
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/siem_readiness/get_categories').then((r) => r.json() as Promise<CategoriesResponse>),
-      fetch('/api/fleet/epm/packages').then((r) => r.json() as Promise<{ items: SiemReadinessPackageInfo[] }>),
-      fetch('/api/detection_engine/rules/_find').then((r) => r.json() as Promise<{ data: RelatedIntegrationRuleResponse[] }>),
-      fetch('/api/ecs_data_quality_dashboard/results_latest/*').then((r) => r.json() as Promise<QualityResult[]>),
-      fetch('/api/siem_readiness/get_pipelines').then((r) => r.json() as Promise<PipelineStats[]>),
-      fetch('/api/siem_readiness/get_retention').then((r) => r.json() as Promise<{ items: RetentionItem[] }>),
-      fetch('/api/siem_readiness/get_rule_field_issues').then((r) => r.json() as Promise<RuleFieldIssue[]>),
-    ])
-      .then(([cats, pkgs, rules, quality, pipes, retention, fieldIssues]) => {
-        setCategories(cats.mainCategoriesMap);
-        setIntegrations(pkgs.items);
-        setCoverage(computeCoverage(rules.data, pkgs.items));
-        setQualityResults(quality);
-        setPipelines(pipes);
-        setRetentionItems(retention.items);
-        setRuleFieldIssues(fieldIssues);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  return { loading, coverage, categories, integrations, qualityResults, pipelines, retentionItems, ruleFieldIssues };
+  const coverage = computeCoverage(MOCK_RULES, MOCK_INTEGRATIONS);
+  return {
+    loading: false,
+    coverage,
+    categories:   MOCK_CATEGORIES,
+    integrations: MOCK_INTEGRATIONS,
+    qualityResults: MOCK_QUALITY,
+    pipelines:    MOCK_PIPELINES,
+    retentionItems: MOCK_RETENTION,
+    ruleFieldIssues: MOCK_RULE_FIELD_ISSUES,
+  };
 }
 
 // ─── Secondary nav ────────────────────────────────────────────────────────────
