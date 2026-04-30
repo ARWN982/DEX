@@ -6,11 +6,10 @@ import {
   EuiHeaderLogo,
   EuiAvatar,
   EuiButtonIcon,
-  EuiButton,
   EuiFlexGroup,
   EuiFlexItem,
   EuiBreadcrumbs,
-  EuiSpacer,
+  EuiIcon,
 } from '@elastic/eui';
 
 interface SecurityHeaderProps {
@@ -100,18 +99,32 @@ const SecurityHeader: React.FC<SecurityHeaderProps> = ({ onMenuClick }) => {
             </EuiFlexItem>
             
             <EuiFlexItem grow={false}>
-              <EuiButton
-                iconType="productAgent"
-                size="s"
-                style={{ 
-                  backgroundColor: '#d9e8ff',
-                  color: '#1750ba',
-                  border: 'none',
-                  fontWeight: 500
-                }}
-              >
-                AI Agent
-              </EuiButton>
+              {/* AI Agent button — Figma: 1771:77507 */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                height: 32,
+                minWidth: 96,
+                padding: '0 8px',
+                borderRadius: 4,
+                backgroundImage: 'linear-gradient(124.93deg, #D9E8FF 3.97%, #ECE2FE 65.60%)',
+                cursor: 'pointer',
+              }}>
+                <EuiIcon type="productAgent" size="s" />
+                <span style={{
+                  background: 'linear-gradient(165.73deg, #1750BA 2.98%, #6B3C9F 66.24%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  fontWeight: 500,
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  whiteSpace: 'nowrap',
+                }}>
+                  AI Agent
+                </span>
+              </div>
             </EuiFlexItem>
             
             <EuiFlexItem grow={false}>
