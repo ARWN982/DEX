@@ -393,8 +393,6 @@ const SummaryStatsRow: React.FC<{ summary: ReadinessSummary }> = ({ summary }) =
 
 interface PillarCardsProps {
   summary: ReadinessSummary;
-  selectedTabId: VisibilityTabId;
-  onTabSelect: (id: VisibilityTabId) => void;
 }
 
 const PILLAR_DESCRIPTIONS: Record<VisibilityTabId, Record<'healthy' | 'warning' | 'critical', string>> = {
@@ -420,7 +418,7 @@ const PILLAR_DESCRIPTIONS: Record<VisibilityTabId, Record<'healthy' | 'warning' 
   },
 };
 
-const PillarCards: React.FC<PillarCardsProps> = ({ summary, selectedTabId, onTabSelect }) => {
+const PillarCards: React.FC<PillarCardsProps> = ({ summary }) => {
   const pillars: Array<{ id: VisibilityTabId; title: string; pillar: PillarStatus }> = [
     { id: 'coverage',   title: 'Coverage',   pillar: summary.pillars.coverage },
     { id: 'quality',    title: 'Quality',    pillar: summary.pillars.quality },
@@ -453,16 +451,7 @@ const PillarCards: React.FC<PillarCardsProps> = ({ summary, selectedTabId, onTab
               titleSize="xs"
               textAlign="left"
               hasBorder
-              selectable={{
-                onClick: () => onTabSelect(id),
-                isSelected: selectedTabId === id,
-              }}
               paddingSize="m"
-              style={selectedTabId === id ? {
-                boxShadow: '0px 0px 2px 0px hsla(216.67,29.51%,23.92%,0.16), 0px 1px 4px 0px hsla(216.67,29.51%,23.92%,0.06), 0px 2px 8px 0px hsla(216.67,29.51%,23.92%,0.04)',
-                outline: '2px solid #1D4ED8',
-                outlineOffset: -2,
-              } : undefined}
             >
               <EuiStat
                 title={pillar.metricValue}
@@ -1531,12 +1520,30 @@ const SiemReadinessPage: React.FC = () => {
                 <SummaryStatsRow summary={summary} />
                 <EuiSpacer size="l" />
 
-                {/* Change 3: Pillar cards */}
-                <PillarCards summary={summary} selectedTabId={activeTab} onTabSelect={setActiveTab} />
+                {/* Change 3: Pillar cards — static display only */}
+                <PillarCards summary={summary} />
 
                 <EuiSpacer size="m" />
 
-                {/* Pillar content — driven by selected card (Fix 1: no tabs) */}
+                {/* Navigation button group */}
+                <EuiButtonGroup
+                  legend="Select pillar"
+                  options={[
+                    { id: 'coverage',   label: 'Coverage'   },
+                    { id: 'quality',    label: 'Quality'    },
+                    { id: 'continuity', label: 'Continuity' },
+                    { id: 'retention',  label: 'Retention'  },
+                  ]}
+                  idSelected={activeTab}
+                  onChange={(id) => setActiveTab(id as VisibilityTabId)}
+                  buttonSize="m"
+                  color="primary"
+                  isFullWidth
+                />
+
+                <EuiSpacer size="m" />
+
+                {/* Pillar content — driven by button group */}
                 {activeTab === 'coverage'   && <><EuiSpacer size="s" /><CoverageTab coverage={coverage} categories={categories} integrations={integrations} loading={loading} /></>}
                 {activeTab === 'quality'    && <><EuiSpacer size="s" /><QualityTab categories={categories} qualityResults={qualityResults} ruleFieldIssues={ruleFieldIssues} loading={loading} /></>}
                 {activeTab === 'continuity' && <><EuiSpacer size="s" /><ContinuityTab categories={categories} pipelines={pipelines} loading={loading} /></>}
