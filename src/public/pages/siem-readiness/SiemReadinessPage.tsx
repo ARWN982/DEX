@@ -14,6 +14,8 @@ import {
   EuiCode,
   EuiEmptyPrompt,
   EuiFieldSearch,
+  EuiFilterButton,
+  EuiFilterGroup,
   EuiFlexGroup,
   EuiFlexItem,
   EuiHealth,
@@ -28,6 +30,8 @@ import {
   EuiPanel,
   EuiPageHeader,
   EuiPageSection,
+  EuiPopover,
+  EuiSelectable,
   EuiSpacer,
   EuiStat,
   EuiTab,
@@ -715,17 +719,115 @@ interface ActionsPanelProps {
   categories: CategoryGroup[];
 }
 
+const ALL_CATEGORIES: VisibilityTabId[] = ['coverage', 'quality', 'continuity', 'retention'];
+const ALL_SEVERITIES: Array<'critical' | 'warning'> = ['critical', 'warning'];
+const CATEGORY_LABELS: Record<VisibilityTabId, string> = { coverage: 'Coverage', quality: 'Quality', continuity: 'Continuity', retention: 'Retention' };
+
 const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
-  const actions = useMemo(
+  const allActions = useMemo(
     () => deriveActionItems(props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories),
     [props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories]
   );
 
+  // Filter state
+  const [activeCats, setActiveCats]  = useState<Set<VisibilityTabId>>(new Set(ALL_CATEGORIES));
+  const [activeSevs, setActiveSevs]  = useState<Set<'critical' | 'warning'>>(new Set(ALL_SEVERITIES));
+  const [catOpen,  setCatOpen]  = useState(false);
+  const [sevOpen,  setSevOpen]  = useState(false);
+
+  const actions = useMemo(
+    () => allActions.filter((a) => activeCats.has(a.pillar) && activeSevs.has(a.severity)),
+    [allActions, activeCats, activeSevs]
+  );
+
+  const toggleCat = (id: VisibilityTabId) => setActiveCats((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+  const toggleSev = (id: 'critical' | 'warning') => setActiveSevs((prev) => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
   return (
     <>
-      {/* Header row */}
-      <EuiTitle size="xs"><h3>Prioritised actions</h3></EuiTitle>
-      <EuiText size="xs" color="subdued">Sorted by Severity - rules affected</EuiText>
+      {/* Header row — title + filter group */}
+      <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
+        <EuiFlexItem>
+          <EuiTitle size="xs"><h3>Prioritised actions</h3></EuiTitle>
+          <EuiText size="xs" color="subdued">Sorted by Severity - rules affected</EuiText>
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <EuiFilterGroup>
+            {/* Category filter */}
+            <EuiPopover
+              isOpen={catOpen}
+              closePopover={() => setCatOpen(false)}
+              button={
+                <EuiFilterButton
+                  iconType="arrowDown"
+                  iconSide="right"
+                  onClick={() => setCatOpen((v) => !v)}
+                  isSelected={catOpen}
+                  numFilters={ALL_CATEGORIES.length}
+                  numActiveFilters={activeCats.size}
+                  hasActiveFilters={activeCats.size < ALL_CATEGORIES.length}
+                  withNext
+                >
+                  Category
+                </EuiFilterButton>
+              }
+              panelPaddingSize="none"
+            >
+              <EuiSelectable
+                options={ALL_CATEGORIES.map((id) => ({ label: CATEGORY_LABELS[id], key: id, checked: activeCats.has(id) ? 'on' as const : undefined }))}
+                onChange={(opts) => {
+                  const next = new Set<VisibilityTabId>();
+                  opts.forEach((o) => { if (o.checked === 'on') next.add(o.key as VisibilityTabId); });
+                  setActiveCats(next);
+                }}
+                listProps={{ bordered: false }}
+              >
+                {(list) => <div style={{ minWidth: 180 }}>{list}</div>}
+              </EuiSelectable>
+            </EuiPopover>
+
+            {/* Severity filter */}
+            <EuiPopover
+              isOpen={sevOpen}
+              closePopover={() => setSevOpen(false)}
+              button={
+                <EuiFilterButton
+                  iconType="arrowDown"
+                  iconSide="right"
+                  onClick={() => setSevOpen((v) => !v)}
+                  isSelected={sevOpen}
+                  numFilters={ALL_SEVERITIES.length}
+                  numActiveFilters={activeSevs.size}
+                  hasActiveFilters={activeSevs.size < ALL_SEVERITIES.length}
+                >
+                  Severity
+                </EuiFilterButton>
+              }
+              panelPaddingSize="none"
+            >
+              <EuiSelectable
+                options={ALL_SEVERITIES.map((id) => ({ label: id === 'critical' ? 'Critical' : 'Warning', key: id, checked: activeSevs.has(id) ? 'on' as const : undefined }))}
+                onChange={(opts) => {
+                  const next = new Set<'critical' | 'warning'>();
+                  opts.forEach((o) => { if (o.checked === 'on') next.add(o.key as 'critical' | 'warning'); });
+                  setActiveSevs(next);
+                }}
+                listProps={{ bordered: false }}
+              >
+                {(list) => <div style={{ minWidth: 160 }}>{list}</div>}
+              </EuiSelectable>
+            </EuiPopover>
+          </EuiFilterGroup>
+        </EuiFlexItem>
+      </EuiFlexGroup>
 
       <EuiSpacer size="m" />
 

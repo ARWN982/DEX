@@ -18,6 +18,7 @@ import { TemplateLoader } from "./utils/templateLoader";
 import RuleDetailsPage from "./pages/detection-rules/v1.0/rule-details";
 import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
 import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
+import AgentsPage from "./pages/agents/AgentsPage";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -87,6 +88,9 @@ const App: React.FC = () => {
             
             {/* SIEM Readiness */}
             <Route path="/siem-readiness" element={<SiemReadinessPage />} />
+
+            {/* Agents */}
+            <Route path="/agents" element={<AgentsPage />} />
 
             {/* Rule details route - must come before the catch-all */}
             <Route

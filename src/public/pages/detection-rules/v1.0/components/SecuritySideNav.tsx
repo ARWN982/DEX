@@ -150,6 +150,20 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
               <NavItem icon="bolt" label="Attack discovery" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
+              <NavItem
+                icon="productAgent"
+                label="Agents"
+                isActive={isActive('/agents')}
+                onClick={() => {
+                  if (isActive('/agents')) {
+                    window.dispatchEvent(new Event('agents-reset'));
+                  } else {
+                    navigate('/agents');
+                  }
+                }}
+              />
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
               <NavItem icon="bullseye" label="Findings" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
