@@ -385,16 +385,16 @@ const PILLAR_SUBLABELS: Record<VisibilityTabId, { label: string; colorKey: 'dang
   retention:  { label: 'Data streams below benchmark',   colorKey: 'warning' },
 };
 
+// Secondary stat folded into specific pillar cards (Option B)
+type SecondaryStatMap = Partial<Record<VisibilityTabId, { label: string; getValue: (s: ReadinessSummary) => string | number; getColor: (s: ReadinessSummary) => string | undefined }>>;
+
+const PILLAR_SECONDARY_STATS: SecondaryStatMap = {
+  coverage:   { label: 'Enabled rules',      getValue: (s) => s.enabledRules,    getColor: () => undefined },
+  continuity: { label: 'Silent data streams', getValue: (s) => s.silentStreams,   getColor: (s) => s.silentStreams > 0 ? '#BD271E' : undefined },
+};
+
 const OverallStatusCard: React.FC<{ summary: ReadinessSummary }> = ({ summary }) => {
   const { euiTheme } = useEuiTheme();
-  const borderStyle = `1px solid ${euiTheme.colors.lightShade}`;
-
-  const stats = [
-    { description: 'Enabled rules',             title: summary.enabledRules,            titleColor: 'default' as const },
-    { description: 'Silent data streams',        title: summary.silentStreams,            titleColor: summary.silentStreams > 0 ? 'danger' as const : 'default' as const },
-    { description: 'Categories missing data',    title: summary.categoriesMissingData,   titleColor: summary.categoriesMissingData > 0 ? 'danger' as const : 'default' as const },
-    { description: 'Retention below benchmark',  title: summary.retentionBelowBenchmark, titleColor: summary.retentionBelowBenchmark > 0 ? 'warning' as const : 'default' as const },
-  ];
 
   const pillars: Array<{ id: VisibilityTabId; label: string }> = [
     { id: 'coverage',   label: 'Coverage'   },
@@ -404,67 +404,59 @@ const OverallStatusCard: React.FC<{ summary: ReadinessSummary }> = ({ summary })
   ];
 
   return (
-    <>
-      {/* Card 1 — headline metrics */}
-      <EuiPanel hasBorder hasShadow={false} paddingSize="m" data-test-subj="siemReadiness-metricsCard">
-        <EuiFlexGroup gutterSize="none" responsive={false}>
-          {stats.map((stat, idx) => (
-            <EuiFlexItem key={stat.description} style={{ borderRight: idx < stats.length - 1 ? borderStyle : undefined, paddingRight: idx < stats.length - 1 ? euiTheme.size.m : undefined, paddingLeft: idx > 0 ? euiTheme.size.m : undefined }}>
-              <EuiStat
-                description={stat.description}
-                title={stat.title}
-                titleSize="m"
-                titleColor={stat.titleColor}
-                reverse={false}
-                descriptionElement="p"
-              />
-            </EuiFlexItem>
-          ))}
-        </EuiFlexGroup>
-      </EuiPanel>
+    <EuiPanel hasBorder hasShadow={false} paddingSize="none" data-test-subj="siemReadiness-overallStatusCard">
+      <div style={{ display: 'flex', minHeight: 100 }}>
+        {pillars.map(({ id, label }, idx) => {
+          const pillar      = summary.pillars[id];
+          const sub         = PILLAR_SUBLABELS[id];
+          const secondary   = PILLAR_SECONDARY_STATS[id];
+          const badgeColor  = pillar.status === 'critical' ? 'danger' as const : pillar.status === 'warning' ? 'warning' as const : 'success' as const;
+          const badgeLabel  = pillar.status === 'critical' ? 'Critical' : pillar.status === 'warning' ? 'Warning' : 'Healthy';
+          const valueColor  = sub.colorKey === 'danger' ? '#BD271E' : '#CA8500';
+          return (
+            <React.Fragment key={id}>
+              {idx > 0 && (
+                <div style={{ width: 0, borderLeft: `1px solid ${euiTheme.colors.lightShade}`, flexShrink: 0, margin: '8px 0' }} />
+              )}
+              <div style={{ flex: 1, padding: '16px 20px' }}>
+                {/* Title + badge */}
+                <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+                  <EuiFlexItem grow={false}>
+                    <EuiText style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>{label}</EuiText>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiBadge color={badgeColor}>{badgeLabel}</EuiBadge>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
 
-      <EuiSpacer size="m" />
+                <EuiSpacer size="s" />
 
-      {/* Card 2 — pillar summaries with full-height separators */}
-      <EuiPanel hasBorder hasShadow={false} paddingSize="none" data-test-subj="siemReadiness-pillarsCard">
-        {/* Use a plain flex div so separators can stretch the full card height */}
-        <div style={{ display: 'flex', minHeight: 100 }}>
-          {pillars.map(({ id, label }, idx) => {
-            const pillar = summary.pillars[id];
-            const sub    = PILLAR_SUBLABELS[id];
-            const badgeColor = pillar.status === 'critical' ? 'danger' as const : pillar.status === 'warning' ? 'warning' as const : 'success' as const;
-            const badgeLabel = pillar.status === 'critical' ? 'Critical' : pillar.status === 'warning' ? 'Warning' : 'Healthy';
-            const valueColor = sub.colorKey === 'danger' ? '#BD271E' : '#CA8500';
-            return (
-              <React.Fragment key={id}>
-                {/* Separator — same style as card 1 borderRight, 8px top/bottom gap */}
-                {idx > 0 && (
-                  <div style={{ width: 0, borderLeft: `1px solid ${euiTheme.colors.lightShade}`, flexShrink: 0, margin: '8px 0' }} />
+                {/* Primary pillar metric */}
+                <EuiText size="xs" color="subdued">
+                  {sub.label}:{' '}
+                  <strong style={{ color: pillar.hasIssues ? valueColor : undefined }}>
+                    {String(pillar.metricValue)}
+                  </strong>
+                </EuiText>
+
+                {/* Secondary stat (folded from top row) */}
+                {secondary && (
+                  <>
+                    <EuiSpacer size="xs" />
+                    <EuiText size="xs" color="subdued">
+                      {secondary.label}:{' '}
+                      <strong style={{ color: secondary.getColor(summary) }}>
+                        {String(secondary.getValue(summary))}
+                      </strong>
+                    </EuiText>
+                  </>
                 )}
-                {/* Content column */}
-                <div style={{ flex: 1, padding: '12px 24px 32px 24px' }}>
-                  <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-                    <EuiFlexItem grow={false}>
-                      <EuiText style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>{label}</EuiText>
-                    </EuiFlexItem>
-                    <EuiFlexItem grow={false}>
-                      <EuiBadge color={badgeColor}>{badgeLabel}</EuiBadge>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
-                  <EuiSpacer size="s" />
-                  <EuiText size="xs" color="subdued">
-                    {sub.label}:{' '}
-                    <strong style={{ color: pillar.hasIssues ? valueColor : undefined }}>
-                      {String(pillar.metricValue)}
-                    </strong>
-                  </EuiText>
-                </div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </EuiPanel>
-    </>
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </EuiPanel>
   );
 };
 
