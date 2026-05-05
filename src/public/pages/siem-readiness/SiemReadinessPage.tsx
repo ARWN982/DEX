@@ -1178,6 +1178,39 @@ function getPlatformFromIndex(indexName: string): string {
   return INDEX_PREFIX_TO_PLATFORM[getIndexPrefix(indexName)] ?? '—';
 }
 
+const CATEGORY_TO_INTEGRATION: Record<string, string> = {
+  'Network':          'zeek',
+  'Endpoint':         'endpoint',
+  'Identity':         'okta',
+  'Cloud':            'aws',
+  'Application/SaaS': 'google_workspace',
+};
+function getTacticsFromCategory(category: string): string[] {
+  const integration = CATEGORY_TO_INTEGRATION[category];
+  return integration ? (INTEGRATION_MITRE[integration] ?? []) : [];
+}
+
+// Shared tactics cell: shows up to 3 badges + "+N more" tooltip
+const TacticsCell: React.FC<{ tactics: string[] }> = ({ tactics }) => {
+  if (tactics.length === 0) return <EuiText size="s" color="subdued">—</EuiText>;
+  const visible = tactics.slice(0, 3);
+  const rest    = tactics.slice(3);
+  return (
+    <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
+      {visible.map((t) => (
+        <EuiFlexItem key={t} grow={false}><EuiBadge color="primary">{t}</EuiBadge></EuiFlexItem>
+      ))}
+      {rest.length > 0 && (
+        <EuiFlexItem grow={false}>
+          <EuiToolTip content={rest.join(', ')} data-test-subj="siemReadiness-tacticsMore">
+            <EuiBadge color="hollow">+{rest.length} more</EuiBadge>
+          </EuiToolTip>
+        </EuiFlexItem>
+      )}
+    </EuiFlexGroup>
+  );
+};
+
 // ─── Shared: Rules Affected flyout ───────────────────────────────────────────
 
 interface FlyoutRule { name: string; tactics: string[]; status: 'in-actions' | 'no-action' }
@@ -1338,12 +1371,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
     },
     {
       name: 'Tactics',
-      render: (row: CategoryAccordionItem) => {
-        const tactics = INTEGRATION_MITRE[row.id] ?? [];
-        return tactics.length > 0
-          ? <EuiFlexGroup gutterSize="xs" wrap responsive={false}>{tactics.map((t) => <EuiFlexItem key={t} grow={false}><EuiBadge color="primary">{t}</EuiBadge></EuiFlexItem>)}</EuiFlexGroup>
-          : <EuiText size="s" color="subdued">—</EuiText>;
-      },
+      render: (row: CategoryAccordionItem) => <TacticsCell tactics={INTEGRATION_MITRE[row.id] ?? []} />,
     },
     {
       name: 'Platform',
@@ -1508,28 +1536,37 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
         <EuiFlexItem>
           <EuiBasicTable
             items={[
-              { id: 'enabled', statusColor: 'success' as const, label: 'Enabled Integrations',               count: coverage?.coveredRules.length ?? 0 },
-              { id: 'missing', statusColor: 'danger'  as const, label: 'Missing or Disabled Integrations',   count: coverage?.uncoveredRules.length ?? 0 },
+              { id: 'enabled', statusColor: 'success' as const, label: 'Enabled Integrations',             count: coverage?.coveredRules.length ?? 0, rulesUnblocked: 0 },
+              { id: 'missing', statusColor: 'danger'  as const, label: 'Missing or Disabled Integrations', count: coverage?.uncoveredRules.length ?? 0, rulesUnblocked: coverage?.uncoveredRules.length ?? 0 },
             ]}
             columns={[
               {
                 field: 'label',
                 name: 'Data Source status',
-                render: (label: string, row: { statusColor: string; label: string; count: number; id: string }) => (
+                render: (label: string, row: { statusColor: string; label: string; count: number; id: string; rulesUnblocked: number }) => (
                   <EuiHealth color={row.statusColor}>{label}</EuiHealth>
                 ),
               },
-              { field: 'count', name: '# of rules associated', width: '200px' },
+              { field: 'count', name: '# of rules associated', width: '180px' },
+              {
+                field: 'rulesUnblocked',
+                name: 'Rules unblocked if resolved',
+                width: '200px',
+                render: (n: number) =>
+                  n > 0
+                    ? <EuiText size="s" style={{ color: '#017D73', fontWeight: 600 }} data-test-subj="siemReadiness-rulesUnblocked">{n} rules</EuiText>
+                    : <EuiText size="s" color="subdued">—</EuiText>,
+              },
               {
                 name: 'Actions',
-                width: '220px',
-                render: (row: { statusColor: string; label: string; count: number; id: string }) => (
-                  <EuiButtonEmpty size="xs" color="primary">
-                    View Integrations&nbsp;<EuiBadge color="hollow">{row.count}</EuiBadge>
+                width: '180px',
+                render: (row: { statusColor: string; label: string; count: number; id: string; rulesUnblocked: number }) => (
+                  <EuiButtonEmpty size="xs" color="primary" data-test-subj={`siemReadiness-viewIntegrations-${row.id}`}>
+                    View Integrations
                   </EuiButtonEmpty>
                 ),
               },
-            ] as Array<EuiBasicTableColumn<{ id: string; statusColor: string; label: string; count: number }>>}
+            ] as Array<EuiBasicTableColumn<{ id: string; statusColor: string; label: string; count: number; rulesUnblocked: number }>>}
             itemId="id"
           />
           <EuiText size="s" style={{ paddingLeft: 8, marginTop: 8 }}>
@@ -1605,11 +1642,19 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
             },
           },
           {
+            name: 'Rules blind',
+            width: '130px',
+            render: (row: typeof dataCategoryRows[0]) =>
+              row.statusLabel === 'Missing data'
+                ? <EuiText size="s" style={{ color: '#BD271E', fontWeight: 600 }} data-test-subj={`siemReadiness-rulesBlind-${row.id}`}>{row.rulesCount}</EuiText>
+                : <EuiText size="s" color="subdued">—</EuiText>,
+          },
+          {
             name: 'Action',
-            width: '220px',
+            width: '100px',
             render: (row: typeof dataCategoryRows[0]) => (
-              <EuiButtonEmpty size="xs" color="primary">
-                View Integrations&nbsp;<EuiBadge color="hollow">{row.integrationCount}</EuiBadge>
+              <EuiButtonEmpty size="xs" color="primary" data-test-subj={`siemReadiness-installIntegration-${row.id}`}>
+                Install
               </EuiButtonEmpty>
             ),
           },
@@ -1704,12 +1749,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
     {
       name: 'Tactics',
       width: '16%',
-      render: (row: QualityIndexItem) => {
-        const tactics = getTacticsFromIndex(row.indexName);
-        return tactics.length > 0
-          ? <EuiFlexGroup gutterSize="xs" wrap responsive={false}>{tactics.map((t) => <EuiFlexItem key={t} grow={false}><EuiBadge color="primary">{t}</EuiBadge></EuiFlexItem>)}</EuiFlexGroup>
-          : <EuiText size="s" color="subdued">—</EuiText>;
-      },
+      render: (row: QualityIndexItem) => <TacticsCell tactics={getTacticsFromIndex(row.indexName)} />,
     },
     {
       name: 'Platform',
@@ -2039,8 +2079,8 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
               ),
             },
             {
-              name: 'Tactics', width: '80px',
-              render: () => <EuiText size="s" color="subdued">—</EuiText>,
+              name: 'Tactics',
+              render: (row: ContinuityFinding) => <TacticsCell tactics={getTacticsFromIndex(row.dataset)} />,
             },
             {
               name: 'Platform', width: '110px',
@@ -2142,8 +2182,8 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
               render: () => <EuiText size="s" color="subdued">—</EuiText>,
             },
             {
-              name: 'Tactics', width: '80px',
-              render: () => <EuiText size="s" color="subdued">—</EuiText>,
+              name: 'Tactics',
+              render: (row: RetentionFinding) => <TacticsCell tactics={getTacticsFromCategory(row.category)} />,
             },
             {
               name: 'Platform', width: '110px',
