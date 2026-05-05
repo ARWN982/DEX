@@ -89,7 +89,7 @@ router.get('/siem_readiness/get_pipelines', (_req: Request, res: Response) => {
     { name: 'logs-endpoint.alerts@pipeline',         indices: ['logs-endpoint.alerts-default'],   docsCount: 12400,  failedDocsCount: 0,    statsAvailable: true },
     { name: 'logs-endpoint.events.network@pipeline', indices: ['logs-endpoint.events.network-default'], docsCount: 98000, failedDocsCount: 0, statsAvailable: true },
     // Network — critical failure rate
-    { name: 'ds-auditbeat@pipeline',                 indices: ['ds-auditbeat-9.1.0-2025.11.02-000015'], docsCount: 55000,  failedDocsCount: 1320, statsAvailable: true },
+    { name: 'ds-auditbeat@pipeline',                 indices: ['ds-auditbeat-9.1.0-2025.11.02-000015'], docsCount: 55000,  failedDocsCount: 1320, statsAvailable: true, latencyMinutes: 8 },
     { name: 'logs-zeek.connection@pipeline',         indices: ['ds-auditbeat-9.1.0-2025.10.15-000014'], docsCount: 31000,  failedDocsCount: 0,    statsAvailable: true },
     // Identity — healthy
     { name: 'logs-okta.system@pipeline',             indices: ['logs-okta.system-2025.07-default', 'logs-okta.system-2025.06-default'], docsCount: 8800, failedDocsCount: 0, statsAvailable: true },
