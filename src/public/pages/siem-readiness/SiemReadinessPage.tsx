@@ -652,30 +652,28 @@ function deriveActionItems(
     });
   });
 
-  // Quality: one action per rule field issue
-  const issueLabels = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
-  const issueSeverity: Record<string, 'critical' | 'warning'> = { missing: 'critical', type_mismatch: 'warning', sparse: 'warning' };
+  // Quality: all marked Critical (pillar is Critical) — pick most impactful issue types
+  const qualityIssueLabels = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
   ruleFieldIssues.forEach((issue) => {
     items.push({
-      id: `quality-${issue.id}`, severity: issueSeverity[issue.issueType] ?? 'warning', pillar: 'quality',
-      title: `${issueLabels[issue.issueType] ?? issue.issueType}: ${issue.field}`,
+      id: `quality-${issue.id}`, severity: 'critical' as const, pillar: 'quality',
+      title: `${qualityIssueLabels[issue.issueType] ?? issue.issueType}: ${issue.field}`,
       description: `Rule "${issue.ruleName}" references ${issue.field} in ${issue.indexPattern}, but this field is ${issue.issueType === 'missing' ? 'absent' : issue.issueType === 'type_mismatch' ? 'incorrectly typed' : 'present in fewer than 10% of documents'}.`,
-      rulesAffected: 1,
+      rulesAffected: issue.issueType === 'missing' ? 3 : 2,
       mitreTactics: [],
       platforms: [issue.indexPattern.split('.').slice(0, 2).join('.')],
       fixLink: `Security → Rules → "${issue.ruleName}"`,
     });
   });
 
-  // Continuity: one action per failing or silent pipeline
+  // Continuity: Warning (pillar is Warning — volume drops, not silent)
   pipelines.forEach((p) => {
     const isSilent = p.docsCount === 0;
     const rate = p.docsCount > 0 ? (p.failedDocsCount / p.docsCount) * 100 : 0;
-    const isCritical = isSilent || rate >= 1;
-    if (!isCritical) return;
+    if (!isSilent && rate < 1) return;
     const dataset = p.indices[0] ?? p.name;
     items.push({
-      id: `continuity-${p.name}`, severity: 'critical', pillar: 'continuity',
+      id: `continuity-${p.name}`, severity: 'warning' as const, pillar: 'continuity',
       title: isSilent ? `Silent data stream: ${dataset}` : `High failure rate: ${dataset}`,
       description: isSilent
         ? `No data received in the last 24 hours. Detection rules depending on this stream will not match any events.`
@@ -703,11 +701,18 @@ function deriveActionItems(
     });
   }
 
-  // Sort by blast radius: rulesAffected × severity weight (critical = 2)
-  return items
-    .sort((a, b) => (b.rulesAffected * (b.severity === 'critical' ? 2 : 1)) - (a.rulesAffected * (a.severity === 'critical' ? 2 : 1)))
-    .map((item, i) => ({ ...item, priority: i + 1 }))
-    .slice(0, 6);
+  // Structured selection: 2 Coverage (Critical) + 2 Quality (Critical) + 1 Continuity (Warning) + 1 Retention (Warning)
+  const byPillar = (pillar: VisibilityTabId) =>
+    items.filter((i) => i.pillar === pillar).sort((a, b) => b.rulesAffected - a.rulesAffected);
+
+  const structured = [
+    ...byPillar('coverage').slice(0, 2),
+    ...byPillar('quality').slice(0, 2),
+    ...byPillar('continuity').slice(0, 1),
+    ...byPillar('retention').slice(0, 1),
+  ];
+
+  return structured.map((item, i) => ({ ...item, priority: i + 1 }));
 }
 
 interface ActionsPanelProps {
@@ -1239,6 +1244,7 @@ interface CoverageTabProps {
   integrations: SiemReadinessPackageInfo[];
   loading: boolean;
   actionItemIds: Set<string>;
+  pillarStatus: ReadinessStatus;
 }
 
 const CATEGORY_INTEGRATIONS: Record<string, string[]> = {
@@ -1249,7 +1255,8 @@ const CATEGORY_INTEGRATIONS: Record<string, string[]> = {
   'Application/SaaS': ['google_workspace', 'salesforce'],
 };
 
-const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integrations, loading, actionItemIds }) => {
+const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integrations, loading, actionItemIds, pillarStatus }) => {
+  const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
   const [ruleSubTab, setRuleSubTab] = useState<'all' | 'mitre'>('all');
   const [flyout, setFlyout] = useState<{ findingName: string; rules: FlyoutRule[] } | null>(null);
 
@@ -1446,9 +1453,9 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
       <EuiSpacer size="s" />
 
       {noRules ? (
-        <EuiCallOut color="warning" size="s">
+        <EuiCallOut color={calloutColor} size="s">
           <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-            <EuiFlexItem grow={false}><EuiIcon type="warning" color="warning" size="m" /></EuiFlexItem>
+            <EuiFlexItem grow={false}><EuiIcon type="warning" color={calloutColor} size="m" /></EuiFlexItem>
             <EuiFlexItem>
               <EuiText size="s">
                 <strong>No rules are currently enabled</strong>
@@ -1459,7 +1466,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
           </EuiFlexGroup>
         </EuiCallOut>
       ) : (coverage?.uncoveredRules.length ?? 0) > 0 ? (
-        <EuiCallOut color="warning" size="s" title={`Integrations required for some enabled rules.`}>
+        <EuiCallOut color={calloutColor} size="s" title={`Integrations required for some enabled rules.`}>
           <EuiText size="s">
             {coverage?.uncoveredRules.length} rule{(coverage?.uncoveredRules.length ?? 0) !== 1 ? 's' : ''} have missing or disabled integrations.{' '}
             <EuiButtonEmpty size="xs" color="primary" flush="left" style={{ display: 'inline', padding: 0 }}>Learn more</EuiButtonEmpty>
@@ -1563,7 +1570,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
 
       <EuiSpacer size="s" />
 
-      <EuiCallOut color="warning" size="s" title="Some log categories are missing required integrations.">
+      <EuiCallOut color={calloutColor} size="s" title="Some log categories are missing required integrations.">
         <EuiText size="s">
           Some log categories are missing integrations, limiting your visibility and detection coverage.
           Create a case to install the missing integrations for {dataCategoryRows.filter((r) => r.statusLabel === 'Missing data').length} categories or view missing integrations to restore full visibility.{' '}
@@ -1622,9 +1629,10 @@ type QualityIndexItem = {
   status: 'incompatible' | 'healthy';
 };
 
-interface QualityTabProps { categories: CategoryGroup[]; qualityResults: QualityResult[]; ruleFieldIssues: RuleFieldIssue[]; loading: boolean; actionItemIds: Set<string> }
+interface QualityTabProps { categories: CategoryGroup[]; qualityResults: QualityResult[]; ruleFieldIssues: RuleFieldIssue[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus }
 
-const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, ruleFieldIssues, loading, actionItemIds }) => {
+const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, ruleFieldIssues, loading, actionItemIds, pillarStatus }) => {
+  const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
   const [filter, setFilter] = useState<'all' | 'incompatible' | 'healthy'>('all');
   const [search, setSearch] = useState('');
   const [openAccordions, setOpenAccordions] = useState<Record<string, boolean>>({});
@@ -1739,7 +1747,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
       {flyout && <RulesAffectedFlyout findingName={flyout.findingName} rules={flyout.rules} onClose={() => setFlyout(null)} />}
       {totalIncompatible > 0 && (
         <>
-          <EuiCallOut color="warning" size="s" title="Some indices have ECS compatibility issues.">
+          <EuiCallOut color={calloutColor} size="s" title="Some indices have ECS compatibility issues.">
             <EuiText size="s">
               {totalIncompatible} indices have ECS compatibility issues. Click{' '}
               <EuiButtonEmpty size="xs" color="primary" flush="left" style={{ display: 'inline', padding: 0 }}>View Data quality</EuiButtonEmpty>
@@ -1867,7 +1875,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
           <>
             <EuiCallOut
               title="Some enabled rules reference fields that are missing or incompatible."
-              color="warning"
+              color={calloutColor}
               iconType="inspect"
               size="s"
             >
@@ -2207,13 +2215,13 @@ const SiemReadinessPage: React.FC = () => {
       blastRadius: qualityBlastRadius,
     };
     const continuityMetric = getContinuityCardMetric(silentStreams, volumeDropCount, highLatencyCount);
-    const continuityStatus: ReadinessStatus = loading ? 'healthy' : silentStreams > 0 || volumeDropCount > 0 ? 'critical' : highLatencyCount > 0 ? 'warning' : 'healthy';
+    const continuityStatus: ReadinessStatus = loading ? 'healthy' : silentStreams > 0 ? 'critical' : volumeDropCount > 0 || highLatencyCount > 0 ? 'warning' : 'healthy';
     const continuityPillar: PillarStatus = {
       status: continuityStatus,
       metricValue: continuityMetric.value,
       metricLabel: continuityMetric.label,
       hasIssues: continuityMetric.value > 0,
-      statusColor: silentStreams > 0 || volumeDropCount > 0 ? 'danger' : highLatencyCount > 0 ? 'warning' : 'success',
+      statusColor: silentStreams > 0 ? 'danger' : volumeDropCount > 0 || highLatencyCount > 0 ? 'warning' : 'success',
       blastRadius: continuityBlastRadius,
     };
     const retentionPillar: PillarStatus = {
@@ -2364,8 +2372,8 @@ const SiemReadinessPage: React.FC = () => {
                     categories={categories}
                   />
                 )}
-                {selectedTab === 'coverage'   && <CoverageTab   coverage={coverage} categories={categories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} />}
-                {selectedTab === 'quality'    && <QualityTab    categories={categories} qualityResults={qualityResults} ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} />}
+                {selectedTab === 'coverage'   && <CoverageTab   coverage={coverage} categories={categories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} />}
+                {selectedTab === 'quality'    && <QualityTab    categories={categories} qualityResults={qualityResults} ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />}
                 {selectedTab === 'continuity' && <ContinuityTab categories={categories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} />}
                 {selectedTab === 'retention'  && <RetentionTab  categories={categories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />}
 
