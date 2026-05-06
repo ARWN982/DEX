@@ -594,6 +594,7 @@ const PillarCards: React.FC<PillarCardsProps> = ({ summary }) => {
 // ─── Actions panel ────────────────────────────────────────────────────────────
 
 interface ActionItem {
+  fixRecommendation: string;
   id: string;
   priority: number;
   severity: 'critical' | 'warning';
@@ -645,6 +646,7 @@ function deriveActionItems(
       id: `coverage-${pkg}`, severity: 'critical', pillar: 'coverage',
       title: `Install ${title} integration`,
       description: `${rules} detection rule${rules !== 1 ? 's' : ''} require ${title} but it is not installed or has no active policy. These rules will not match any events.`,
+      fixRecommendation: `Go to Fleet → Integrations, search for "${title}", install it, and create an agent policy. Once active, affected rules will begin matching events automatically.`,
       rulesAffected: rules,
       mitreTactics: INTEGRATION_MITRE[pkg] ?? [],
       platforms: [title],
@@ -659,6 +661,11 @@ function deriveActionItems(
       id: `quality-${issue.id}`, severity: 'critical' as const, pillar: 'quality',
       title: `${qualityIssueLabels[issue.issueType] ?? issue.issueType}: ${issue.field}`,
       description: `Rule "${issue.ruleName}" references ${issue.field} in ${issue.indexPattern}, but this field is ${issue.issueType === 'missing' ? 'absent' : issue.issueType === 'type_mismatch' ? 'incorrectly typed' : 'present in fewer than 10% of documents'}.`,
+      fixRecommendation: issue.issueType === 'missing'
+        ? `Update the rule's index pattern or enrich your data pipeline so that "${issue.field}" is populated in ${issue.indexPattern}.`
+        : issue.issueType === 'type_mismatch'
+          ? `Check the field mapping for "${issue.field}" in ${issue.indexPattern} and align it with the ECS type expected by the rule.`
+          : `Investigate why "${issue.field}" is sparsely populated. Ensure your integration is sending complete event data.`,
       rulesAffected: issue.issueType === 'missing' ? 3 : 2,
       mitreTactics: [],
       platforms: [issue.indexPattern.split('.').slice(0, 2).join('.')],
@@ -678,6 +685,9 @@ function deriveActionItems(
       description: isSilent
         ? `No data received in the last 24 hours. Detection rules depending on this stream will not match any events.`
         : `${rate.toFixed(1)}% of docs are failing ingestion (${p.failedDocsCount.toLocaleString()} of ${p.docsCount.toLocaleString()}). Events are being dropped.`,
+      fixRecommendation: isSilent
+        ? `Check the integration configuration in Fleet. Verify the agent is running and the data stream is active. Restart the agent if necessary.`
+        : `Review the ingest pipeline for "${dataset}" in Fleet. Check for parsing errors or mapping conflicts causing documents to fail.`,
       rulesAffected: 5,
       mitreTactics: [],
       platforms: [dataset.split('.').slice(0, 2).join('.')],
@@ -694,6 +704,7 @@ function deriveActionItems(
       pillar: 'retention',
       title: `Data streams below benchmark: ${nonCompliantRetention.length}`,
       description: `${nonCompliantRetention.length} data streams do not meet the required retention benchmark. Update your ILM or data lifecycle policies to ensure compliance.`,
+      fixRecommendation: `Open Stack Management → Index Lifecycle Management. For each affected data stream, update the policy to extend the retention period to meet the required benchmark (90–180 days depending on category).`,
       rulesAffected: nonCompliantRetention.length,
       mitreTactics: [],
       platforms: [...new Set(nonCompliantRetention.map((r) => r.indexName.split('.').slice(0, 2).join('.')))].slice(0, 3),
@@ -958,8 +969,14 @@ const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
                       </EuiFlexGroup>
                       <EuiSpacer size="xs" />
 
-                      {/* Description */}
-                      <EuiText size="s" color="subdued">{action.description}</EuiText>
+                      {/* Issue + Action */}
+                      <EuiText size="xs" color="subdued">
+                        <strong>Issue</strong>&nbsp;{action.description}
+                      </EuiText>
+                      <EuiSpacer size="xs" />
+                      <EuiText size="xs" color="subdued">
+                        <strong>Action</strong>&nbsp;{action.fixRecommendation}
+                      </EuiText>
                       <EuiSpacer size="s" />
 
                       {/* Badges — all hollow except the severity badge above */}
