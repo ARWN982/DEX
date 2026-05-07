@@ -75,7 +75,7 @@ const App: React.FC = () => {
         )}
         <div style={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<Homepage />} />
+            <Route path="/" element={<SiemReadinessPage />} />
             
             {/* Template routes */}
             <Route
