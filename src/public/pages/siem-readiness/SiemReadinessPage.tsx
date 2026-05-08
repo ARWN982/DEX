@@ -346,39 +346,44 @@ const AddToChatButton: React.FC = () => (
 );
 
 const StatusHero: React.FC<{ summary: ReadinessSummary }> = ({ summary }) => {
-  const msg = getOverallStatusMessage({
+  const pillarStatuses = {
     coverage:   summary.pillars.coverage.status,
     quality:    summary.pillars.quality.status,
     continuity: summary.pillars.continuity.status,
     retention:  summary.pillars.retention.status,
-  });
-  const stripBg    = msg.color === 'danger' ? '#FFF3F1' : msg.color === 'warning' ? '#FFF8E6' : '#F0FFF4';
-  const titleColor = msg.color === 'danger' ? '#BD271E' : msg.color === 'warning' ? '#CA8500' : '#017D73';
+  };
+
+  const criticalCount = Object.values(pillarStatuses).filter(s => s === 'critical').length;
+  const warningCount  = Object.values(pillarStatuses).filter(s => s === 'warning').length;
+  const totalIssues   = criticalCount + warningCount;
+
+  const overallStatus = criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'healthy';
+  const titleColor    = overallStatus === 'critical' ? '#BD271E' : overallStatus === 'warning' ? '#CA8500' : '#017D73';
+  const iconType      = overallStatus === 'critical' ? 'alert' : overallStatus === 'warning' ? 'warning' : 'checkInCircleFilled';
+  const iconColor     = overallStatus === 'critical' ? 'danger' as const : overallStatus === 'warning' ? 'warning' as const : 'success' as const;
+  const headline      = overallStatus === 'critical' ? 'Critical issues detected' : overallStatus === 'warning' ? 'Warnings detected' : 'All systems healthy';
+  const actionsCount  = criticalCount * 2 + warningCount;
+
   return (
-    <EuiPanel hasBorder hasShadow={false} paddingSize="m" data-test-subj="siemReadiness-statusBanner">
-      <EuiTitle size="s"><h2>Overall status</h2></EuiTitle>
-      <EuiSpacer size="s" />
-      <div style={{ background: stripBg, borderRadius: 4, padding: '10px 12px' }}>
-        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="m">
-          <EuiFlexItem>
-            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <EuiIcon type={msg.iconType} size="m" color={msg.color} />
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiText size="s">
-                  <strong style={{ color: titleColor }}>
-                    {`${summary.pillars.coverage.blastRadius ?? 0} rules are blind, ${summary.pillars.quality.metricValue} indices have field issues, ${summary.volumeDropCount} streams are dropping events, ${summary.retentionBelowBenchmark} below retention benchmark.`}
-                  </strong>
-                </EuiText>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <AddToChatButton />
-          </EuiFlexItem>
-        </EuiFlexGroup>
+    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ background: '#F6F9FC' }} data-test-subj="siemReadiness-statusBanner">
+      <EuiText size="s" style={{ fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>Overall status</EuiText>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <EuiIcon type={iconType} size="l" color={iconColor} />
+        <span style={{ color: titleColor, fontSize: 20, lineHeight: '24px', fontWeight: 700 }}>
+          {headline}
+        </span>
       </div>
+      {totalIssues > 0 ? (
+        <EuiText size="s" color="subdued">
+          {'your SIEM readiness has '}
+          {criticalCount > 0 && <EuiBadge color="danger">{criticalCount} Critical</EuiBadge>}
+          {criticalCount > 0 && warningCount > 0 && ' and '}
+          {warningCount > 0 && <EuiBadge color="warning">{warningCount} Warning</EuiBadge>}
+          {` severity impacted issues. This has created ${actionsCount} actions to resolve.`}
+        </EuiText>
+      ) : (
+        <EuiText size="s" color="subdued">No issues detected across all pillars.</EuiText>
+      )}
     </EuiPanel>
   );
 };
