@@ -59,7 +59,7 @@ const AutoDexPage: React.FC = () => {
               <div style={{ padding: '24px 24px 0 24px', flexShrink: 0 }}>
 
                 {/* Title row */}
-                <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s" style={{ marginBottom: 8 }}>
+                <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s" style={{ marginBottom: 12 }}>
                   {/* Title + Running badge */}
                   <EuiFlexItem grow={true}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -86,13 +86,10 @@ const AutoDexPage: React.FC = () => {
                   </EuiFlexItem>
                 </EuiFlexGroup>
 
-                <EuiText size="s" color="subdued" style={{ marginBottom: 16 }}>
-                  Autonomous detection engineering — AI-managed rule health, coverage gaps, and approvals.
-                </EuiText>
               </div>
 
               {/* Scrollable AutoDEX content */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px 24px', minHeight: 0 }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: '12px 24px 24px 24px', minHeight: 0 }}>
                 <AutoDexTabView onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)} />
               </div>
             </EuiPanel>

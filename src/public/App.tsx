@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   CommentingSystem,
-  DesignerToolbar,
   JobStoriesFlyout,
   CreateVersionModal,
   AssistantFlyout,
@@ -126,33 +125,6 @@ const App: React.FC = () => {
           onExitCommentingMode={() => setIsCommentingEnabled(false)}
         />
 
-        {/* Designer Toolbar - hidden on homepage */}
-        {location.pathname !== "/" && (
-          <DesignerToolbar
-            isCommentingEnabled={isCommentingEnabled}
-            onToggleCommenting={() => {
-              console.log(
-                "Toggling comment mode from",
-                isCommentingEnabled,
-                "to",
-                !isCommentingEnabled
-              );
-              setIsCommentingEnabled(!isCommentingEnabled);
-            }}
-            isJobStoriesTrackingEnabled={isJobStoriesTrackingEnabled}
-            onToggleJobStoriesTracking={() => {
-              console.log(
-                "Toggling job stories tracking from",
-                isJobStoriesTrackingEnabled,
-                "to",
-                !isJobStoriesTrackingEnabled
-              );
-              setIsJobStoriesTrackingEnabled(!isJobStoriesTrackingEnabled);
-            }}
-            onCreateVersion={handleCreateVersion}
-            projectName={getProjectNameFromPath(location.pathname) || undefined}
-          />
-        )}
 
         {/* Job Stories Flyout */}
         <JobStoriesFlyout

@@ -1,10 +1,15 @@
+export interface AutoDexDiffChange {
+  before: string;
+  after: string;
+}
+
 export interface AutoDexLogFullReasoning {
   summary: string;
   diagnosis: string[];
   decision: string[];
   confidence: number;
   riskLevel: string;
-  changesMade: string[];
+  changesMade: Array<string | AutoDexDiffChange>;
   relatedMitreIds: string[];
 }
 
@@ -44,7 +49,9 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
       ],
       confidence: 98,
       riskLevel: 'Low',
-      changesMade: ['Updated index_patterns: ["logs-endpoint.events.*", "logs-endpoint.*", "endgame-*"]'],
+      changesMade: [
+        { before: 'index_patterns: ["logs-endpoint.*"]', after: 'index_patterns: ["logs-endpoint.events.*", "logs-endpoint.*", "endgame-*"]' },
+      ],
       relatedMitreIds: ['T1071.001 — Application Layer Protocol: Web Protocols'],
     },
     status: 'success',
@@ -102,7 +109,9 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
       ],
       confidence: 91,
       riskLevel: 'Medium — requires approval',
-      changesMade: ['Proposed exception (pending approval): user.name = "corp-dev-*"'],
+      changesMade: [
+        { before: 'exceptions: (none)', after: 'exceptions: user.name = "corp-dev-*"' },
+      ],
       relatedMitreIds: ['T1218.014 — System Binary Proxy Execution: MMC'],
     },
     status: 'success',
@@ -160,10 +169,117 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
       ],
       confidence: 97,
       riskLevel: 'Low',
-      changesMade: ['Updated rule version: 3.2 → 3.3', 'Added process exclusions for MsMpEng.exe, SentinelAgent.exe, CylanceSvc.exe'],
+      changesMade: [
+        { before: 'rule.version: 3.2', after: 'rule.version: 3.3' },
+        { before: 'process.name exclusions: (none)', after: 'process.name exclusions: ("MsMpEng.exe" OR "SentinelAgent.exe" OR "CylanceSvc.exe")' },
+      ],
       relatedMitreIds: ['T1210 — Exploitation of Remote Services', 'T1570 — Lateral Tool Transfer'],
     },
     status: 'success',
     needsApproval: true,
+  },
+  // ── Rule updates (new category, requires approval) ─────────────────────────
+  {
+    id: '6',
+    timestamp: 'Apr 14, 2026 @ 16:11:30',
+    action: 'Rule updates',
+    actionColor: 'primary',
+    rule: 'Windows Registry Modification via reg.exe',
+    reasoning:
+      'Version 2.1→2.2: Elastic Security Labs added new registry key patterns that broaden detection scope. AutoDEX flagged this for analyst review before applying.',
+    status: 'success',
+    needsApproval: true,
+  },
+  {
+    id: '7',
+    timestamp: 'Apr 14, 2026 @ 15:47:12',
+    action: 'Rule updates',
+    actionColor: 'primary',
+    rule: 'Suspicious PowerShell Engine ImageLoad',
+    reasoning:
+      'Version 1.4→1.5: Elastic Security Labs revised the detection query to include additional DLL load patterns. AutoDEX requires approval as the change extends detection coverage.',
+    status: 'success',
+    needsApproval: true,
+  },
+  // ── Additional auto-approved activity log entries ──────────────────────────
+  {
+    id: '8',
+    timestamp: 'Apr 14, 2026 @ 14:30:00',
+    action: 'Execution failure',
+    actionColor: 'danger',
+    rule: 'Potential SSH-IT SSH Worm Downloaded',
+    reasoning: 'Rule was failing due to missing field mappings after an Elastic Agent update. AutoDEX corrected the index pattern and verified execution resumed.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '9',
+    timestamp: 'Apr 14, 2026 @ 13:22:44',
+    action: 'Tuned false positives',
+    actionColor: 'warning',
+    rule: 'AWS IAM Assume Role Policy Update',
+    reasoning: 'Rule producing 120 alerts/week from a known CI/CD service account. AutoDEX added a scoped exception for aws.cloudtrail.user_identity.arn matching the pipeline ARN.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '10',
+    timestamp: 'Apr 14, 2026 @ 11:58:03',
+    action: 'Installed rule',
+    actionColor: 'primary',
+    rule: 'GCP Pub/Sub Subscription Creation',
+    reasoning: 'T1530 (Data from Cloud Storage) coverage gap identified. AutoDEX installed and enabled the Elastic prebuilt rule after confirming GCP audit logs are flowing.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '11',
+    timestamp: 'Apr 13, 2026 @ 17:05:19',
+    action: 'Updated rule',
+    actionColor: 'primary',
+    rule: 'Linux Restricted Shell Breakout via apt/apt-get',
+    reasoning: 'Version 1.1→1.2: Minor query optimisation released by Elastic Security Labs. AutoDEX applied automatically — no scope changes detected.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '12',
+    timestamp: 'Apr 13, 2026 @ 15:34:51',
+    action: 'Execution failure',
+    actionColor: 'danger',
+    rule: 'Persistence via WMI Event Subscription',
+    reasoning: 'Index pattern mismatch after Winlogbeat schema update. AutoDEX updated the pattern from winlogbeat-* to winlogbeat-8* and re-enabled the rule.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '13',
+    timestamp: 'Apr 13, 2026 @ 14:10:07',
+    action: 'Tuned false positives',
+    actionColor: 'warning',
+    rule: 'Unusual Process Network Connection',
+    reasoning: '85 alerts/week traced to a monitoring agent on all server hosts. AutoDEX added an exception for the agent process scoped to the monitoring host group.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '14',
+    timestamp: 'Apr 12, 2026 @ 16:49:33',
+    action: 'Installed rule',
+    actionColor: 'primary',
+    rule: 'Azure Active Directory High Risk Sign-in',
+    reasoning: 'T1078.004 gap identified in Azure tenant. AutoDEX installed the Elastic prebuilt rule after confirming Azure AD sign-in logs are present in the data stream.',
+    status: 'success',
+    needsApproval: false,
+  },
+  {
+    id: '15',
+    timestamp: 'Apr 12, 2026 @ 11:22:18',
+    action: 'Rule updates',
+    actionColor: 'primary',
+    rule: 'Potential Credential Access via Renamed SSH Keygen',
+    reasoning: 'Version 1.0→1.1: Elastic Security Labs released a performance fix. AutoDEX applied the update automatically as it reduces false positive rate only.',
+    status: 'success',
+    needsApproval: false,
   },
 ];

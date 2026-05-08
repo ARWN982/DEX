@@ -644,96 +644,39 @@ const GapsFlyout: React.FC<{
   );
 };
 
-/**
- * Single height for every Summary + Usage metric card so rows match the Total tokens card
- * when switching tabs; grid stretch fills any extra space inside this floor.
- */
-const AUTODEX_METRIC_CARD_MIN_HEIGHT = 200;
+// ─── Single-section inside the combined stat card ────────────────────────────
 
-const metricCardShell = (accent: string): React.CSSProperties => ({
-  borderRadius: 8,
-  flex: 1,
-  width: '100%',
-  minWidth: 0,
-  minHeight: AUTODEX_METRIC_CARD_MIN_HEIGHT,
-  display: 'flex',
-  flexDirection: 'column',
-  borderLeft: `3px solid ${accent}`,
-});
-
-/** Main content grows; footer stays pinned to the bottom of the card. */
-const metricCardBody: React.CSSProperties = {
-  flex: 1,
-  minHeight: 0,
-  display: 'flex',
-  flexDirection: 'column',
-};
-
-/** Same vertical slot on every card so one-button and two-button footers line up. */
-const metricCardFooter: React.CSSProperties = {
-  flexShrink: 0,
-  marginTop: 'auto',
-  paddingTop: 10,
-  minHeight: 44,
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'flex-end',
-  gap: 4,
-  rowGap: 2,
-};
-
-/** Grid/flex parent so the panel grows to the row height (matches Total tokens). */
-const gridCellStyle: React.CSSProperties = {
-  minWidth: 0,
-  minHeight: 0,
-  display: 'flex',
-  flexDirection: 'column',
-  alignSelf: 'stretch',
-};
-
-const MetricCard: React.FC<{
-  accent: string;
+const StatSection: React.FC<{
+  title: string;
+  label: string;
   value: React.ReactNode;
   valueColor: string;
-  title: string;
   sub: string;
   badge?: React.ReactNode;
-  viewLabel: string;
-  viewIconType?: string;
-  onView: () => void;
-  onChat: () => void;
-}> = ({ accent, value, valueColor, title, sub, badge, viewLabel, viewIconType = 'inspect', onView, onChat }) => (
-  <EuiPanel hasBorder hasShadow={false} paddingSize="s" style={metricCardShell(accent)}>
-    <div style={metricCardBody}>
-      <EuiFlexGroup gutterSize="xs" alignItems="flexStart" responsive={false} justifyContent="spaceBetween" wrap={false}>
-        <EuiFlexItem grow={false}>
-          <EuiText size="s" style={{ fontWeight: 600 }}>
-            {title}
-          </EuiText>
-        </EuiFlexItem>
-        {badge && <EuiFlexItem grow={false}>{badge}</EuiFlexItem>}
-      </EuiFlexGroup>
-      <div style={{ marginTop: 2 }}>
-        <EuiTitle size="s">
-          <span style={{ color: valueColor, lineHeight: 1.1, fontSize: 26, fontWeight: 600 }}>{value}</span>
-        </EuiTitle>
-      </div>
-      <div style={{ flex: 1, marginTop: 4, minHeight: 0 }}>
-        <EuiText size="s" color="subdued" style={{ lineHeight: 1.35 }}>
-          {sub}
-        </EuiText>
-      </div>
+  grow?: number;
+  isFirst?: boolean;
+  isLast?: boolean;
+}> = ({ title, label, value, valueColor, sub, badge, grow = 1, isFirst, isLast }) => (
+  <div style={{ flex: grow, minWidth: 0, display: 'flex', flexDirection: 'column', padding: `0 ${isLast ? '0' : '20px'} 0 ${isFirst ? '0' : '20px'}` }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+      <EuiText size="s" style={{ fontWeight: 700, fontSize: 15 }}>{title}</EuiText>
+      {badge}
     </div>
-    <div style={metricCardFooter}>
-      <EuiButtonEmpty size="xs" iconType={viewIconType} color="primary" flush="left" onClick={onView}>
-        {viewLabel}
-      </EuiButtonEmpty>
-      <EuiButtonEmpty size="xs" iconType="productAgent" flush="left" style={{ color: '#7B61FF' }} onClick={onChat}>
-        Add to chat
-      </EuiButtonEmpty>
-    </div>
-  </EuiPanel>
+    <EuiText size="s" style={{ marginBottom: 4 }}>
+      {label}:{' '}
+      <span style={{ color: valueColor, fontWeight: 700 }}>{value}</span>
+    </EuiText>
+    <EuiText size="s" color="subdued">
+      {sub}
+    </EuiText>
+  </div>
 );
+
+const SectionDivider: React.FC = () => (
+  <div style={{ width: 1, background: '#D3DAE6', flexShrink: 0, alignSelf: 'stretch' }} />
+);
+
+// ─── Token breakdown (Usage tab, rightmost section) ───────────────────────────
 
 const TOKEN_WORKFLOWS: { label: string; value: string; color: string; widthPct: number }[] = [
   { label: 'FP tuning', value: '891k', color: '#7B61FF', widthPct: 78 },
@@ -742,126 +685,26 @@ const TOKEN_WORKFLOWS: { label: string; value: string; color: string; widthPct: 
   { label: 'Gap analysis', value: '27k', color: '#F5A700', widthPct: 5 },
 ];
 
-const UsagePairActionCard: React.FC<{
-  title: string;
-  badge: React.ReactNode;
-  value: string;
-  sub: string;
-  viewLabel: string;
-  onView: () => void;
-  onChat: () => void;
-}> = ({ title, badge, value, sub, viewLabel, onView, onChat }) => (
-  <EuiPanel hasBorder hasShadow={false} paddingSize="s" style={metricCardShell('#017D73')}>
-    <div style={metricCardBody}>
-      <EuiFlexGroup gutterSize="xs" alignItems="flexStart" responsive={false} justifyContent="spaceBetween" wrap={false}>
-        <EuiFlexItem grow={false}>
-          <EuiText size="s" style={{ fontWeight: 600 }}>
-            {title}
-          </EuiText>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>{badge}</EuiFlexItem>
-      </EuiFlexGroup>
-      <div style={{ marginTop: 2 }}>
-        <EuiTitle size="s">
-          <span style={{ color: '#343741', lineHeight: 1.1, fontSize: 26, fontWeight: 600 }}>{value}</span>
-        </EuiTitle>
-      </div>
-      <div style={{ flex: 1, marginTop: 4, minHeight: 0 }}>
-        <EuiText size="s" color="subdued" style={{ lineHeight: 1.35 }}>
-          {sub}
+const TotalTokensSection: React.FC = () => (
+  <div style={{ flex: 2, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '0 0 0 20px' }}>
+    <EuiText size="s" style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Total tokens</EuiText>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 56 }}>
+      <div style={{ flexShrink: 0 }}>
+        <EuiText size="s" style={{ marginBottom: 4 }}>
+          Tokens used: <span style={{ color: '#343741', fontWeight: 700 }}>1.24M</span>
         </EuiText>
+        <EuiText size="s" color="subdued">of 2M monthly limit</EuiText>
+      </div>
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', flex: 1 }}>
+        {TOKEN_WORKFLOWS.map((w) => (
+          <div key={w.label}>
+            <EuiText size="s" style={{ fontWeight: 700, color: w.color }}>{w.value}</EuiText>
+            <EuiText size="xs" color="subdued">{w.label}</EuiText>
+          </div>
+        ))}
       </div>
     </div>
-    <div style={metricCardFooter}>
-      <EuiButtonEmpty size="xs" iconType="inspect" color="primary" flush="left" onClick={onView}>
-        {viewLabel}
-      </EuiButtonEmpty>
-      <EuiButtonEmpty size="xs" iconType="productAgent" flush="left" style={{ color: '#7B61FF' }} onClick={onChat}>
-        Add to chat
-      </EuiButtonEmpty>
-    </div>
-  </EuiPanel>
-);
-
-const UsageTotalTokensCard: React.FC<{ onChat: () => void }> = ({ onChat }) => (
-  <EuiPanel hasBorder hasShadow={false} paddingSize="s" style={metricCardShell('#F5A700')}>
-    <div style={metricCardBody}>
-      <EuiFlexGroup gutterSize="s" alignItems="stretch" responsive={true} style={{ flex: 1, minHeight: 0 }}>
-        <EuiFlexItem grow={false} style={{ minWidth: 112 }}>
-          <EuiText size="s" style={{ fontWeight: 600 }}>
-            Total tokens
-          </EuiText>
-          <div style={{ marginTop: 2 }}>
-            <EuiTitle size="s">
-              <span style={{ color: '#F5A700', lineHeight: 1.1, fontSize: 26, fontWeight: 600 }}>1.24M</span>
-            </EuiTitle>
-          </div>
-          <EuiText size="xs" color="subdued" style={{ marginTop: 2 }}>
-            of 2M limit
-          </EuiText>
-        </EuiFlexItem>
-        <EuiFlexItem grow={true} style={{ minWidth: 160, display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-          <EuiText
-            size="xs"
-            color="subdued"
-            style={{ fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}
-          >
-            By workflow
-          </EuiText>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              flex: 1,
-              minHeight: 0,
-              justifyContent: 'flex-start',
-            }}
-          >
-            {TOKEN_WORKFLOWS.map((w) => (
-              <div key={w.label}>
-                <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                  <EuiFlexItem grow={true}>
-                    <div
-                      style={{
-                        height: 5,
-                        borderRadius: 3,
-                        background: '#EDF0F5',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${w.widthPct}%`,
-                          height: 5,
-                          borderRadius: 3,
-                          background: w.color,
-                          maxWidth: '100%',
-                        }}
-                      />
-                    </div>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false} style={{ minWidth: 40 }}>
-                    <EuiText size="xs" style={{ fontWeight: 500, fontSize: 11 }}>
-                      {w.value}
-                    </EuiText>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-                <EuiText size="xs" color="subdued" style={{ marginTop: 1, fontSize: 11, lineHeight: 1.2 }}>
-                  {w.label}
-                </EuiText>
-              </div>
-            ))}
-          </div>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </div>
-    <div style={metricCardFooter}>
-      <EuiButtonEmpty size="xs" iconType="productAgent" flush="left" style={{ color: '#7B61FF' }} onClick={onChat}>
-        Add to chat
-      </EuiButtonEmpty>
-    </div>
-  </EuiPanel>
+  </div>
 );
 
 const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) => {
@@ -894,132 +737,70 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
       />
 
       {summarySection === 'summary' ? (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-            gridTemplateRows: `minmax(${AUTODEX_METRIC_CARD_MIN_HEIGHT}px, auto)`,
-            gap: 8,
-            alignItems: 'stretch',
-          }}
-        >
-          <div style={gridCellStyle}>
-            <MetricCard
-              accent="#F5A700"
+        <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ minHeight: 110 }}>
+          <div style={{ display: 'flex', alignItems: 'stretch' }}>
+            <StatSection
+              isFirst
+              title="Approvals"
+              label="Approvals needed"
               value="5"
               valueColor="#F5A700"
-              title="Approvals"
-              sub="approvals needed."
-              viewLabel="View approvals"
-              onView={() => setActivityFilter('pending-approvals')}
-              onChat={() => onOpenAIAssistant('Summarise pending AutoDEX approvals')}
+              sub="5 pending · requires your review"
             />
-          </div>
-          <div style={gridCellStyle}>
-            <MetricCard
-              accent="#0077CC"
-              value="47"
+            <SectionDivider />
+            <StatSection
+              title="Activity"
+              label="Activities completed"
+              value="15"
               valueColor="#0077CC"
-              title="Rules managed"
-              sub="of 1200 enabled rules."
-              badge={
-                <EuiBadge color="success" iconType="sortUp">
-                  +12% this week
-                </EuiBadge>
-              }
-              viewLabel="View rules"
-              onView={() => setRulesFlyoutOpen(true)}
-              onChat={() => onOpenAIAssistant('Explain how AutoDEX is managing my rules')}
+              sub="Rules managed: 14"
+              badge={<EuiBadge color="success" iconType="sortUp">+12% this week</EuiBadge>}
             />
-          </div>
-          <div style={gridCellStyle}>
-            <MetricCard
-              accent="#017D73"
+            <SectionDivider />
+            <StatSection
+              title="MITRE coverage"
+              label="Coverage score"
               value="72%"
               valueColor="#017D73"
-              title="MITRE coverage"
-              sub="3 rules added in the last 7 days."
-              badge={
-                <EuiBadge color="success" iconType="sortUp">
-                  +12% this week
-                </EuiBadge>
-              }
-              viewLabel="View coverage"
-              viewIconType="popout"
-              onView={() => window.open('https://attack.mitre.org/techniques/', '_blank')}
-              onChat={() => onOpenAIAssistant('How did AutoDEX improve MITRE coverage?')}
+              sub="3 rules added in the last 7 days"
+              badge={<EuiBadge color="success" iconType="sortUp">+12% this week</EuiBadge>}
             />
-          </div>
-          <div style={gridCellStyle}>
-            <MetricCard
-              accent="#F5A700"
-              value="21/23 mins"
-              valueColor="#F5A700"
+            <SectionDivider />
+            <StatSection
               title="Gap filling"
-              sub="Across 8 rules."
+              label="Active fills"
+              value="21 / 23"
+              valueColor="#F5A700"
+              sub="Across 8 MITRE techniques"
               badge={<EuiBadge color="warning">Filling in progress</EuiBadge>}
-              viewLabel="View gaps"
-              onView={() => setGapsFlyoutOpen(true)}
-              onChat={() => onOpenAIAssistant('Explain gap filling progress')}
             />
-          </div>
-          <div style={gridCellStyle}>
-            <MetricCard
-              accent="#0077CC"
-              value="6/8"
-              valueColor="#0077CC"
+            <SectionDivider />
+            <StatSection
+              isLast
               title="Rule updates"
-              sub="2 more rules require approval."
-              viewLabel="View approvals"
-              onView={() => setActivityFilter('rule-update-approvals')}
-              onChat={() => onOpenAIAssistant('Summarise pending rule updates from AutoDEX')}
+              label="Rules updated"
+              value="6 / 8"
+              valueColor="#0077CC"
+              sub="2 more require approval"
             />
           </div>
-        </div>
+        </EuiPanel>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr)',
-            gridTemplateRows: `minmax(${AUTODEX_METRIC_CARD_MIN_HEIGHT}px, auto)`,
-            gap: 8,
-            alignItems: 'stretch',
-          }}
-        >
-          <div style={gridCellStyle}>
-            <UsagePairActionCard
-              title="Actions this week"
-              badge={
-                <EuiBadge color="success" iconType="sortUp">
-                  ↑ 12% this week
-                </EuiBadge>
-              }
-              value="34"
-              sub="28 auto · 6 approved"
-              viewLabel="View logs"
-              onView={() => onOpenAIAssistant('Show AutoDEX action logs for this week')}
-              onChat={() => onOpenAIAssistant('Summarise AutoDEX actions this week')}
-            />
-          </div>
-          <div style={gridCellStyle}>
-            <UsagePairActionCard
+        <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ minHeight: 110 }}>
+          <div style={{ display: 'flex', alignItems: 'stretch' }}>
+            <StatSection
+              isFirst
               title="Approval rate"
-              badge={
-                <EuiBadge color="success" iconType="sortUp">
-                  ↑ 4% this week
-                </EuiBadge>
-              }
+              label="Proposals accepted"
               value="91%"
-              sub="of proposals accepted"
-              viewLabel="View approvals"
-              onView={() => onOpenAIAssistant('Show AutoDEX proposal approvals')}
-              onChat={() => onOpenAIAssistant('Explain AutoDEX approval rate trends')}
+              valueColor="#017D73"
+              sub="of all proposed changes"
+              badge={<EuiBadge color="success" iconType="sortUp">↑ 4% this week</EuiBadge>}
             />
+            <SectionDivider />
+            <TotalTokensSection />
           </div>
-          <div style={gridCellStyle}>
-            <UsageTotalTokensCard onChat={() => onOpenAIAssistant('Break down AutoDEX token usage by workflow')} />
-          </div>
-        </div>
+        </EuiPanel>
       )}
 
       <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 8, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -1029,19 +810,11 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
               Showing 1-{MOCK_AUTODEX_LOGS.length} of 55 AutoDEX activities
             </EuiText>
           </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiText size="xs" color="subdued">
-              Updated {updatedStr}
-            </EuiText>
-          </EuiFlexItem>
+          <EuiFlexItem grow={true} />
           <EuiFlexItem grow={false}>
             <EuiToolTip content="Refresh activity">
               <EuiButtonIcon iconType="refresh" aria-label="Refresh activity" color="text" size="s" />
             </EuiToolTip>
-          </EuiFlexItem>
-          <EuiFlexItem grow={true} />
-          <EuiFlexItem grow={false}>
-            <EuiBadge color="hollow">{pendingApprovals} pending approvals</EuiBadge>
           </EuiFlexItem>
         </EuiFlexGroup>
 

@@ -16,6 +16,7 @@ import {
   EuiText,
 } from '@elastic/eui';
 import { MOCK_AUTODEX_LOGS } from './autoDexMockData';
+import type { AutoDexDiffChange } from './autoDexMockData';
 
 type SelectableFilterOption = { label: string; checked?: 'on' };
 
@@ -26,6 +27,61 @@ const LOG_GROUP_CONFIG: Record<string, { description: string; color: string; bg:
   'Tuned false positives':{ description: 'High-volume false positive patterns identified and tuned by AutoDEX', color: '#F5A700', bg: '#FEF3E2' },
   'Installed rule':       { description: 'New detection rules installed by AutoDEX to close coverage gaps', color: '#017D73', bg: '#E6F6F0' },
   'Updated rule':         { description: 'Elastic Security Labs rule updates applied by AutoDEX', color: '#0077CC', bg: '#E6F1FA' },
+  'Rule updates':         { description: 'Pending rule version updates from Elastic Security Labs requiring analyst sign-off', color: '#0077CC', bg: '#E6F1FA' },
+};
+
+// ─── TopGroupAccordion — outer two-level grouping ─────────────────────────────
+
+const TopGroupAccordion: React.FC<{
+  title: string;
+  count: number;
+  countLabel: string;
+  badgeColor?: 'warning' | 'primary' | 'success' | 'hollow';
+  badgeIcon?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}> = ({ title, count, countLabel, badgeColor = 'primary', badgeIcon, defaultOpen = true, children }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <EuiPanel
+      hasBorder
+      hasShadow={false}
+      paddingSize="none"
+      style={{ borderRadius: 8, marginBottom: 12, overflow: 'hidden' }}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+          padding: '13px 16px',
+          background: isOpen ? '#F5F7FA' : '#FAFBFD',
+          border: 'none', cursor: 'pointer', textAlign: 'left',
+          borderBottom: isOpen ? '1px solid #D3DAE6' : 'none',
+        }}
+      >
+        <EuiIcon type={isOpen ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" style={{ flexShrink: 0 }} />
+        <EuiText size="s" style={{ fontWeight: 700 }}>{title}</EuiText>
+        <EuiBadge color={badgeColor} iconType={badgeIcon}>{count} {countLabel}</EuiBadge>
+        <div style={{ marginLeft: 'auto' }} onClick={(e) => e.stopPropagation()}>
+          <EuiButtonEmpty
+            size="xs"
+            iconType="arrowDown"
+            iconSide="right"
+            color="text"
+            style={{ border: '1px solid #D3DAE6', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
+          >
+            Take action
+          </EuiButtonEmpty>
+        </div>
+      </button>
+      {isOpen && (
+        <div style={{ padding: '8px' }}>
+          {children}
+        </div>
+      )}
+    </EuiPanel>
+  );
 };
 
 // ─── LogGroupCard — card-style accordion matching the screenshot ──────────────
@@ -148,40 +204,20 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   const setLogSearch = onSearchChange ?? setInternalSearch;
 
   const [isTypePopoverOpen, setIsTypePopoverOpen] = useState(false);
-  const [isApprovalFilterOpen, setIsApprovalFilterOpen] = useState(false);
   const [typeFilterOptions, setTypeFilterOptions] = useState<SelectableFilterOption[]>([
     { label: 'Fixed execution failure' },
     { label: 'Tuned false positives' },
     { label: 'Installed rule' },
     { label: 'Updated rule' },
   ]);
-  const [approvalFilterOptions, setApprovalFilterOptions] = useState<SelectableFilterOption[]>([
-    { label: 'Needs approval' },
-    { label: 'No approval needed' },
-  ]);
 
   const [approvalPopoverOpen, setApprovalPopoverOpen] = useState<Record<string, boolean>>({});
   const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
   const [fullReasoningLogId, setFullReasoningLogId] = useState<string | null>(null);
 
-  // When the parent activates a locked filter, programmatically select the existing filter chips.
+  // When the parent activates a locked filter, programmatically select the type filter chips.
   useEffect(() => {
-    if (lockedFilter === 'pending-approvals') {
-      setApprovalFilterOptions([
-        { label: 'Needs approval', checked: 'on' },
-        { label: 'No approval needed' },
-      ]);
-      setTypeFilterOptions([
-        { label: 'Fixed execution failure' },
-        { label: 'Tuned false positives' },
-        { label: 'Installed rule' },
-        { label: 'Updated rule' },
-      ]);
-    } else if (lockedFilter === 'rule-update-approvals') {
-      setApprovalFilterOptions([
-        { label: 'Needs approval', checked: 'on' },
-        { label: 'No approval needed' },
-      ]);
+    if (lockedFilter === 'rule-update-approvals') {
       setTypeFilterOptions([
         { label: 'Fixed execution failure' },
         { label: 'Tuned false positives' },
@@ -209,8 +245,6 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
   const filteredLogs = useMemo(() => {
     const activeTypes = typeFilterOptions.filter((o) => o.checked === 'on').map((o) => o.label);
-    const wantNeedsApproval = approvalFilterOptions.find((o) => o.label === 'Needs approval')?.checked === 'on';
-    const wantNoApproval = approvalFilterOptions.find((o) => o.label === 'No approval needed')?.checked === 'on';
 
     return MOCK_AUTODEX_LOGS.filter((log) => {
       const matchesSearch =
@@ -219,13 +253,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         log.action.toLowerCase().includes(logSearch.toLowerCase());
       const typeLabel = actionToTypeLabel(log.action);
       const matchesType = activeTypes.length === 0 || activeTypes.includes(typeLabel);
-      let matchesApproval = true;
-      if (wantNeedsApproval && !wantNoApproval) matchesApproval = log.needsApproval;
-      else if (!wantNeedsApproval && wantNoApproval) matchesApproval = !log.needsApproval;
-      else if (wantNeedsApproval && wantNoApproval) matchesApproval = true;
-      return matchesSearch && matchesType && matchesApproval;
+      return matchesSearch && matchesType;
     });
-  }, [logSearch, typeFilterOptions, approvalFilterOptions]);
+  }, [logSearch, typeFilterOptions]);
 
   const filterToolbar = (
     <EuiFlexGroup gutterSize="s" responsive={false} style={{ marginBottom: 12 }} alignItems="center">
@@ -273,36 +303,17 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
               )}
             </EuiSelectable>
           </EuiPopover>
-          <EuiPopover
-            button={
-              <EuiFilterButton
-                iconType="arrowDown"
-                onClick={() => setIsApprovalFilterOpen(!isApprovalFilterOpen)}
-                isSelected={isApprovalFilterOpen}
-                hasActiveFilters={approvalFilterOptions.some((o) => o.checked === 'on')}
-                numActiveFilters={approvalFilterOptions.filter((o) => o.checked === 'on').length}
-              >
-                Approval
-              </EuiFilterButton>
-            }
-            isOpen={isApprovalFilterOpen}
-            closePopover={() => setIsApprovalFilterOpen(false)}
-            panelPaddingSize="none"
-          >
-            <EuiSelectable options={approvalFilterOptions} onChange={(opts) => setApprovalFilterOptions(opts)}>
-              {(list) => <div style={{ width: 220 }}>{list}</div>}
-            </EuiSelectable>
-          </EuiPopover>
         </EuiFilterGroup>
       </EuiFlexItem>
     </EuiFlexGroup>
   );
 
-  /** Renders one log entry — used in both flat and grouped views */
-  const renderLog = (log: (typeof filteredLogs)[0], i: number, logsArr: typeof filteredLogs, padded = false) => {
+  /** Renders one log entry — used in both flat and grouped views.
+   *  activityMode=true: suppresses approval popover, shows Auto/Approved static badge instead. */
+  const renderLog = (log: (typeof filteredLogs)[0], i: number, logsArr: typeof filteredLogs, padded = false, activityMode = false) => {
     const decision = approvalDecisions[log.id];
     const isApprovalOpen = !!approvalPopoverOpen[log.id];
-    const pendingApproval = requiresApproval && log.needsApproval && !decision;
+    const pendingApproval = !activityMode && requiresApproval && log.needsApproval && !decision;
     return (
       <div key={log.id} style={padded ? { padding: '0 14px' } : undefined}>
               <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 10 }}>
@@ -331,10 +342,19 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                 <EuiFlexItem grow={false}>
                   <EuiBadge color="hollow">{log.action}</EuiBadge>
                 </EuiFlexItem>
-                {/* Approvals needed badge — sits immediately after the action badge */}
-                {log.needsApproval && !decision && (
+                {/* Approvals needed badge — only in approval mode */}
+                {!activityMode && log.needsApproval && !decision && (
                   <EuiFlexItem grow={false}>
                     <EuiBadge color="warning">Approvals needed</EuiBadge>
+                  </EuiFlexItem>
+                )}
+                {/* Activity mode: show static Approved or Auto badge */}
+                {activityMode && (
+                  <EuiFlexItem grow={false}>
+                    {log.needsApproval
+                      ? <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
+                      : <EuiBadge color="primary">Auto</EuiBadge>
+                    }
                   </EuiFlexItem>
                 )}
                 <EuiFlexItem grow={true}>
@@ -347,7 +367,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                     {log.timestamp}
                   </EuiText>
                 </EuiFlexItem>
-                {requiresApproval && log.needsApproval && (
+                {!activityMode && requiresApproval && log.needsApproval && (
                   <EuiFlexItem grow={false}>
                     {!decision ? (
                       <EuiPopover
@@ -508,23 +528,29 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                     >
                       Changes made
                     </EuiText>
-                    {log.fullReasoning.changesMade.map((change, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          padding: '8px 12px',
-                          marginBottom: 6,
-                          background: '#F0F4FF',
-                          borderLeft: '3px solid #0077CC',
-                          borderRadius: 4,
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          color: '#343741',
-                        }}
-                      >
-                        {change}
-                      </div>
-                    ))}
+                    <div style={{ border: '1px solid #D3DAE6', borderRadius: 6, overflow: 'hidden', marginBottom: 4 }}>
+                      {log.fullReasoning.changesMade.map((change, idx) => {
+                        const isLast = idx === log.fullReasoning!.changesMade.length - 1;
+                        const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
+                        if (typeof change === 'string') {
+                          return (
+                            <div key={idx} style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}>
+                              <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change}
+                            </div>
+                          );
+                        }
+                        return (
+                          <React.Fragment key={idx}>
+                            <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '6px 12px', borderBottom: '1px solid #D3DAE6' }}>
+                              <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#BD271E' }}>-</span>{change.before}
+                            </div>
+                            <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}>
+                              <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}
+                            </div>
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </EuiPanel>
@@ -552,36 +578,74 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
   // ── Grouped render ──────────────────────────────────────────────────────────
   if (grouped) {
-    const ORDER = ['Execution failure', 'Tuned false positives', 'Installed rule', 'Updated rule'];
-    const groups = ORDER.map((action) => ({
+    const ORDER = ['Execution failure', 'Tuned false positives', 'Installed rule', 'Updated rule', 'Rule updates'];
+
+    // Approvals needed: action-type groups containing only pending items
+    const pendingGroups = ORDER.map((action) => ({
+      action,
+      logs: filteredLogs.filter((l) => l.action === action && l.needsApproval && !approvalDecisions[l.id]),
+    })).filter((g) => g.logs.length > 0);
+    const totalPending = pendingGroups.reduce((sum, g) => sum + g.logs.length, 0);
+
+    // Activity logs: all action-type groups across all logs
+    const activityGroups = ORDER.map((action) => ({
       action,
       logs: filteredLogs.filter((l) => l.action === action),
     })).filter((g) => g.logs.length > 0);
+    const totalActivity = filteredLogs.length;
 
     return (
       <div>
         {filterToolbar}
-        {groups.length === 0 ? (
+        {filteredLogs.length === 0 ? (
           <EuiText textAlign="center" color="subdued">
             <p>No activities match your filters.</p>
           </EuiText>
         ) : (
-          groups.map((group) => {
-            const pendingCount = group.logs.filter(
-              (l) => l.needsApproval && !approvalDecisions[l.id]
-            ).length;
-            return (
-              <LogGroupCard
-                key={group.action}
-                actionType={group.action}
-                pendingCount={pendingCount}
-                taskCount={group.logs.length}
-                defaultOpen={pendingCount > 0}
+          <>
+            {totalPending > 0 && (
+              <TopGroupAccordion
+                title="Approvals needed"
+                count={totalPending}
+                countLabel="approvals needed"
+                badgeColor="warning"
+                badgeIcon="warningFilled"
+                defaultOpen
               >
-                {group.logs.map((log, i) => renderLog(log, i, group.logs, true))}
-              </LogGroupCard>
-            );
-          })
+                {pendingGroups.map((group) => (
+                  <LogGroupCard
+                    key={group.action}
+                    actionType={group.action}
+                    pendingCount={group.logs.length}
+                    taskCount={group.logs.length}
+                    defaultOpen={false}
+                  >
+                    {group.logs.map((log, i) => renderLog(log, i, group.logs, true))}
+                  </LogGroupCard>
+                ))}
+              </TopGroupAccordion>
+            )}
+
+            <TopGroupAccordion
+              title="Activity logs"
+              count={totalActivity}
+              countLabel="activities"
+              badgeColor="success"
+              defaultOpen={totalPending === 0}
+            >
+              {activityGroups.map((group) => (
+                <LogGroupCard
+                  key={group.action}
+                  actionType={group.action}
+                  pendingCount={0}
+                  taskCount={group.logs.length}
+                  defaultOpen={false}
+                >
+                  {group.logs.map((log, i) => renderLog(log, i, group.logs, true, true))}
+                </LogGroupCard>
+              ))}
+            </TopGroupAccordion>
+          </>
         )}
       </div>
     );
