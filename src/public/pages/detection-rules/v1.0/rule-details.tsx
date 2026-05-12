@@ -37,6 +37,7 @@ import {
   EuiFilterButton,
   EuiPopover,
   EuiSelectable,
+  EuiContextMenu,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -64,7 +65,7 @@ interface DetectionRule {
 const RuleDetailsPage: React.FC = () => {
   const { ruleId } = useParams<{ ruleId: string }>();
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'exceptions' | 'execution' | 'gaps'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'exceptions' | 'execution'>('overview');
   const [isEnabled, setIsEnabled] = useState(true);
   const [showWarning, setShowWarning] = useState(false);
   const [aboutViewToggle, setAboutViewToggle] = useState('details');
@@ -89,6 +90,22 @@ const RuleDetailsPage: React.FC = () => {
   const runTypeActiveCount = runTypeOptions.filter((o: any) => o.checked === 'on').length;
   const statusActiveCount = statusOptions.filter((o: any) => o.checked === 'on').length;
   const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
+  const [isHistoryPaneOpen, setIsHistoryPaneOpen] = useState(false);
+  const [expandedHistoryVersion, setExpandedHistoryVersion] = useState<number | null>(5);
+
+  const versionHistory = [
+    { timestamp: 'On May 12 2026 @14.23', author: 'Alex Nightingale', detail: '4 changes',  ruleVersion: 'R77', version: 'V4', isCurrent: true,  note: null },
+    { timestamp: 'On May 12 2026 @11.23', author: 'Pavel M',          detail: '29 changes', ruleVersion: 'R77', version: 'V4', isCurrent: false, note: "Removed 'Okta tokens' tag" },
+    { timestamp: 'On May 10 2026 @17.18', author: 'Pavel M',          detail: '5 changes',  ruleVersion: 'R76', version: 'V4', isCurrent: false, note: null },
+    { timestamp: 'On May 10 2026 @17.18', author: 'Pavel M',          detail: '5 changes',  ruleVersion: 'R76', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 09 2026 @17.18', author: 'Pavel M',          detail: 'Enabled the rule',   ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 09 2026 @10.42', author: 'Pavel M',          detail: 'Disabled the rule',  ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.42', author: 'Alex Nightingale', detail: '23 changes', ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.42', author: 'Alex Nightingale', detail: '11 changes', ruleVersion: 'R75', version: 'V2', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.34', author: 'Alex Nightingale', detail: '23 changes', ruleVersion: 'R74', version: 'V2', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.34', author: 'Alex Nightingale', detail: '7 changes',  ruleVersion: 'R74', version: 'V1', isCurrent: false, note: null },
+  ];
   const [selectedExecution, setSelectedExecution] = useState<any>(null);
   const [summaryState, setSummaryState] = useState<'idle' | 'generating' | 'generated'>('idle');
 
@@ -185,8 +202,9 @@ const RuleDetailsPage: React.FC = () => {
     { id: 'alerts' as const, label: 'Alerts' },
     { id: 'exceptions' as const, label: 'Rule exceptions' },
     { id: 'execution' as const, label: 'Execution results' },
-    { id: 'gaps' as const, label: 'Gaps' },
   ];
+
+  const visibleTabs = isHistoryPaneOpen ? [] : tabs;
 
   return (
     <>
@@ -234,125 +252,176 @@ const RuleDetailsPage: React.FC = () => {
               }}
             >
               <div style={{ padding: '24px' }}>
-                {/* Back button */}
-                <EuiButtonEmpty
-                  iconType="arrowLeft"
-                  size="s"
-                  onClick={() => navigate('/detection-rules')}
-                  style={{ marginBottom: 16 }}
-                >
-                  Rules
-                </EuiButtonEmpty>
-
-                {/* Rule Header */}
+                {/* Title row: back arrow + rule name + action buttons */}
                 <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
                   <EuiFlexItem>
-                    <EuiTitle size="l">
-                      <h1>{rule.name}</h1>
-                    </EuiTitle>
+                    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonIcon
+                          iconType="arrowLeft"
+                          aria-label="Back to rules"
+                          color="text"
+                          size="s"
+                          onClick={() => navigate('/detection-rules')}
+                        />
+                      </EuiFlexItem>
+                      <EuiFlexItem>
+                        <EuiTitle size="l">
+                          <h1>{rule.name}</h1>
+                        </EuiTitle>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
                     <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
                       <EuiFlexItem grow={false}>
                         <EuiSwitch
-                          label="Enable"
+                          label={isEnabled ? 'Enabled' : 'Disabled'}
                           checked={isEnabled}
-                          onChange={(e) => setIsEnabled(e.target.checked)}
+                          onChange={(e) => !isHistoryPaneOpen && setIsEnabled(e.target.checked)}
+                          disabled={isHistoryPaneOpen}
+                          compressed
                         />
                       </EuiFlexItem>
+                      {!isHistoryPaneOpen && (
                       <EuiFlexItem grow={false}>
-                        <EuiButton iconType="gear" size="s">
-                          Edit rule settings
+                        <EuiButtonEmpty iconType="play" size="s">
+                          Manual run
+                        </EuiButtonEmpty>
+                      </EuiFlexItem>
+                      )}
+                      {!isHistoryPaneOpen && (
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="discuss" size="s">
+                          Add to chat
+                        </EuiButtonEmpty>
+                      </EuiFlexItem>
+                      )}
+                      {!isHistoryPaneOpen && <EuiFlexItem grow={false}>
+                        <EuiPopover
+                          button={
+                            <EuiButtonIcon
+                              iconType="boxesHorizontal"
+                              aria-label="More actions"
+                              size="s"
+                              color="text"
+                              onClick={() => setIsMoreActionsOpen((v) => !v)}
+                            />
+                          }
+                          isOpen={isMoreActionsOpen}
+                          closePopover={() => setIsMoreActionsOpen(false)}
+                          panelPaddingSize="none"
+                          anchorPosition="downRight"
+                        >
+                          <EuiContextMenu
+                            initialPanelId={0}
+                            panels={[
+                              {
+                                id: 0,
+                                items: [
+                                  {
+                                    name: 'History',
+                                    icon: 'clock',
+                                    onClick: () => {
+                                      setIsMoreActionsOpen(false);
+                                      setIsHistoryPaneOpen(true);
+                                      setSelectedTab('overview');
+                                    },
+                                  },
+                                  {
+                                    name: 'Duplicate rule',
+                                    icon: 'copy',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Export rule',
+                                    icon: 'exportAction',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Snooze notifications',
+                                    icon: 'bell',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Refresh',
+                                    icon: 'refresh',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Delete rule',
+                                    icon: 'trash',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  { isSeparator: true },
+                                  {
+                                    name: 'Add integrations',
+                                    icon: 'plusInCircle',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Documentation',
+                                    icon: 'popout',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Feedback',
+                                    icon: 'editorComment',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                ],
+                              },
+                            ]}
+                          />
+                        </EuiPopover>
+                      </EuiFlexItem>}
+                      {!isHistoryPaneOpen && (
+                      <EuiFlexItem grow={false}>
+                        <EuiButton iconType="pencil" size="s" fill>
+                          Edit
                         </EuiButton>
                       </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiButtonIcon
-                          iconType="boxesHorizontal"
-                          aria-label="More actions"
-                          size="s"
-                        />
-                      </EuiFlexItem>
+                      )}
                     </EuiFlexGroup>
                   </EuiFlexItem>
                 </EuiFlexGroup>
 
-                {/* Metadata - Row 1 */}
-                <EuiSpacer size="s" />
-                <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center">
-                  <EuiFlexItem grow={false}>
-                    <EuiText size="s" color="subdued">
-                      <strong>Created by:</strong> 22468f8712 on Feb 3, 2025 @ 12:13:31.468
-                    </EuiText>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false}>
-                    <EuiText size="s" color="subdued">
-                      <strong>Updated by:</strong> 2236886732 on Mar 18, 2026 @ 21:15:43.596
-                    </EuiText>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-
-                {/* Metadata - Row 2 */}
+                {/* Metadata - single row */}
                 <EuiSpacer size="xs" />
-                <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center">
+                <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center" wrap>
                   <EuiFlexItem grow={false}>
-                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}>
-                        <EuiText size="s" color="subdued">
-                          <strong>Last response:</strong>
-                        </EuiText>
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiHealth color="warning" style={{ fontSize: '12px' }}>
-                          warning
-                        </EuiHealth>
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiText size="s" color="subdued">
-                          at Mar 18, 2026 @ 21:14:17.686
-                        </EuiText>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
+                    <EuiHealth color="warning" style={{ fontSize: '12px' }}>
+                      Warning at Mar 24, 2026 @ 12:32:54.909
+                    </EuiHealth>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
-                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}>
-                        <EuiIcon type="dot" size="s" color="subdued" />
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiText size="s" color="subdued">
-                          Notify when alerts generated
-                        </EuiText>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
+                    <EuiText size="s" color="subdued">
+                      Created by: analyst on Oct 10, 2024 @ 00:11:03.178
+                    </EuiText>
                   </EuiFlexItem>
                   <EuiFlexItem grow={false}>
-                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}>
-                        <EuiText size="s" color="subdued">
-                          <strong>Auto gap fill status:</strong>
-                        </EuiText>
-                      </EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiBadge color="success">ON</EuiBadge>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
+                    <EuiText size="s" color="subdued">
+                      Updated by: analyst on Feb 8, 2026 @ 04:37:53.533
+                    </EuiText>
                   </EuiFlexItem>
                 </EuiFlexGroup>
 
                 <EuiSpacer size="m" />
 
-                {/* Tabs */}
-                <EuiTabs size="l">
-                  {tabs.map((tab) => (
-                    <EuiTab
-                      key={tab.id}
-                      isSelected={selectedTab === tab.id}
-                      onClick={() => setSelectedTab(tab.id)}
-                    >
-                      {tab.label}
-                    </EuiTab>
-                  ))}
-                </EuiTabs>
+                {/* Tabs — hidden when history pane is open */}
+                {!isHistoryPaneOpen && (
+                  <EuiTabs size="l">
+                    {visibleTabs.map((tab) => (
+                      <EuiTab
+                        key={tab.id}
+                        isSelected={selectedTab === tab.id}
+                        onClick={() => setSelectedTab(tab.id)}
+                      >
+                        {tab.label}
+                      </EuiTab>
+                    ))}
+                  </EuiTabs>
+                )}
 
                 <EuiSpacer size="m" />
 
@@ -412,6 +481,14 @@ const RuleDetailsPage: React.FC = () => {
                             {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>Description</EuiText>,
                               description: <EuiText size="s">{rule.description || 'No description available.'}</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Version</EuiText>,
+                              description: <EuiBadge color="hollow">209</EuiBadge>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Revision</EuiText>,
+                              description: <EuiBadge color="hollow">29</EuiBadge>,
                             },
                             {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Author</EuiText>,
@@ -1045,6 +1122,160 @@ const RuleDetailsPage: React.FC = () => {
               </div>
             </EuiPanel>
           </EuiFlexItem>
+
+          {/* Version History Pane */}
+          {isHistoryPaneOpen && (
+            <EuiFlexItem grow={false} style={{ width: 640 }}>
+              <EuiPanel
+                paddingSize="none"
+                hasShadow={true}
+                style={{
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  minHeight: 'calc(100vh - 64px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Pane header */}
+                <div style={{
+                  padding: '14px 16px',
+                  borderBottom: '1px solid #D3DAE6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                }}>
+                  <EuiText style={{ fontWeight: 700, fontSize: 16 }}>Version history</EuiText>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <EuiButtonIcon iconType="calendar" aria-label="Calendar" color="text" size="s" />
+                    <EuiButtonIcon iconType="sortable" aria-label="Filter" color="text" size="s" />
+                    <div style={{ width: 1, height: 16, background: '#D3DAE6', margin: '0 4px' }} />
+                    <EuiButtonIcon
+                      iconType="cross"
+                      aria-label="Close history"
+                      color="text"
+                      size="s"
+                      onClick={() => setIsHistoryPaneOpen(false)}
+                    />
+                  </div>
+                </div>
+
+                {/* Version list */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                  {versionHistory.map((entry, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        margin: '12px 8px',
+                        borderRadius: 6,
+                        border: '1px solid #D3DAE6',
+                        background: entry.isCurrent ? '#EEF2FF' : '#fff',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          gap: 8,
+                          cursor: entry.note ? 'pointer' : 'default',
+                        }}
+                        onClick={() =>
+                          entry.note &&
+                          setExpandedHistoryVersion(
+                            expandedHistoryVersion === idx ? null : idx
+                          )
+                        }
+                      >
+                        {/* Left: timestamp + author */}
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <EuiText size="s" style={{ fontWeight: 600 }}>{entry.timestamp}</EuiText>
+                          <EuiText size="xs" color="subdued">
+                            {entry.author} &bull; {entry.detail}
+                          </EuiText>
+                        </div>
+
+                        {/* Right: badges */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                          {entry.isCurrent && (
+                            <span style={{
+                              fontSize: 11,
+                              color: '#69707D',
+                              border: '1px solid #D3DAE6',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              Current version
+                            </span>
+                          )}
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#343741',
+                            border: '1px solid #D3DAE6',
+                            borderRadius: 12,
+                            padding: '2px 8px',
+                          }}>
+                            {entry.ruleVersion}
+                          </span>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#343741',
+                            border: '1px solid #D3DAE6',
+                            borderRadius: 12,
+                            padding: '2px 8px',
+                          }}>
+                            {entry.version}
+                          </span>
+                        </div>
+
+                        <EuiButtonIcon
+                          iconType="boxesHorizontal"
+                          aria-label="Version actions"
+                          color="text"
+                          size="xs"
+                          style={{ flexShrink: 0 }}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        />
+                      </div>
+
+                      {/* Expanded note */}
+                      {entry.note && expandedHistoryVersion === idx && (
+                        <div style={{
+                          margin: '0 12px 10px',
+                          padding: '6px 10px',
+                          background: '#F0F4FA',
+                          borderRadius: 4,
+                          border: '1px solid #D3DAE6',
+                        }}>
+                          <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#343741' }}>
+                            {entry.note}
+                          </EuiText>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                  padding: '12px 16px',
+                  borderTop: '1px solid #D3DAE6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexShrink: 0,
+                }}>
+                  <EuiIcon type="clock" size="s" color="subdued" />
+                  <EuiText size="xs" color="subdued">On Jan 1 2026 @ 00:00 History started</EuiText>
+                </div>
+              </EuiPanel>
+            </EuiFlexItem>
+          )}
         </EuiFlexGroup>
       </div>
 
