@@ -803,7 +803,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
         </EuiPanel>
       )}
 
-      <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 8, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <EuiPanel hasBorder={false} hasShadow={false} paddingSize="m" style={{ borderRadius: 8, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center" style={{ marginBottom: 12 }}>
           <EuiFlexItem grow={false}>
             <EuiText size="xs" color="subdued">

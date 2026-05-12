@@ -101,7 +101,10 @@ const LogGroupCard: React.FC<{
       hasBorder
       hasShadow={false}
       paddingSize="none"
-      style={{ borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}
+      style={{
+        borderRadius: 8, marginBottom: 10, overflow: 'hidden',
+        ...(pendingCount > 0 ? { borderLeft: '3px solid #F5A700' } : {}),
+      }}
     >
       {/* ── Header row ── */}
       <button
@@ -116,11 +119,6 @@ const LogGroupCard: React.FC<{
       >
         <EuiIcon type={isOpen ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" style={{ flexShrink: 0 }} />
         <EuiBadge color="hollow" style={{ flexShrink: 0 }}>{actionType}</EuiBadge>
-        {pendingCount > 0 && (
-          <EuiBadge color="warning" iconType="warningFilled" style={{ flexShrink: 0 }}>
-            {pendingCount} Approvals needed
-          </EuiBadge>
-        )}
         {/* Description — shown inline when collapsed, below header when expanded */}
         {!isOpen && (
           <EuiText
@@ -459,7 +457,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   borderRadius: 6,
                   background: '#F7F9FF',
                   marginBottom: 10,
-                  borderLeft: `3px solid ${pendingApproval ? '#F5A700' : '#D3DAE6'}`,
+                  borderLeft: '3px solid #D3DAE6',
                 }}
               >
                 <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>
