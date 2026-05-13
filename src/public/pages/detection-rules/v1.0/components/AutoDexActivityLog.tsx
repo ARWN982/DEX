@@ -13,6 +13,7 @@ import {
   EuiPopover,
   EuiSelectable,
   EuiPopoverTitle,
+  EuiTablePagination,
   EuiText,
 } from '@elastic/eui';
 import { MOCK_AUTODEX_LOGS } from './autoDexMockData';
@@ -225,6 +226,10 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
   const [fullReasoningLogId, setFullReasoningLogId] = useState<string | null>(null);
 
+  const PAGE_SIZE_OPTIONS = [5, 10, 25];
+  const [pageSize, setPageSize] = useState(5);
+  const [pageIndex, setPageIndex] = useState(0);
+
   // When the parent activates a locked filter, programmatically select the type filter chips.
   useEffect(() => {
     if (lockedFilter === 'rule-update-approvals') {
@@ -236,6 +241,11 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
       ]);
     }
   }, [lockedFilter]);
+
+  // Reset to page 0 whenever the filtered set or page size changes.
+  useEffect(() => {
+    setPageIndex(0);
+  }, [logSearch, typeFilterOptions, activeTypeLabels, approvalDecisions, pageSize]);
 
   const toggleApprovalPopover = (id: string) =>
     setApprovalPopoverOpen((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -670,6 +680,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
     ? filteredLogs.filter((l) => l.needsApproval && !approvalDecisions[l.id])
     : filteredLogs;
 
+  const pageCount = Math.max(1, Math.ceil(displayLogs.length / pageSize));
+  const pagedLogs = displayLogs.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+
   return (
     <div>
       {toolbar}
@@ -678,7 +691,20 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
           <p>No activities match your filters.</p>
         </EuiText>
       ) : (
-        displayLogs.map((log, i) => renderLog(log, i, displayLogs))
+        <>
+          {pagedLogs.map((log, i) => renderLog(log, i, pagedLogs))}
+          <div style={{ marginTop: 12 }}>
+            <EuiTablePagination
+              activePage={pageIndex}
+              pageCount={pageCount}
+              onChangePage={setPageIndex}
+              itemsPerPage={pageSize}
+              itemsPerPageOptions={PAGE_SIZE_OPTIONS}
+              onChangeItemsPerPage={(size) => setPageSize(size)}
+              showPerPageOptions
+            />
+          </div>
+        </>
       )}
     </div>
   );

@@ -647,68 +647,14 @@ const GapsFlyout: React.FC<{
   );
 };
 
-// ─── Single-section inside the combined stat card ────────────────────────────
+// ─── Token breakdown data ─────────────────────────────────────────────────────
 
-const StatSection: React.FC<{
-  title: string;
-  label: string;
-  value: React.ReactNode;
-  valueColor: string;
-  sub: string;
-  badge?: React.ReactNode;
-  grow?: number;
-  isFirst?: boolean;
-  isLast?: boolean;
-}> = ({ title, label, value, valueColor, sub, badge, grow = 1, isFirst, isLast }) => (
-  <div style={{ flex: grow, minWidth: 0, display: 'flex', flexDirection: 'column', padding: `0 ${isLast ? '0' : '20px'} 0 ${isFirst ? '0' : '20px'}` }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-      <EuiText size="s" style={{ fontWeight: 700, fontSize: 15 }}>{title}</EuiText>
-      {badge}
-    </div>
-    <EuiText size="s" style={{ marginBottom: 4 }}>
-      {label}:{' '}
-      <span style={{ color: valueColor, fontWeight: 700 }}>{value}</span>
-    </EuiText>
-    <EuiText size="s" color="subdued">
-      {sub}
-    </EuiText>
-  </div>
-);
-
-const SectionDivider: React.FC = () => (
-  <div style={{ width: 1, background: '#D3DAE6', flexShrink: 0, alignSelf: 'stretch' }} />
-);
-
-// ─── Token breakdown (Usage tab, rightmost section) ───────────────────────────
-
-const TOKEN_WORKFLOWS: { label: string; value: string; color: string; widthPct: number }[] = [
-  { label: 'FP tuning', value: '891k', color: '#7B61FF', widthPct: 78 },
-  { label: 'Rule repair', value: '223k', color: '#0077CC', widthPct: 22 },
-  { label: 'Discovery', value: '99k', color: '#017D73', widthPct: 12 },
-  { label: 'Gap analysis', value: '27k', color: '#F5A700', widthPct: 5 },
+const TOKEN_WORKFLOWS: { label: string; value: string; color: string }[] = [
+  { label: 'False positive tuning', value: '891k', color: '#6b3c9f' },
+  { label: 'Rule repair',           value: '223k', color: '#0f658a' },
+  { label: 'Discovery',             value: '99k',  color: '#d13680' },
+  { label: 'Gap analysis',          value: '27k',  color: '#9e3a16' },
 ];
-
-const TotalTokensSection: React.FC = () => (
-  <div style={{ flex: 2, minWidth: 0, display: 'flex', flexDirection: 'column', padding: '0 0 0 20px' }}>
-    <EuiText size="s" style={{ fontWeight: 700, fontSize: 15, marginBottom: 12 }}>Total tokens</EuiText>
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 56 }}>
-      <div style={{ flexShrink: 0 }}>
-        <EuiText size="s" style={{ marginBottom: 4 }}>
-          Tokens used: <span style={{ color: '#343741', fontWeight: 700 }}>1.24M</span>
-        </EuiText>
-        <EuiText size="s" color="subdued">of 2M monthly limit</EuiText>
-      </div>
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', flex: 1 }}>
-        {TOKEN_WORKFLOWS.map((w) => (
-          <div key={w.label}>
-            <EuiText size="s" style={{ fontWeight: 700, color: w.color }}>{w.value}</EuiText>
-            <EuiText size="xs" color="subdued">{w.label}</EuiText>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
 
 const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) => {
   const [rulesFlyoutOpen, setRulesFlyoutOpen] = useState(false);
@@ -731,7 +677,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
 
   const colHeader = (title: string, badge?: React.ReactNode) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <EuiText style={{ fontWeight: 700, fontSize: 14 }}>
+      <EuiText style={{ fontWeight: 600, fontSize: 20, lineHeight: '24px' }}>
         {title}
       </EuiText>
       {badge}
@@ -801,7 +747,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
       >
         {colHeader(
           'Approvals needed',
-          <EuiBadge color="danger">{pendingCount}</EuiBadge>
+          <EuiBadge color="warning">{pendingCount}</EuiBadge>
         )}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           <AutoDexActivityLog
@@ -844,89 +790,86 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
       </div>{/* end two log columns */}
       </div>{/* end left area */}
 
-      {/* ── Right column: Combined stats ─────────────────────────────────────── */}
+      {/* ── Right column: Summary ────────────────────────────────────────────── */}
       <EuiPanel
         hasBorder
         hasShadow={false}
-        paddingSize="m"
-        style={{ flex: '0 0 351px', display: 'flex', flexDirection: 'column', gap: 24, padding: '24px' }}
+        paddingSize="none"
+        style={{
+          flex: '0 0 264px',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '12px 8px 20px 12px',
+          overflowY: 'auto',
+        }}
       >
-        <EuiText style={{ fontWeight: 700, fontSize: 14, marginBottom: -8 }}>Summary</EuiText>
-        <EuiHorizontalRule margin="none" />
+        {/* Title */}
+        <EuiText style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', marginBottom: 12 }}>
+          Summary
+        </EuiText>
+        <EuiHorizontalRule margin="none" style={{ marginBottom: 0 }} />
 
-        {/* Approvals */}
-        <div>
-          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>Approvals</EuiText>
-          <EuiText size="s">
-            Needed: <span style={{ fontWeight: 700, color: '#F5A700' }}>{pendingCount}</span>
-          </EuiText>
-          <EuiText size="xs" color="subdued">pending · requires your review</EuiText>
-        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-        <EuiHorizontalRule margin="none" />
-
-        {/* Activity */}
-        <div>
-          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>Activity</EuiText>
-          <EuiText size="s">
-            Completed: <span style={{ fontWeight: 700, color: '#0077CC' }}>15</span>
-          </EuiText>
-          <EuiText size="xs" color="subdued">Rules managed: 14</EuiText>
-          <EuiBadge color="success" iconType="sortUp" style={{ marginTop: 4 }}>+12% this week</EuiBadge>
-        </div>
-
-        <EuiHorizontalRule margin="none" />
-
-        {/* Gap filling */}
-        <div>
-          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>Gap filling</EuiText>
-          <EuiText size="s">
-            Active: <span style={{ fontWeight: 700, color: '#F5A700' }}>21 / 23</span>
-          </EuiText>
-          <EuiText size="xs" color="subdued">Across 8 MITRE techniques</EuiText>
-          <EuiBadge color="warning" style={{ marginTop: 4 }}>Filling in progress</EuiBadge>
-        </div>
-
-        <EuiHorizontalRule margin="none" />
-
-        {/* Rule updates */}
-        <div>
-          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>Rule updates</EuiText>
-          <EuiText size="s">
-            Updated: <span style={{ fontWeight: 700, color: '#0077CC' }}>6 / 8</span>
-          </EuiText>
-          <EuiText size="xs" color="subdued">2 more require approval</EuiText>
-        </div>
-
-        <EuiHorizontalRule margin="none" />
-
-        {/* Approval rate */}
-        <div>
-          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>Approval rate</EuiText>
-          <EuiText size="s">
-            Accepted: <span style={{ fontWeight: 700, color: '#017D73' }}>91%</span>
-          </EuiText>
-          <EuiText size="xs" color="subdued">of all proposed changes</EuiText>
-          <EuiBadge color="success" iconType="sortUp" style={{ marginTop: 4 }}>↑ 4% this week</EuiBadge>
-        </div>
-
-        <EuiHorizontalRule margin="none" />
-
-        {/* Total tokens */}
-        <div>
-          <EuiText size="s" style={{ fontWeight: 700, marginBottom: 10 }}>Total tokens</EuiText>
-          <EuiText size="s">
-            Used: <span style={{ fontWeight: 700, color: '#343741' }}>1.24M</span>
-          </EuiText>
-          <EuiText size="xs" color="subdued">of 2M monthly limit</EuiText>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', marginTop: 8 }}>
-            {TOKEN_WORKFLOWS.map((w) => (
-              <div key={w.label}>
-                <EuiText size="xs" style={{ fontWeight: 700, color: w.color }}>{w.value}</EuiText>
-                <EuiText size="xs" color="subdued">{w.label}</EuiText>
-              </div>
-            ))}
+          {/* ── Approvals ── */}
+          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
+            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
+              Approvals
+            </EuiText>
+            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#eaae01', margin: '0 0 2px' }}>
+              {pendingCount}
+            </p>
+            <EuiText size="s" style={{ color: '#343741' }}>approvals needed</EuiText>
           </div>
+          <EuiHorizontalRule margin="none" />
+
+          {/* ── Activity ── */}
+          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
+            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
+              Activity
+            </EuiText>
+            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#065b58', margin: '0 0 2px' }}>
+              15
+            </p>
+            <EuiText size="s" style={{ color: '#343741', marginBottom: 6 }}>activities completed</EuiText>
+            <EuiBadge color="success" iconType="sortUp">+12% this week</EuiBadge>
+          </div>
+          <EuiHorizontalRule margin="none" />
+
+          {/* ── Approval rate ── */}
+          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
+            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
+              Approval rate
+            </EuiText>
+            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#516381', margin: '0 0 2px' }}>
+              91%
+            </p>
+            <EuiText size="s" style={{ color: '#343741', marginBottom: 6 }}>accepted of proposed changes</EuiText>
+            <EuiBadge color="success" iconType="sortUp">+12% this week</EuiBadge>
+          </div>
+          <EuiHorizontalRule margin="none" />
+
+          {/* ── Total tokens ── */}
+          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
+            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
+              Total tokens
+            </EuiText>
+            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#516381', margin: '0 0 2px' }}>
+              1.24M
+            </p>
+            <EuiText size="s" style={{ color: '#343741', marginBottom: 16 }}>of tokens used</EuiText>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {TOKEN_WORKFLOWS.map((w) => (
+                <div key={w.label}>
+                  <p style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: w.color, margin: '0 0 1px' }}>
+                    {w.value}
+                  </p>
+                  <EuiText size="s" style={{ color: '#343741' }}>{w.label}</EuiText>
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
       </EuiPanel>
 
