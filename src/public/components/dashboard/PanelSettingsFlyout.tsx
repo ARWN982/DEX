@@ -77,7 +77,7 @@ export const PanelSettingsFlyout: React.FC<PanelSettingsFlyoutProps> = ({
     <EuiFlyout onClose={onClose} size="s" ownFocus>
       <EuiFlyoutHeader hasBorder>
         <EuiTitle size="m">
-          <h2>Panel Settings</h2>
+          <h2>Panel settings</h2>
         </EuiTitle>
       </EuiFlyoutHeader>
 
@@ -92,7 +92,7 @@ export const PanelSettingsFlyout: React.FC<PanelSettingsFlyoutProps> = ({
             />
           </EuiFormRow>
 
-          <EuiFormRow label="Show Title" fullWidth>
+          <EuiFormRow label="Show title" fullWidth>
             <EuiSwitch
               label="Display title on panel"
               checked={showTitle}
@@ -103,7 +103,7 @@ export const PanelSettingsFlyout: React.FC<PanelSettingsFlyoutProps> = ({
           {isMarkdownPanel && (
             <>
               <EuiSpacer size="m" />
-              <EuiFormRow label="Markdown Content" fullWidth>
+              <EuiFormRow label="Markdown content" fullWidth>
                 <EuiMarkdownEditor
                   value={markdownContent}
                   onChange={setMarkdownContent}
@@ -117,7 +117,7 @@ export const PanelSettingsFlyout: React.FC<PanelSettingsFlyoutProps> = ({
           {isControlPanel && (
             <>
               <EuiSpacer size="m" />
-              <EuiFormRow label="Show Border" fullWidth>
+              <EuiFormRow label="Show border" fullWidth>
                 <EuiSwitch
                   label="Display border around panel"
                   checked={showBorder}

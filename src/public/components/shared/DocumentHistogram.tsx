@@ -40,6 +40,19 @@ type HistogramResult = {
   metricTitle?: string;
 };
 
+/** Sentence-case label from snake_case field id (e.g. host_name → Host name). */
+function sentenceCaseFromSnake(field: string): string {
+  const words = field.replace(/_/g, " ").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "";
+  return words
+    .map((w, i) =>
+      i === 0
+        ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+        : w.toLowerCase()
+    )
+    .join(" ");
+}
+
 export const DocumentHistogram: React.FC<HistogramProps> = ({
   logs,
   field,
@@ -278,7 +291,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
           });
       }
 
-      // Show the applied date range instead of generic "Timestamp Distribution"
+      // Show the applied date range instead of generic "Timestamp distribution"
       if (dateRange) {
         // Format the date range for display in the requested format
         const formatDateRange = (range: DateRange) => {
@@ -355,7 +368,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
 
         title = formatDateRange(dateRange);
       } else {
-        title = "Timestamp Distribution";
+        title = "Timestamp distribution";
       }
       formatter = (d: any) => {
         if (typeof d === "number") {
@@ -398,7 +411,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
         ];
       }
 
-      title = "Log Level Distribution";
+      title = "Log level distribution";
       formatter = (d: string) => d;
       scale = ScaleType.Ordinal;
     } else if (
@@ -433,7 +446,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
         ];
       }
 
-      title = "HTTP Status Code Distribution";
+      title = "HTTP status code distribution";
       formatter = (d: string) => d;
       scale = ScaleType.Ordinal;
     } else if (
@@ -447,7 +460,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
           ? "Latency (ms)"
           : field === "bytes"
           ? "Bytes"
-          : field.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+          : sentenceCaseFromSnake(field);
 
       // Collect actual values
       const values: number[] = [];
@@ -524,7 +537,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
         scale = ScaleType.Linear as any;
       }
 
-      title = `${fieldName} Distribution`;
+      title = `${fieldName} distribution`;
       formatter =
         field === "latency_ms"
           ? (d: number) => `${Math.round(d)}ms`
@@ -563,9 +576,7 @@ export const DocumentHistogram: React.FC<HistogramProps> = ({
         ];
       }
 
-      title = `${field
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())} Distribution`;
+      title = `${sentenceCaseFromSnake(field)} distribution`;
       formatter = (d: string) => d;
       scale = ScaleType.Ordinal;
     }

@@ -12,18 +12,21 @@ import { VersionSwitcher } from './VersionSwitcher';
 
 interface DesignerToolbarProps {
   isCommentingEnabled: boolean;
+  /** When true, comment mode cannot be turned on (e.g. empty version placeholder page). */
+  isCommentingDisabled?: boolean;
   onToggleCommenting: () => void;
   onCreateVersion?: () => void;
-  projectName?: string;
+  slug?: string;
 }
 
 const isProduction = process.env.VIBE_DEPLOY_MODE === 'production';
 
 export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   isCommentingEnabled,
+  isCommentingDisabled = false,
   onToggleCommenting,
   onCreateVersion,
-  projectName,
+  slug,
 }) => {
   const location = useLocation();
   const isTemplate = location.pathname.startsWith('/templates/');
@@ -113,16 +116,16 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
 
   // Re-fetch metadata when the flyout opens or the project changes
   useEffect(() => {
-    if (projectName && isAboutFlyoutOpen) {
+    if (slug && isAboutFlyoutOpen) {
       loadProjectMetadata();
     }
-  }, [projectName, isAboutFlyoutOpen]);
+  }, [slug, isAboutFlyoutOpen]);
 
   const loadProjectMetadata = async () => {
-    if (!projectName) return;
+    if (!slug) return;
     
     try {
-      const response = await fetch(`/api/project-metadata/${projectName}`);
+      const response = await fetch(`/api/project-metadata/${slug}`);
       if (response.ok) {
         const metadata = await response.json();
         setProjectMetadata(metadata);
@@ -147,6 +150,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   };
 
   const handleCommentClick = () => {
+    if (isCommentingDisabled) return;
     if (!isCommentingEnabled) {
       onToggleCommenting();
     }
@@ -164,7 +168,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         onClose={() => setIsAboutFlyoutOpen(false)}
         projectMetadata={projectMetadata}
         currentVersion={currentVersion}
-        projectName={projectName}
+        slug={slug}
       />
     );
   }
@@ -309,15 +313,27 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
           {/* Comment Tool - hidden on templates */}
           {!isTemplate && (
             <button
-              style={buttonStyle(isCommentingEnabled)}
+              type="button"
+              disabled={isCommentingDisabled}
+              style={{
+                ...buttonStyle(isCommentingEnabled && !isCommentingDisabled),
+                opacity: isCommentingDisabled ? 0.35 : 1,
+                cursor: isCommentingDisabled ? "not-allowed" : "pointer",
+              }}
               onClick={handleCommentClick}
-              title="Comment tool"
+              title={
+                isCommentingDisabled
+                  ? "Comments are unavailable on empty versions"
+                  : "Comment tool"
+              }
               onMouseEnter={(e) => {
+                if (isCommentingDisabled) return;
                 if (!isCommentingEnabled) {
                   (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
                 }
               }}
               onMouseLeave={(e) => {
+                if (isCommentingDisabled) return;
                 if (!isCommentingEnabled) {
                   (e.target as HTMLElement).style.backgroundColor = 'transparent';
                 }
@@ -350,7 +366,7 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         onClose={() => setIsAboutFlyoutOpen(false)}
         projectMetadata={projectMetadata}
         currentVersion={currentVersion}
-        projectName={projectName}
+        slug={slug}
       />
 
       {/* Create Project from Template Modal (hidden in production mode) */}

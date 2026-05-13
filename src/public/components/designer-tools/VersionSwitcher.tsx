@@ -221,7 +221,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: euiTheme.size.s }}>
                   <Plus size={16} />
-                  <span>Create New Version</span>
+                  <span>Create new version</span>
                 </div>
               </button>
             )}

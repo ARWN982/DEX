@@ -7,7 +7,7 @@ interface TextPanelProps {
 }
 
 export const TextPanel: React.FC<TextPanelProps> = ({
-  title = "Text Panel",
+  title = "Text panel",
   content = "This is a text panel. You can customize the content here.",
 }) => {
   const { euiTheme } = useEuiTheme();

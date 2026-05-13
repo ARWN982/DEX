@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { StepStatus, StepConfig } from '../components/shared/CreationStepRow';
 import { getCurrentPage } from '../utils/pageUtils';
 import { invalidateVersionCacheForPage } from '../utils/componentLoader';
 
@@ -27,10 +28,19 @@ interface VersionStore {
   currentVersion: string;
   isLoading: boolean;
 
+  // Creation-progress state (drives the inline progress page)
+  isCreatingVersion: boolean;
+  creatingVersionId: string | null;
+  creationSteps: StepConfig[];
+  creationStepStatuses: StepStatus[];
+
   // Actions
   loadVersions: () => Promise<void>;
   setActiveVersion: (versionId: string) => Promise<void>;
   createVersion: (options?: CreateVersionOptions) => Promise<string>;
+  startCreation: (versionId: string, steps: StepConfig[]) => void;
+  updateCreationStep: (index: number, status: StepStatus) => void;
+  finishCreation: () => void;
   
   // Helpers
   getCurrentVersion: () => Version | undefined;
@@ -74,6 +84,11 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
   versions: [],
   currentVersion: '1.0',
   isLoading: false,
+
+  isCreatingVersion: false,
+  creatingVersionId: null,
+  creationSteps: [],
+  creationStepStatuses: [],
 
   loadVersions: async () => {
     if (isPublishMode) {
@@ -197,6 +212,31 @@ export const useVersionStore = create<VersionStore>((set, get) => ({
       console.error('Error creating version:', error);
       throw error;
     }
+  },
+
+  startCreation: (versionId, steps) => {
+    set({
+      isCreatingVersion: true,
+      creatingVersionId: versionId,
+      creationSteps: steps,
+      creationStepStatuses: steps.map((_, i) => (i === 0 ? 'active' : 'pending')),
+    });
+  },
+
+  updateCreationStep: (index, status) => {
+    const { creationStepStatuses } = get();
+    const next = [...creationStepStatuses];
+    next[index] = status;
+    set({ creationStepStatuses: next });
+  },
+
+  finishCreation: () => {
+    set({
+      isCreatingVersion: false,
+      creatingVersionId: null,
+      creationSteps: [],
+      creationStepStatuses: [],
+    });
   },
 
   getCurrentVersion: () => {

@@ -340,10 +340,15 @@ const Homepage: React.FC = () => {
   const handleSaveProjectMetadata = async (metadata: ProjectMetadata) => {
     if (selectedProject) {
       await saveProjectMetadata(selectedProject.name, metadata);
-      // Update the project in the local state
       setProjects((prev) =>
         prev.map((p) =>
-          p.name === selectedProject.name ? { ...p, metadata } : p
+          p.name === selectedProject.name
+            ? {
+                ...p,
+                displayName: metadata.displayName || p.displayName,
+                metadata,
+              }
+            : p
         )
       );
     }
@@ -404,7 +409,7 @@ const Homepage: React.FC = () => {
     backgroundColor: colors.primaryButton,
     color: colors.primaryButtonText,
     border: "none",
-    borderRadius: dtRadius.pill,
+    borderRadius: dtRadius.medium,
     padding: `${euiTheme.size.m} ${euiTheme.size.l}`,
     fontSize: "14px",
     fontWeight: "500",
@@ -416,7 +421,6 @@ const Homepage: React.FC = () => {
     maxWidth: `${euiTheme.breakpoint.xl}px`,
     margin: "0 auto",
     padding: `96px ${euiTheme.size.l} ${euiTheme.size.xxxl} ${euiTheme.size.l}`,
-    minHeight: "100vh",
   };
 
   const sectionStyle = {
@@ -433,6 +437,7 @@ const Homepage: React.FC = () => {
   console.log('[Homepage Render] State:', { loading, projectsCount: projects.length, projects });
 
   return (
+    <div style={{ backgroundColor: euiTheme.colors.emptyShade, minHeight: "100vh" }}>
     <div style={containerStyle}>
       <style>{`
         .homepage-card-grid {
@@ -900,6 +905,7 @@ const Homepage: React.FC = () => {
           defaultProjectName={createProjectFromTemplate?.defaultName}
         />
       )}
+    </div>
     </div>
   );
 };

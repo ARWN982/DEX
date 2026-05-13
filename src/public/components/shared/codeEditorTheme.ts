@@ -140,7 +140,7 @@ export const createCodeEditorTheme = ({
     },
     ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
       backgroundColor: euiTheme.colors.primary,
-      color: euiTheme.colors.ghost,
+      color: euiTheme.colors.textGhost,
     },
     // Hide any default CodeMirror completion icons
     ".cm-tooltip.cm-tooltip-autocomplete .cm-completionIcon": {
@@ -181,7 +181,7 @@ export const createCodeEditorTheme = ({
     },
     ".cm-tooltip.cm-tooltip-autocomplete li[aria-selected] .cm-completionDetail":
       {
-        color: euiTheme.colors.ghost,
+        color: euiTheme.colors.textGhost,
         opacity: 0.9,
       },
     // Placeholder styling

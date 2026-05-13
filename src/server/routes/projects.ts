@@ -83,11 +83,26 @@ router.get('/', async (req: Request, res: Response) => {
             return aNum - bNum;
           });
 
-          // Convert kebab-case to Title Case for display name
-          const displayName = projectName
+          // Try to read stored displayName from about.md; fall back to deriving from slug
+          let displayName: string;
+          const slugToDisplayName = (slug: string) => slug
             .split('-')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .map((word: string) => {
+              const trimmed = word.replace(/^_+/, '');
+              if (!trimmed) return '';
+              return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+            })
+            .filter(Boolean)
             .join(' ');
+
+          try {
+            const aboutPath = path.join(projectPath, 'about.md');
+            const raw = await fs.readFile(aboutPath, 'utf-8');
+            const { data } = matter(raw);
+            displayName = data.displayName || slugToDisplayName(projectName);
+          } catch {
+            displayName = slugToDisplayName(projectName);
+          }
 
           projects.push({
             name: projectName,
@@ -120,7 +135,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, templateName } = req.body;
+    const { name, displayName, description, templateName } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ 
@@ -271,14 +286,17 @@ export default ${componentName};
     }
 
     // Create about.md metadata file with YAML frontmatter
-    const frontmatter = {
-      projectName: normalizedName,
+    const frontmatter: Record<string, string> = {
+      slug: normalizedName,
       designer: '',
       pm: '',
       prdLink: '',
       githubIssueLink: '',
       breadcrumb: '',
     };
+    if (displayName && typeof displayName === 'string' && displayName.trim()) {
+      frontmatter.displayName = displayName.trim();
+    }
     const aboutContent = matter.stringify(description || '', frontmatter);
     await fs.writeFile(aboutPath, aboutContent, 'utf-8');
 

@@ -6,7 +6,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { getDesignUIColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
 
 export interface ProjectMetadata {
-  projectName: string;
+  slug: string;
+  displayName: string;
   designer: string;
   pm: string;
   bodyMarkdown: string;
@@ -20,7 +21,7 @@ interface AboutFlyoutProps {
   onClose: () => void;
   projectMetadata: ProjectMetadata | null;
   currentVersion?: string;
-  projectName?: string;
+  slug?: string;
 }
 
 export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
@@ -28,7 +29,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   onClose,
   projectMetadata,
   currentVersion,
-  projectName,
+  slug,
 }) => {
   const { colorMode } = useAppStore();
   const { euiTheme } = useEuiTheme();
@@ -37,7 +38,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
   const [notesLoading, setNotesLoading] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !projectName || !currentVersion) {
+    if (!isOpen || !slug || !currentVersion) {
       setVersionNotes("");
       return;
     }
@@ -45,7 +46,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     let cancelled = false;
     setNotesLoading(true);
 
-    fetch(`/api/versions/notes?page=${projectName}&version=${currentVersion}`)
+    fetch(`/api/versions/notes?page=${slug}&version=${currentVersion}`)
       .then((r) => r.json())
       .then((data) => {
         if (!cancelled) setVersionNotes(data.markdown || "");
@@ -60,7 +61,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [isOpen, projectName, currentVersion]);
+  }, [isOpen, slug, currentVersion]);
 
   if (!isOpen) return null;
   if (!projectMetadata) return null;
@@ -179,7 +180,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
       <div style={flyoutStyle} data-exclude-comments>
         <div style={headerStyle}>
           <div>
-            <h2 style={titleStyle}>{projectMetadata.projectName}</h2>
+            <h2 style={titleStyle}>{projectMetadata.displayName || projectMetadata.slug}</h2>
           </div>
           <button
             style={closeButtonStyle}
@@ -256,7 +257,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
 
           {projectMetadata.pm && (
             <>
-              <div style={sectionLabelStyle}>Product Manager</div>
+              <div style={sectionLabelStyle}>Product manager</div>
               <div style={fieldValueStyle}>{projectMetadata.pm}</div>
             </>
           )}
@@ -279,7 +280,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
 
           {projectMetadata.githubIssueLink && (
             <>
-              <div style={sectionLabelStyle}>GitHub Issue</div>
+              <div style={sectionLabelStyle}>GitHub issue</div>
               <div style={fieldValueStyle}>
                 <a
                   href={projectMetadata.githubIssueLink}
@@ -287,7 +288,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
                   rel="noopener noreferrer"
                   style={linkStyle}
                 >
-                  Open Issue
+                  Open issue
                 </a>
               </div>
             </>
@@ -296,7 +297,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
           {/* ── Project Description (Markdown) ── */}
           {projectMetadata.bodyMarkdown && (
             <>
-              <div style={{ ...sectionLabelStyle, marginBottom: euiTheme.size.m }}>Project Description</div>
+              <div style={{ ...sectionLabelStyle, marginBottom: euiTheme.size.m }}>Project description</div>
               <div
                 className="about-flyout-markdown"
                 style={markdownContainerStyle}
@@ -311,7 +312,7 @@ export const AboutFlyout: React.FC<AboutFlyoutProps> = ({
             <>
               <div style={dividerStyle} />
               <div style={{ ...sectionLabelStyle, marginBottom: euiTheme.size.m }}>
-                Version {currentVersion} Notes
+                Version {currentVersion} notes
               </div>
               {notesLoading ? (
                 <div style={{ display: "flex", justifyContent: "center", padding: `${euiTheme.size.base} 0` }}>

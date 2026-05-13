@@ -17,12 +17,12 @@ export const DashboardLevaPanel: React.FC = () => {
         label: "Gap",
       },
     }),
-    "Panel Border": folder({
+    "Panel border": folder({
       borderStyle: {
         value: "border",
         options: {
-          "Border": "border",
-          "Box Shadow": "shadow",
+          Border: "border",
+          "Box shadow": "shadow",
         },
         label: "Style",
       },
@@ -32,8 +32,8 @@ export const DashboardLevaPanel: React.FC = () => {
         min: 0, 
         max: 5, 
         step: 1, 
-        label: "Border Width",
-        render: (get) => get("Panel Border.borderStyle") === "border",
+        label: "Border width",
+        render: (get) => get("Panel border.borderStyle") === "border",
       },
       borderColorKey: {
         value: "borderBaseSubdued",
@@ -46,16 +46,16 @@ export const DashboardLevaPanel: React.FC = () => {
           "Warning": "borderBaseWarning",
           "Danger": "borderBaseDanger",
         },
-        label: "Border Color",
-        render: (get) => get("Panel Border.borderStyle") === "border",
+        label: "Border color",
+        render: (get) => get("Panel border.borderStyle") === "border",
       },
     }),
     Title: folder({
-      titleFontSize: { value: 14, min: 10, max: 24, step: 1, label: "Font Size" },
+      titleFontSize: { value: 14, min: 10, max: 24, step: 1, label: "Font size" },
       titleFontWeight: { 
         value: 500, 
         options: { Normal: 400, Medium: 500, Semibold: 600, Bold: 700 },
-        label: "Font Weight" 
+        label: "Font weight" 
       },
       titleHeight: {
         value: 40,
@@ -66,14 +66,14 @@ export const DashboardLevaPanel: React.FC = () => {
         },
         label: "Height",
       },
-      "Title Padding": folder({
+      "Title padding": folder({
         titlePaddingTop: { value: 0, min: 0, max: 24, step: 1, label: "Top" },
         titlePaddingRight: { value: 12, min: 0, max: 24, step: 1, label: "Right" },
         titlePaddingBottom: { value: 0, min: 0, max: 24, step: 1, label: "Bottom" },
         titlePaddingLeft: { value: 16, min: 0, max: 24, step: 1, label: "Left" },
       }),
     }),
-    "Panel Body Padding": folder({
+    "Panel body padding": folder({
       panelPaddingTop: { value: 0, min: 0, max: 24, step: 1, label: "Top" },
       panelPaddingRight: { value: 16, min: 0, max: 24, step: 1, label: "Right" },
       panelPaddingBottom: { value: 12, min: 0, max: 24, step: 1, label: "Bottom" },
@@ -90,5 +90,5 @@ export const DashboardLevaPanel: React.FC = () => {
     });
   }, [values, setSettings]);
 
-  return <Leva collapsed={false} titleBar={{ title: "Panel Settings" }} />;
+  return <Leva collapsed={false} titleBar={{ title: "Panel settings" }} />;
 };

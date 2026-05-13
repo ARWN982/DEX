@@ -1,20 +1,12 @@
 import { EuiCheckbox, EuiRadio, useEuiTheme } from "@elastic/eui";
 import { X } from "phosphor-react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { useAppStore } from "../../store/useAppStore";
-import { useVersionStore } from "../../store/useVersionStore";
+import { useVersionStore, type CreateVersionOptions } from "../../store/useVersionStore";
 import { getToolbarColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
 import { getComponentFromRegistry } from "../../utils/componentRegistry";
 import { getCurrentPage } from "../../utils/pageUtils";
-
-const AnimatedDots: React.FC = () => {
-  const [dotCount, setDotCount] = useState(1);
-  useEffect(() => {
-    const timer = setInterval(() => setDotCount((c) => (c % 3) + 1), 400);
-    return () => clearInterval(timer);
-  }, []);
-  return <span style={{ display: "inline-block", minWidth: "1em", textAlign: "left" }}>{".".repeat(dotCount)}</span>;
-};
+import type { StepConfig } from "../shared/CreationStepRow";
 
 interface CreateVersionModalProps {
   isOpen: boolean;
@@ -26,7 +18,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   onClose,
 }) => {
   const { colorMode } = useAppStore();
-  const { getCurrentVersion, createVersion, versions } = useVersionStore();
+  const { getCurrentVersion, createVersion, versions, startCreation, updateCreationStep, finishCreation } = useVersionStore();
   const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
@@ -35,7 +27,6 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   const [copyComments, setCopyComments] = useState(false);
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-  const lockedVersionRef = useRef<string | null>(null);
 
   const currentVersion = getCurrentVersion();
 
@@ -58,52 +49,65 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     }
   };
 
-  const nextVersionNumber = lockedVersionRef.current ?? getNextVersionNumber();
+  const nextVersionNumber = getNextVersionNumber();
+
+  const getSteps = useCallback((): StepConfig[] => {
+    const ver = nextVersionNumber;
+    const currVer = currentVersion?.id || "1.0";
+    return [
+      {
+        activeLabel: `Scaffolding v${ver} files`,
+        doneLabel: `v${ver} files ready`,
+      },
+      {
+        activeLabel: startFromScratch
+          ? "Setting up blank canvas"
+          : `Copying design from v${currVer}`,
+        doneLabel: startFromScratch
+          ? "Blank canvas ready"
+          : `Design copied from v${currVer}`,
+      },
+      {
+        activeLabel: "Registering version",
+        doneLabel: "Version registered",
+      },
+    ];
+  }, [nextVersionNumber, currentVersion, startFromScratch]);
 
   const handleCreate = async () => {
-    lockedVersionRef.current = getNextVersionNumber();
+    const versionId = getNextVersionNumber();
+    const steps = getSteps();
+    const opts = {
+      isMajorVersion,
+      startFromScratch,
+      copyComments: startFromScratch ? false : copyComments,
+      description: description.trim() || undefined,
+    };
+
     setIsCreating(true);
-    try {
-      const newVersionId = await createVersion({
-        isMajorVersion,
-        startFromScratch,
-        copyComments: startFromScratch ? false : copyComments,
-        description: description.trim() || undefined,
-      });
 
-      // Keep modal open until webpack HMR has the new component ready.
-      const pageName = getCurrentPage();
-      const maxWait = 10_000;
-      const interval = 400;
-      let waited = 0;
+    // Signal the store so the inline page appears immediately
+    startCreation(versionId, steps);
 
-      while (waited < maxWait) {
-        if (getComponentFromRegistry(pageName, newVersionId)) break;
-        await new Promise((r) => setTimeout(r, interval));
-        waited += interval;
-      }
+    // Close the modal right away — progress is shown inline
+    resetForm();
+    onClose();
 
-      setIsMajorVersion(false);
-      setStartFromScratch(false);
-      setCopyComments(false);
-      setDescription("");
-      lockedVersionRef.current = null;
-      onClose();
-    } catch (error) {
-      console.error("Failed to create version:", error);
-      lockedVersionRef.current = null;
-    } finally {
-      setIsCreating(false);
-    }
+    // Run creation + step orchestration in the background
+    orchestrateCreation(versionId, opts, updateCreationStep, finishCreation);
+  };
+
+  const resetForm = () => {
+    setIsMajorVersion(false);
+    setStartFromScratch(false);
+    setCopyComments(false);
+    setDescription("");
+    setIsCreating(false);
   };
 
   const handleClose = () => {
     if (!isCreating) {
-      setIsMajorVersion(false);
-      setStartFromScratch(false);
-      setCopyComments(false);
-      setDescription("");
-      lockedVersionRef.current = null;
+      resetForm();
       onClose();
     }
   };
@@ -239,12 +243,6 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     color: "#ffffff",
   };
 
-  const createButtonDisabledStyle: React.CSSProperties = {
-    ...createButtonStyle,
-    backgroundColor: colors.textMuted,
-    cursor: "default",
-  };
-
   return (
     <>
       <div style={overlayStyle} onClick={handleClose}>
@@ -257,17 +255,15 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
             }
           `}</style>
 
+          {/* Header */}
           <div style={headerStyle}>
             <h2 style={titleStyle}>Create new version</h2>
             <button
               style={closeButtonStyle}
               onClick={handleClose}
-              disabled={isCreating}
               onMouseEnter={(e) => {
-                if (!isCreating) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    colors.buttonHover;
-                }
+                (e.target as HTMLElement).style.backgroundColor =
+                  colors.buttonHover;
               }}
               onMouseLeave={(e) => {
                 (e.target as HTMLElement).style.backgroundColor = "transparent";
@@ -277,6 +273,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
             </button>
           </div>
 
+          {/* Content — form only */}
           <div style={contentStyle}>
             {/* Version number + major toggle */}
             <div style={sectionStyle}>
@@ -378,7 +375,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               Cancel
             </button>
             <button
-              style={isCreating ? createButtonDisabledStyle : createButtonStyle}
+              style={createButtonStyle}
               onClick={handleCreate}
               disabled={isCreating}
               onMouseEnter={(e) => {
@@ -393,7 +390,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 }
               }}
             >
-              {isCreating ? <>Creating<AnimatedDots /></> : "Create version"}
+              Create version
             </button>
           </div>
         </div>
@@ -401,3 +398,63 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     </>
   );
 };
+
+/**
+ * Background orchestration: calls createVersion, polls for HMR, and
+ * drives the step animations via the version store.  Runs detached
+ * from the modal component (which is already closed).
+ */
+async function orchestrateCreation(
+  versionId: string,
+  opts: CreateVersionOptions,
+  updateStep: (index: number, status: "pending" | "active" | "complete") => void,
+  finish: () => void,
+) {
+  const { createVersion } = useVersionStore.getState();
+  const startTime = Date.now();
+
+  // Cosmetic step timers — these fire regardless of how fast the API is
+  const step1Timer = setTimeout(() => {
+    updateStep(0, "complete");
+    updateStep(1, "active");
+  }, 1750);
+
+  const step2Timer = setTimeout(() => {
+    updateStep(1, "complete");
+    updateStep(2, "active");
+  }, 3250);
+
+  try {
+    const newVersionId = await createVersion(opts);
+
+    // Wait for HMR / registry to see the new component
+    const pageName = getCurrentPage();
+    const maxWait = 10_000;
+    const interval = 400;
+    let waited = 0;
+
+    while (waited < maxWait) {
+      if (getComponentFromRegistry(pageName, newVersionId)) break;
+      await new Promise((r) => setTimeout(r, interval));
+      waited += interval;
+    }
+
+    // Wait for the visual step timers to play out before finishing.
+    // Step 2 timer fires at 3250ms; add buffer for the animation.
+    const minElapsed = 3800;
+    const remaining = minElapsed - (Date.now() - startTime);
+    if (remaining > 0) {
+      await new Promise((r) => setTimeout(r, remaining));
+    }
+
+    // Complete the final step, then signal done after a brief pause
+    updateStep(2, "complete");
+    await new Promise((r) => setTimeout(r, 800));
+    finish();
+  } catch (error) {
+    console.error("Failed to create version:", error);
+    clearTimeout(step1Timer);
+    clearTimeout(step2Timer);
+    finish();
+  }
+}

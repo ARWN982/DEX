@@ -123,7 +123,7 @@ router.post('/screenshots/:projectName', async (req, res) => {
       const jsonPath = path.join(projectDir, 'about.json');
 
       let frontmatter: Record<string, any> = {
-        projectName,
+        slug: projectName,
         designer: '',
         pm: '',
         prdLink: '',

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 
 export interface ProjectMetadata {
-  projectName: string;
+  slug: string;
+  displayName: string;
   designer: string;
   pm: string;
   bodyMarkdown: string;
@@ -44,15 +45,21 @@ export const useProjectMetadata = (projectName: string | null) => {
       } catch (err) {
         console.error('Error fetching project metadata:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch metadata');
-        // Set fallback metadata
+        // Don't auto-derive a displayName here — consumers should decide
+        // how to handle missing metadata. Setting a slug-derived name in
+        // the error path causes a visible flash of the wrong name (e.g.
+        // "Nl Esql") during transient fetch failures, like the brief
+        // server unavailability after a webpack reload triggered by
+        // writing a new version to disk.
         setMetadata({
-          projectName,
+          slug: projectName,
+          displayName: '',
           designer: '',
           pm: '',
           bodyMarkdown: '',
           prdLink: '',
           githubIssueLink: '',
-          breadcrumb: projectName,
+          breadcrumb: '',
         });
       } finally {
         setLoading(false);

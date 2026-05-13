@@ -161,17 +161,17 @@ export const Dashboards: React.FC = () => {
       h: 3,
       minW: 8,
       minH: 1,
-      title: "Key Dashboards",
+      title: "Key dashboards",
       showTitle: true,
       panelType: "links",
       content: (
         <LinksPanel
           links={[
-            { id: "1", label: "Cluster Monitoring", href: "#", isActive: true },
-            { id: "2", label: "ES Index Monitoring", href: "#" },
+            { id: "1", label: "Cluster monitoring", href: "#", isActive: true },
+            { id: "2", label: "ES index monitoring", href: "#" },
             { id: "3", label: "SSH logins", href: "#" },
-            { id: "4", label: "Cluster & Node View", href: "#" },
-            { id: "5", label: "Index & Shard View", href: "#" },
+            { id: "4", label: "Cluster & node view", href: "#" },
+            { id: "5", label: "Index & shard view", href: "#" },
           ]}
           direction="horizontal"
           gap={24}
@@ -187,7 +187,7 @@ export const Dashboards: React.FC = () => {
       h: 10,
       minW: 12,
       minH: 6,
-      title: "CPU Usage",
+      title: "CPU usage",
       showTitle: true,
       content: (
         <StackedBarChartPanel
@@ -228,9 +228,9 @@ export const Dashboards: React.FC = () => {
             { id: "status", displayAsText: "Status", dataType: "status" },
             { id: "cpu", displayAsText: "CPU %" },
             { id: "memory", displayAsText: "Memory %" },
-            { id: "os", displayAsText: "Operating System" },
-            { id: "ip", displayAsText: "IP Address" },
-            { id: "lastSeen", displayAsText: "Last Seen" },
+            { id: "os", displayAsText: "Operating system" },
+            { id: "ip", displayAsText: "IP address" },
+            { id: "lastSeen", displayAsText: "Last seen" },
           ]}
           data={[
             { hostname: "gke-prod-cluster-pool-a1b2c3d4-node-001", status: "Online", cpu: "23%", memory: "67%", os: "Container-Optimized OS", ip: "10.128.0.42", lastSeen: "2024-10-31T14:23:18Z" },
@@ -264,7 +264,7 @@ export const Dashboards: React.FC = () => {
       showBorder: true,
       panelType: "control",
       controlConfig: {
-        label: "Source Country",
+        label: "Source country",
         options: [
           { value: "us", label: "US" },
           { value: "uk", label: "UK" },
@@ -312,7 +312,7 @@ export const Dashboards: React.FC = () => {
       showBorder: true,
       panelType: "control",
       controlConfig: {
-        label: "Log Level",
+        label: "Log level",
         options: [
           { value: "error", label: "Error" },
           { value: "warn", label: "Warning" },
@@ -367,12 +367,12 @@ export const Dashboards: React.FC = () => {
       h: 6,
       minW: 4,
       minH: 1,
-      title: "Resource Utilization",
+      title: "Resource utilization",
       showTitle: false,
       noPadding: true,
       content: (
         <MetricPanel 
-          title="Resource Utilization" 
+          title="Resource utilization" 
           value={55.2}
           valuePostfix=" %"
           color="vis2"
@@ -402,12 +402,12 @@ export const Dashboards: React.FC = () => {
       h: 6,
       minW: 4,
       minH: 1,
-      title: "Log Ingestion Rate",
+      title: "Log ingestion rate",
       showTitle: false,
       noPadding: true,
       content: (
         <MetricPanel 
-          title="Log Ingestion Rate" 
+          title="Log ingestion rate" 
           value={55.3}
           valuePostfix=" %"
           color="vis2"
@@ -437,12 +437,12 @@ export const Dashboards: React.FC = () => {
       h: 6,
       minW: 4,
       minH: 1,
-      title: "P95 Latency",
+      title: "P95 latency",
       showTitle: false,
       noPadding: true,
       content: (
         <MetricPanel 
-          title="P95 Latency" 
+          title="P95 latency" 
           value={210}
           valuePostfix=" ms"
           color="vis2"
@@ -476,7 +476,7 @@ export const Dashboards: React.FC = () => {
       h: 10,
       minW: 4,
       minH: 1,
-      title: "Requests Over Time",
+      title: "Requests over time",
       showTitle: true,
       content: <TimeSeriesPanel data={generateTimeSeriesData(24, 150, 50)} title="Requests" chartType="area" xAxisTitle="@timestamp per 1 hour" />,
     },
@@ -488,13 +488,13 @@ export const Dashboards: React.FC = () => {
       h: 10,
       minW: 4,
       minH: 1,
-      title: "Response Time",
+      title: "Response time",
       showTitle: true,
       content: (
         <TimeSeriesPanel 
           series={[
-            { id: "p50", name: "P50 Latency", data: generateTimeSeriesData(24, 150, 50), color: euiTheme.colors.vis.euiColorVis0 },
-            { id: "p95", name: "P95 Latency", data: generateTimeSeriesData(24, 280, 80), color: euiTheme.colors.vis.euiColorVis2 },
+            { id: "p50", name: "P50 latency", data: generateTimeSeriesData(24, 150, 50), color: euiTheme.colors.vis.euiColorVis0 },
+            { id: "p95", name: "P95 latency", data: generateTimeSeriesData(24, 280, 80), color: euiTheme.colors.vis.euiColorVis2 },
           ]}
           title="Latency (ms)" 
           chartType="line" 
@@ -511,7 +511,7 @@ export const Dashboards: React.FC = () => {
       h: 12,
       minW: 12,
       minH: 8,
-      title: "[Bulk] Document Indexing Rate",
+      title: "[Bulk] Document indexing rate",
       showTitle: true,
       content: (
         <TimeSeriesPanel 
@@ -522,7 +522,7 @@ export const Dashboards: React.FC = () => {
           color="#F8719D" // Pink color matching the image
           showLegend={true}
           legendPosition="right"
-          seriesName="Indexing Rate"
+          seriesName="Indexing rate"
           valueFormatter={(v) => {
             if (v >= 1000) {
               return `${(v / 1000).toFixed(1)}k`;
@@ -540,7 +540,7 @@ export const Dashboards: React.FC = () => {
       h: 12,
       minW: 12,
       minH: 8,
-      title: "[Bulk] Byte Indexing Rate",
+      title: "[Bulk] Byte indexing rate",
       showTitle: true,
       content: (
         <TimeSeriesPanel 
@@ -551,7 +551,7 @@ export const Dashboards: React.FC = () => {
           color="#F8719D" // Pink color matching the image
           showLegend={true}
           legendPosition="right"
-          seriesName="Bytes Received"
+          seriesName="Bytes received"
           valueFormatter={(v) => {
             // Format bytes/s: B, KB, MB, GB
             if (v >= 1024 * 1024 * 1024) {
@@ -710,7 +710,7 @@ export const Dashboards: React.FC = () => {
               
               {/* Section Header */}
               <div style={{ padding: `0 ${gridGap}px 0 ${gridGap}px` }}>
-                <SectionHeader title="Key Metrics" />
+                <SectionHeader title="Key metrics" />
               </div>
               
               {/* Middle Grid */}

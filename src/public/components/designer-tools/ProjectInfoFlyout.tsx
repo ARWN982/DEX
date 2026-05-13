@@ -16,7 +16,8 @@ import {
 import React, { useState, useEffect } from 'react';
 
 export interface ProjectMetadata {
-  projectName: string;
+  slug: string;
+  displayName: string;
   designer: string;
   pm: string;
   bodyMarkdown: string;
@@ -47,7 +48,8 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
   onSave,
 }) => {
   const [formData, setFormData] = useState<ProjectMetadata>({
-    projectName: '',
+    slug: '',
+    displayName: '',
     designer: '',
     pm: '',
     bodyMarkdown: '',
@@ -87,23 +89,43 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
     <EuiFlyout onClose={onClose} size="m" ownFocus>
       <EuiFlyoutHeader hasBorder>
         <EuiTitle size="m">
-          <h2>Edit Project Info</h2>
+          <h2>Edit project info</h2>
         </EuiTitle>
       </EuiFlyoutHeader>
 
       <EuiFlyoutBody>
-        <EuiForm>
-          <EuiFormRow label="Project Name:" fullWidth>
+        <EuiForm component="form">
+          <EuiFormRow
+            label="Display name"
+            helpText="Shown on project cards and headers."
+            fullWidth
+          >
             <EuiFieldText
+              compressed
               fullWidth
-              value={formData.projectName}
-              onChange={(e) => handleInputChange('projectName', e.target.value)}
-              placeholder="Enter project name"
+              value={formData.displayName}
+              onChange={(e) => handleInputChange('displayName', e.target.value)}
+              placeholder="Enter display name"
             />
           </EuiFormRow>
 
-          <EuiFormRow label="Designer:" fullWidth>
+          <EuiFormRow
+            label="URL slug"
+            helpText="Used in the project URL. Cannot be changed."
+            fullWidth
+          >
             <EuiFieldText
+              compressed
+              fullWidth
+              value={formData.slug}
+              readOnly
+              disabled
+            />
+          </EuiFormRow>
+
+          <EuiFormRow label="Designer" fullWidth>
+            <EuiFieldText
+              compressed
               fullWidth
               value={formData.designer}
               onChange={(e) => handleInputChange('designer', e.target.value)}
@@ -111,8 +133,9 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
             />
           </EuiFormRow>
 
-          <EuiFormRow label="PM:" fullWidth>
+          <EuiFormRow label="PM" fullWidth>
             <EuiFieldText
+              compressed
               fullWidth
               value={formData.pm}
               onChange={(e) => handleInputChange('pm', e.target.value)}
@@ -122,6 +145,7 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
 
           <EuiFormRow label="Description (Markdown supported)" fullWidth>
             <EuiTextArea
+              compressed
               fullWidth
               value={formData.bodyMarkdown}
               onChange={(e) => handleInputChange('bodyMarkdown', e.target.value)}
@@ -130,8 +154,9 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
             />
           </EuiFormRow>
 
-          <EuiFormRow label="PRD link:" fullWidth>
+          <EuiFormRow label="PRD link" fullWidth>
             <EuiFieldText
+              compressed
               fullWidth
               value={formData.prdLink}
               onChange={(e) => handleInputChange('prdLink', e.target.value)}
@@ -139,8 +164,9 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
             />
           </EuiFormRow>
 
-          <EuiFormRow label="Github issue link:" fullWidth>
+          <EuiFormRow label="GitHub issue link" fullWidth>
             <EuiFieldText
+              compressed
               fullWidth
               value={formData.githubIssueLink}
               onChange={(e) => handleInputChange('githubIssueLink', e.target.value)}
@@ -148,8 +174,9 @@ export const ProjectInfoFlyout: React.FC<ProjectInfoFlyoutProps> = ({
             />
           </EuiFormRow>
 
-          <EuiFormRow label="Breadcrumb:" fullWidth>
+          <EuiFormRow label="Breadcrumb" fullWidth>
             <EuiFieldText
+              compressed
               fullWidth
               value={formData.breadcrumb}
               onChange={(e) => handleInputChange('breadcrumb', e.target.value)}

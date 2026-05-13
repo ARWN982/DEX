@@ -27,6 +27,10 @@ function seedStore(versionIds: string[]) {
   useVersionStore.setState({
     versions,
     currentVersion: currentId,
+    isCreatingVersion: false,
+    creatingVersionId: null,
+    creationSteps: [],
+    creationStepStatuses: [],
   });
 }
 
@@ -69,69 +73,9 @@ describe('CreateVersionModal', () => {
     expect(screen.getByText('v1.2')).toBeInTheDocument();
   });
 
-  it('disables form controls while creating', async () => {
+  it('closes immediately and sets store creation state on create', async () => {
     const neverResolve = new Promise<string>(() => {});
     const createVersionMock = vi.fn(() => neverResolve);
-    useVersionStore.setState({ createVersion: createVersionMock } as any);
-
-    render(<CreateVersionModal isOpen={true} onClose={vi.fn()} />);
-
-    const createButton = screen.getByRole('button', { name: /Create version/i });
-    fireEvent.click(createButton);
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('Major version')).toBeDisabled();
-      expect(screen.getByLabelText('Start from scratch')).toBeDisabled();
-      expect(screen.getByPlaceholderText(/Describe what's new/)).toBeDisabled();
-    });
-
-    const cancelButton = screen.getByRole('button', { name: /Cancel/i });
-    expect(cancelButton).toBeDisabled();
-  });
-
-  it('locks the version number during creation so it does not change', async () => {
-    const createPromise = new Promise<string>(() => {});
-    const createVersionMock = vi.fn(() => createPromise);
-    useVersionStore.setState({ createVersion: createVersionMock } as any);
-
-    render(<CreateVersionModal isOpen={true} onClose={vi.fn()} />);
-
-    expect(screen.getByText(/Version 1\.3/)).toBeInTheDocument();
-
-    const createButton = screen.getByRole('button', { name: /Create version/i });
-    fireEvent.click(createButton);
-
-    // Simulate the store adding the new version (which would change nextVersionNumber without the lock)
-    await act(async () => {
-      const updatedVersions = makeVersions('1.0', '1.1', '1.2', '1.3');
-      useVersionStore.setState({ versions: updatedVersions, currentVersion: '1.3' });
-    });
-
-    // The displayed version should still say 1.3, not 1.4
-    expect(screen.getByText(/Version 1\.3/)).toBeInTheDocument();
-    expect(screen.queryByText(/Version 1\.4/)).not.toBeInTheDocument();
-  });
-
-  it('shows "Creating" text in the button while creating', async () => {
-    const neverResolve = new Promise<string>(() => {});
-    const createVersionMock = vi.fn(() => neverResolve);
-    useVersionStore.setState({ createVersion: createVersionMock } as any);
-
-    render(<CreateVersionModal isOpen={true} onClose={vi.fn()} />);
-
-    const createButton = screen.getByRole('button', { name: /Create version/i });
-    fireEvent.click(createButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Creating/)).toBeInTheDocument();
-    });
-  });
-
-  it('calls onClose after successful creation', async () => {
-    const { getComponentFromRegistry } = await import('../public/utils/componentRegistry');
-    (getComponentFromRegistry as ReturnType<typeof vi.fn>).mockReturnValue(() => null);
-
-    const createVersionMock = vi.fn(() => Promise.resolve('1.3'));
     useVersionStore.setState({ createVersion: createVersionMock } as any);
 
     const onClose = vi.fn();
@@ -143,8 +87,116 @@ describe('CreateVersionModal', () => {
       fireEvent.click(createButton);
     });
 
-    await waitFor(() => {
-      expect(onClose).toHaveBeenCalled();
+    // Modal should close immediately
+    expect(onClose).toHaveBeenCalled();
+
+    // Store should reflect creation-in-progress
+    const state = useVersionStore.getState();
+    expect(state.isCreatingVersion).toBe(true);
+    expect(state.creatingVersionId).toBe('1.3');
+    expect(state.creationSteps).toHaveLength(3);
+    expect(state.creationStepStatuses[0]).toBe('active');
+    expect(state.creationStepStatuses[1]).toBe('pending');
+    expect(state.creationStepStatuses[2]).toBe('pending');
+  });
+
+  it('populates step labels that include the version numbers', async () => {
+    const neverResolve = new Promise<string>(() => {});
+    const createVersionMock = vi.fn(() => neverResolve);
+    useVersionStore.setState({ createVersion: createVersionMock } as any);
+
+    const onClose = vi.fn();
+    render(<CreateVersionModal isOpen={true} onClose={onClose} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Create version/i }));
+
+    const { creationSteps } = useVersionStore.getState();
+    expect(creationSteps[0].activeLabel).toMatch(/Scaffolding v1\.3/);
+    expect(creationSteps[1].activeLabel).toMatch(/Copying design from v1\.2/);
+    expect(creationSteps[2].activeLabel).toMatch(/Registering version/);
+  });
+
+  it('advances steps through the store during background orchestration', async () => {
+    const { getComponentFromRegistry } = await import('../public/utils/componentRegistry');
+    (getComponentFromRegistry as ReturnType<typeof vi.fn>).mockReturnValue(() => null);
+
+    const createVersionMock = vi.fn(() => Promise.resolve('1.3'));
+    useVersionStore.setState({ createVersion: createVersionMock } as any);
+
+    const onClose = vi.fn();
+    render(<CreateVersionModal isOpen={true} onClose={onClose} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Create version/i }));
     });
+
+    // Step 1 should be active initially
+    expect(useVersionStore.getState().creationStepStatuses[0]).toBe('active');
+
+    // Advance past step 1 timer (1750ms)
+    await act(async () => {
+      vi.advanceTimersByTime(1800);
+    });
+
+    expect(useVersionStore.getState().creationStepStatuses[0]).toBe('complete');
+    expect(useVersionStore.getState().creationStepStatuses[1]).toBe('active');
+
+    // Advance past step 2 timer (3250ms total)
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    expect(useVersionStore.getState().creationStepStatuses[1]).toBe('complete');
+    expect(useVersionStore.getState().creationStepStatuses[2]).toBe('active');
+  });
+
+  it('finishes creation and clears store state after completion', async () => {
+    const { getComponentFromRegistry } = await import('../public/utils/componentRegistry');
+    (getComponentFromRegistry as ReturnType<typeof vi.fn>).mockReturnValue(() => null);
+
+    const createVersionMock = vi.fn(() => Promise.resolve('1.3'));
+    useVersionStore.setState({ createVersion: createVersionMock } as any);
+
+    const onClose = vi.fn();
+    render(<CreateVersionModal isOpen={true} onClose={onClose} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Create version/i }));
+    });
+
+    // Advance through all timers (steps + final pause)
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    await waitFor(() => {
+      const state = useVersionStore.getState();
+      expect(state.isCreatingVersion).toBe(false);
+      expect(state.creatingVersionId).toBeNull();
+    });
+  });
+
+  it('resets form state after clicking create', async () => {
+    const neverResolve = new Promise<string>(() => {});
+    const createVersionMock = vi.fn(() => neverResolve);
+    useVersionStore.setState({ createVersion: createVersionMock } as any);
+
+    const onClose = vi.fn();
+    const { rerender } = render(<CreateVersionModal isOpen={true} onClose={onClose} />);
+
+    // Toggle major version before creating
+    fireEvent.click(screen.getByLabelText('Major version'));
+    expect(screen.getByText(/Version 2\.0/)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Create version/i }));
+    });
+
+    // Re-render with isOpen true to simulate reopening
+    rerender(<CreateVersionModal isOpen={true} onClose={onClose} />);
+
+    // Form should be reset — showing 1.3 again (not 2.0)
+    // Note: the store now has v2.0 being created, but the form resets
+    expect(screen.getByText(/Version 1\.3/)).toBeInTheDocument();
   });
 });

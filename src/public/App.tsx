@@ -1,5 +1,5 @@
 import { EuiProvider } from "@elastic/eui";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   CommentingSystem,
@@ -11,6 +11,7 @@ import {
 import { useChartTheme } from "./hooks";
 import { Homepage } from "./pages";
 import { useAppStore } from "./store/useAppStore";
+import { useDesignerSurfaceStore } from "./store/useDesignerSurfaceStore";
 import { useVersionStore } from "./store/useVersionStore";
 import { VersionedComponentLoader } from "./utils/componentLoader";
 import { TemplateLoader } from "./utils/templateLoader";
@@ -28,6 +29,28 @@ const App: React.FC = () => {
   const [isCommentingEnabled, setIsCommentingEnabled] = useState(false);
   const [showCreateVersionModal, setShowCreateVersionModal] = useState(false);
   const [isAssistantFlyoutOpen, setIsAssistantFlyoutOpen] = useState(false);
+
+  const isEmptyVersionPage = useDesignerSurfaceStore(
+    (s) => s.isEmptyPlaceholderPage
+  );
+
+  // Reset empty-page flag when switching project or version (before EmptyState mounts again).
+  useEffect(() => {
+    useDesignerSurfaceStore.getState().setEmptyPlaceholderPage(false);
+    setIsCommentingEnabled(false);
+  }, [location.pathname, currentVersion]);
+
+  useEffect(() => {
+    if (location.pathname === "/" || location.pathname.startsWith("/templates/")) {
+      useDesignerSurfaceStore.getState().setEmptyPlaceholderPage(false);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (isEmptyVersionPage) {
+      setIsCommentingEnabled(false);
+    }
+  }, [isEmptyVersionPage]);
 
   // Load appropriate chart theme CSS based on color mode
   useChartTheme(colorMode);
@@ -94,7 +117,7 @@ const App: React.FC = () => {
 
         {/* Universal Comment System Overlay */}
         <CommentingSystem
-          isEnabled={isCommentingEnabled}
+          isEnabled={isCommentingEnabled && !isEmptyVersionPage}
           onExitCommentingMode={() => setIsCommentingEnabled(false)}
         />
 
@@ -102,6 +125,7 @@ const App: React.FC = () => {
         {location.pathname !== "/" && (
           <DesignerToolbar
             isCommentingEnabled={isCommentingEnabled}
+            isCommentingDisabled={isEmptyVersionPage}
             onToggleCommenting={() => {
               console.log(
                 "Toggling comment mode from",
@@ -112,7 +136,7 @@ const App: React.FC = () => {
               setIsCommentingEnabled(!isCommentingEnabled);
             }}
             onCreateVersion={handleCreateVersion}
-            projectName={getProjectNameFromPath(location.pathname) || undefined}
+            slug={getProjectNameFromPath(location.pathname) || undefined}
           />
         )}
 

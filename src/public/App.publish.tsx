@@ -10,7 +10,7 @@ declare const __PUBLISH_PROJECT__: string;
 declare const __PUBLISH_VERSIONS__: string;
 declare const __PUBLISH_DISPLAY_NAME__: string;
 
-const projectName: string = process.env.PUBLISH_PROJECT || "";
+const slug: string = process.env.PUBLISH_PROJECT || "";
 const publishedVersions: string[] = JSON.parse(process.env.PUBLISH_VERSIONS || "[]");
 
 const usePublishChartTheme = (colorMode: "light" | "dark") => {
@@ -60,7 +60,7 @@ const PublishApp: React.FC = () => {
       >
         <div style={{ flex: 1 }}>
           <VersionedComponentLoader
-            pageName={projectName}
+            pageName={slug}
             version={currentVersion}
           />
         </div>

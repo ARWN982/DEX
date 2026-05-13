@@ -1,6 +1,9 @@
 import React from "react";
 import { getCurrentPage } from './pageUtils';
+import { CreatingVersionPage } from '../components/shared/CreatingVersionPage';
+import { PageShell } from '../components/shared/PageShell';
 import { VersionRouteLoading } from '../components/shared/VersionRouteLoading';
+import { useVersionStore } from '../store/useVersionStore';
 
 const isPublishMode = process.env.VIBE_PUBLISH_MODE === 'true';
 
@@ -174,7 +177,23 @@ const isReactComponent = (exportedItem: any): boolean => {
 };
 
 /**
- * React component wrapper that loads versioned components dynamically
+ * Transition phase for the creation → loaded component flow.
+ *
+ *  "idle"         – no creation in progress, render normally
+ *  "creating"     – creation in progress, show steps inside PageShell
+ *  "crossfading"  – creation done, cross-fade steps out / loaded content in
+ *  "settled"      – cross-fade complete, render loaded component normally
+ */
+type TransitionPhase = "idle" | "creating" | "crossfading" | "settled";
+
+const CROSSFADE_MS = 400;
+
+/**
+ * React component wrapper that loads versioned components dynamically.
+ *
+ * During version creation the loader renders a persistent PageShell whose
+ * background, project label, and version pill stay in place while only the
+ * content slot cross-fades from the creation step rows to the loaded page.
  */
 export const VersionedComponentLoader: React.FC<{
   pageName: string;
@@ -196,9 +215,38 @@ export const VersionedComponentLoader: React.FC<{
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Track whether we've ever loaded a component so we can keep it
-  // visible during subsequent version transitions instead of flashing
-  // a spinner.
+  const [phase, setPhase] = React.useState<TransitionPhase>("idle");
+
+  const isCreatingVersion = useVersionStore((s) => s.isCreatingVersion);
+  const creatingVersionId = useVersionStore((s) => s.creatingVersionId);
+
+  // Sticky flag: stays true from the moment creation starts, through the
+  // entire transition (creating → crossfading → settled) and until the
+  // loaded component is actually ready to render.  Without this, brief
+  // gaps in the phase state can let the EUI loading spinner flash.
+  const [creationActive, setCreationActive] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isCreatingVersion) {
+      setCreationActive(true);
+      setPhase("creating");
+    } else if (phase === "creating") {
+      setPhase("crossfading");
+      const timer = setTimeout(() => setPhase("settled"), CROSSFADE_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [isCreatingVersion]);
+
+  // Only drop from "settled" to "idle" once the component is loaded.
+  // This prevents the spinner from ever flashing — the shell stays
+  // visible until there's real content to show.
+  React.useEffect(() => {
+    if (phase === "settled" && !loading && Component) {
+      setPhase("idle");
+      setCreationActive(false);
+    }
+  }, [phase, loading, Component]);
+
   const componentRef = React.useRef<React.ComponentType<any> | null>(null);
 
   const onComponentLoadedRef = React.useRef(onComponentLoaded);
@@ -250,6 +298,61 @@ export const VersionedComponentLoader: React.FC<{
     };
   }, [pageName, version]);
 
+  // ── Shell-wrapped rendering during creation / cross-fade ──────────
+  // Sticky `creationActive` flag keeps the shell visible from the
+  // moment creation starts until the loaded component is ready,
+  // closing every possible gap where the spinner could flash.
+  if (creationActive || isCreatingVersion || phase === "creating" || phase === "crossfading" || phase === "settled") {
+    const componentReady = !loading && Component;
+    const showLoaded = (phase === "crossfading" || phase === "settled") && componentReady;
+    // Show the steps whenever we're in creation territory and not yet
+    // ready to show the loaded component.  This covers the brief window
+    // before the phase effect promotes us out of "idle" too.
+    const showSteps = !showLoaded;
+
+    return React.createElement(
+      PageShell,
+      { versionId: creatingVersionId || version },
+
+      React.createElement(
+        "div",
+        { style: { position: "relative" as const, width: "100%" } },
+
+        // Outgoing: creation step rows (fade out during crossfade, gone in settled)
+        showSteps &&
+          React.createElement(
+            "div",
+            {
+              style: {
+                opacity: phase === "crossfading" ? 0 : 1,
+                transition: `opacity ${CROSSFADE_MS}ms ease`,
+                position: showLoaded ? ("absolute" as const) : ("relative" as const),
+                top: 0,
+                left: 0,
+                width: "100%",
+                pointerEvents: phase === "crossfading" ? ("none" as const) : ("auto" as const),
+              },
+            },
+            React.createElement(CreatingVersionPage)
+          ),
+
+        // Incoming: loaded component
+        showLoaded &&
+          React.createElement(
+            "div",
+            {
+              style: {
+                opacity: 1,
+                transition: `opacity ${CROSSFADE_MS}ms ease`,
+              },
+            },
+            React.createElement(Component!, props)
+          )
+      )
+    );
+  }
+
+  // ── Normal rendering (no creation in progress) ────────────────────
   if (loading && !Component) {
     if (LoadingComponent) {
       return React.createElement(LoadingComponent);
@@ -263,7 +366,6 @@ export const VersionedComponentLoader: React.FC<{
       return React.createElement(FallbackComponent, props);
     }
 
-    // Show helpful message for empty pages
     const pageNameCapitalized =
       pageName.charAt(0).toUpperCase() + pageName.slice(1);
     const relativePath = `src/public/pages/${pageName}/v${version}/index.tsx`;

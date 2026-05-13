@@ -9,6 +9,18 @@ function projectDir(projectName: string) {
   return path.join(process.cwd(), 'src', 'public', 'pages', projectName);
 }
 
+function deriveDisplayName(slug: string): string {
+  return slug
+    .split('-')
+    .map(word => {
+      const trimmed = word.replace(/^_+/, '');
+      if (!trimmed) return '';
+      return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    })
+    .filter(Boolean)
+    .join(' ');
+}
+
 async function readAbout(projectName: string) {
   const dir = projectDir(projectName);
   const mdPath = path.join(dir, 'about.md');
@@ -18,8 +30,11 @@ async function readAbout(projectName: string) {
   try {
     const raw = await fs.readFile(mdPath, 'utf-8');
     const { data, content } = matter(raw);
+    // Support legacy `projectName` key from pre-rename forks
+    const slug = data.slug ?? data.projectName ?? projectName;
     return {
-      projectName: data.projectName ?? projectName,
+      slug,
+      displayName: data.displayName || deriveDisplayName(slug),
       designer: data.designer ?? '',
       pm: data.pm ?? '',
       bodyMarkdown: content.trim(),
@@ -35,8 +50,11 @@ async function readAbout(projectName: string) {
   try {
     const raw = await fs.readFile(jsonPath, 'utf-8');
     const json = JSON.parse(raw);
+    // Support legacy `projectName` key from pre-rename forks
+    const slug = json.slug ?? json.projectName ?? projectName;
     return {
-      projectName: json.projectName ?? projectName,
+      slug,
+      displayName: json.displayName || deriveDisplayName(slug),
       designer: json.designer ?? '',
       pm: json.pm ?? '',
       bodyMarkdown: json.briefDescription ?? '',
@@ -50,7 +68,8 @@ async function readAbout(projectName: string) {
   }
 
   return {
-    projectName,
+    slug: projectName,
+    displayName: deriveDisplayName(projectName),
     designer: '',
     pm: '',
     bodyMarkdown: '',
