@@ -186,6 +186,14 @@ export interface AutoDexActivityLogProps {
   lockedFilter?: 'pending-approvals' | 'rule-update-approvals';
   /** When true, groups items by action type using the card-style accordion. */
   grouped?: boolean;
+  /** When true, only shows items that have needsApproval === true (flat mode only). */
+  pendingOnly?: boolean;
+  /** Colour of the left border on reasoning summary panels. Defaults to grey (#D3DAE6). */
+  reasoningBorderColor?: string;
+  /** When true, suppresses the internal search + filter toolbar entirely. */
+  hideToolbar?: boolean;
+  /** When provided, overrides the internal type filter with these active type labels. */
+  activeTypeLabels?: string[];
 }
 
 const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
@@ -196,6 +204,10 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   hideSearchRow = false,
   lockedFilter,
   grouped = false,
+  pendingOnly = false,
+  reasoningBorderColor = '#D3DAE6',
+  hideToolbar = false,
+  activeTypeLabels,
 }) => {
   const [internalSearch, setInternalSearch] = useState('');
   const logSearch = controlledSearch !== undefined ? controlledSearch : internalSearch;
@@ -242,7 +254,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   };
 
   const filteredLogs = useMemo(() => {
-    const activeTypes = typeFilterOptions.filter((o) => o.checked === 'on').map((o) => o.label);
+    const activeTypes = activeTypeLabels !== undefined
+      ? activeTypeLabels
+      : typeFilterOptions.filter((o) => o.checked === 'on').map((o) => o.label);
 
     return MOCK_AUTODEX_LOGS.filter((log) => {
       const matchesSearch =
@@ -253,7 +267,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
       const matchesType = activeTypes.length === 0 || activeTypes.includes(typeLabel);
       return matchesSearch && matchesType;
     });
-  }, [logSearch, typeFilterOptions]);
+  }, [logSearch, typeFilterOptions, activeTypeLabels]);
 
   const filterToolbar = (
     <EuiFlexGroup gutterSize="s" responsive={false} style={{ marginBottom: 12 }} alignItems="center">
@@ -341,7 +355,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   <EuiBadge color="hollow">{log.action}</EuiBadge>
                 </EuiFlexItem>
                 {/* Approvals needed badge — only in approval mode */}
-                {!activityMode && log.needsApproval && !decision && (
+                {!activityMode && requiresApproval && log.needsApproval && !decision && (
                   <EuiFlexItem grow={false}>
                     <EuiBadge color="warning">Approvals needed</EuiBadge>
                   </EuiFlexItem>
@@ -457,7 +471,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   borderRadius: 6,
                   background: '#F7F9FF',
                   marginBottom: 10,
-                  borderLeft: '3px solid #D3DAE6',
+                  borderLeft: `3px solid ${reasoningBorderColor}`,
                 }}
               >
                 <EuiText size="xs" color="subdued" style={{ fontStyle: 'italic', marginBottom: 6 }}>
@@ -574,6 +588,8 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
     );
   };
 
+  const toolbar = hideToolbar ? null : filterToolbar;
+
   // ── Grouped render ──────────────────────────────────────────────────────────
   if (grouped) {
     const ORDER = ['Execution failure', 'Tuned false positives', 'Installed rule', 'Updated rule', 'Rule updates'];
@@ -594,7 +610,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
     return (
       <div>
-        {filterToolbar}
+        {toolbar}
         {filteredLogs.length === 0 ? (
           <EuiText textAlign="center" color="subdued">
             <p>No activities match your filters.</p>
@@ -650,15 +666,19 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   }
 
   // ── Flat render (default) ───────────────────────────────────────────────────
+  const displayLogs = pendingOnly
+    ? filteredLogs.filter((l) => l.needsApproval && !approvalDecisions[l.id])
+    : filteredLogs;
+
   return (
     <div>
-      {filterToolbar}
-      {filteredLogs.length === 0 ? (
+      {toolbar}
+      {displayLogs.length === 0 ? (
         <EuiText textAlign="center" color="subdued">
           <p>No activities match your filters.</p>
         </EuiText>
       ) : (
-        filteredLogs.map((log, i) => renderLog(log, i, filteredLogs))
+        displayLogs.map((log, i) => renderLog(log, i, displayLogs))
       )}
     </div>
   );
