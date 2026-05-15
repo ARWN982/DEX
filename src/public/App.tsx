@@ -93,6 +93,9 @@ const App: React.FC = () => {
             {/* AutoDEX */}
             <Route path="/autodex" element={<AutoDexPage />} />
 
+            {/* SIEM Readiness */}
+            <Route path="/siem-readiness" element={<SiemReadinessPage />} />
+
             {/* Rule details route - must come before the catch-all */}
             <Route
               path="/detection-rules/create"
