@@ -19,6 +19,7 @@ import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
 import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules";
 import InboxPage from "./pages/detection-rules/v1.0/inbox";
 import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
+import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -78,7 +79,7 @@ const App: React.FC = () => {
         )}
         <div style={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<Homepage />} />
+            <Route path="/" element={<SiemReadinessPage />} />
             
             {/* Template routes */}
             <Route
