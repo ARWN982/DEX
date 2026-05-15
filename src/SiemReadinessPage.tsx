@@ -1844,11 +1844,11 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
 
   const qualityColumns: Array<EuiBasicTableColumn<QualityIndexItem>> = [
     { field: 'indexName', name: 'Indices', truncateText: true, sortable: true, width: '30%' },
-    { field: 'incompatibleFieldCount', name: 'Incompatible fields', sortable: true, width: '14%',
+    { field: 'incompatibleFieldCount', name: 'Incompatible fields', sortable: true, width: '9%',
       render: (n: number) => <EuiText size="s">{n}</EuiText> },
-    { field: 'checkedAt', name: 'Last checked', sortable: true, width: '14%',
+    { field: 'checkedAt', name: 'Last checked', sortable: true, width: '10%',
       render: (t?: number) => <EuiText size="s" color={t ? undefined : 'subdued'}>{relativeTime(t)}</EuiText> },
-    { field: 'status', name: 'Status', sortable: true, width: '12%',
+    { field: 'status', name: 'Status', sortable: true, width: '9%',
       render: (s: string) => (
         <EuiBadge color={s === 'incompatible' ? 'warning' : 'success'}>
           {s === 'incompatible' ? 'Incompatible' : 'Healthy'}
@@ -1856,7 +1856,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
       ) },
     {
       name: 'Tactics',
-      width: '16%',
+      width: '22%',
       render: (row: QualityIndexItem) => <TacticsCell tactics={getTacticsFromIndex(row.indexName)} />,
     },
     {
@@ -1866,7 +1866,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
     },
     {
       name: 'Actions',
-      width: '14%',
+      width: '10%',
       render: (row: QualityIndexItem) => (
         <EuiButtonEmpty size="xs" color="primary" flush="left" onClick={() => setFlyout({ findingName: row.indexName, rules: getTacticsFromIndex(row.indexName).length > 0 ? [{ name: `Rule targeting ${row.indexName}`, tactics: getTacticsFromIndex(row.indexName), status: 'no-action' }] : [] })} data-test-subj={`siemReadiness-qualityRulesAffected-${row.id}`}>
           View Data quality
@@ -2005,19 +2005,31 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
               </EuiFlexItem>
             </EuiFlexGroup>
 
-            {/* Accordions */}
+            {/* Accordions — custom expandable rows (EuiAccordion forceState is unreliable) */}
             <EuiPanel hasBorder paddingSize="none" style={{ overflow: 'hidden' }}>
               {filteredCategories.map((cat, idx) => {
                 const incompatFields = cat.items.reduce((s, i) => s + i.incompatibleFieldCount, 0);
                 const affected = cat.items.filter((i) => i.status === 'incompatible').length;
                 const isOpen = openAccordions[cat.category] ?? false;
+                const toggle = () => setOpenAccordions((prev) => ({ ...prev, [cat.category]: !prev[cat.category] }));
                 return (
                   <div key={cat.category}>
-                    <EuiAccordion
-                      id={`quality-accordion-${cat.category}`}
-                      buttonContent={<EuiText size="s" style={{ fontWeight: 600 }}>{cat.category}</EuiText>}
-                      extraAction={
-                        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ paddingRight: 16 }}>
+                    {/* Row header */}
+                    <EuiFlexGroup
+                      alignItems="center"
+                      gutterSize="none"
+                      responsive={false}
+                      style={{ padding: '14px 16px', cursor: 'pointer' }}
+                      onClick={toggle}
+                    >
+                      <EuiFlexItem grow={false} style={{ marginRight: 8 }}>
+                        <EuiIcon type={isOpen ? 'arrowDown' : 'arrowRight'} size="s" color="text" />
+                      </EuiFlexItem>
+                      <EuiFlexItem>
+                        <EuiText size="s" style={{ fontWeight: 600 }}>{cat.category}</EuiText>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false} onClick={(e) => e.stopPropagation()}>
+                        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ paddingRight: 0 }}>
                           <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Status:</EuiText></EuiFlexItem>
                           <EuiFlexItem grow={false} style={{ marginLeft: 4 }}>{categoryStatusBadge(incompatFields)}</EuiFlexItem>
                           <EuiFlexItem grow={false} style={{ margin: '0 8px' }}>{metaDivider}</EuiFlexItem>
@@ -2029,13 +2041,11 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                             <EuiText size="xs" color="subdued">Affected indices: <strong style={{ color: '#1d2a3e' }}>{affected}/{cat.items.length}</strong></EuiText>
                           </EuiFlexItem>
                         </EuiFlexGroup>
-                      }
-                      style={{ padding: '14px 16px' }}
-                      paddingSize="none"
-                      borders="none"
-                      forceState={isOpen ? 'open' : 'closed'}
-                      onToggle={() => setOpenAccordions((prev) => ({ ...prev, [cat.category]: !prev[cat.category] }))}
-                    >
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+
+                    {/* Expanded content */}
+                    {isOpen && (
                       <div style={{ padding: '0 16px 16px' }}>
                         <EuiInMemoryTable
                           items={cat.items}
@@ -2045,7 +2055,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                           tableLayout="auto"
                         />
                       </div>
-                    </EuiAccordion>
+                    )}
                     {idx < filteredCategories.length - 1 && <EuiHorizontalRule margin="none" />}
                   </div>
                 );
@@ -2196,25 +2206,23 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
           </p>
         </EuiText>
         <EuiSpacer size="xs" />
-        <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
+        <EuiText size="s">
           {row.volumeBaseline !== null && row.volumeCurrent !== null && (
-            <EuiFlexItem grow={false}>
-              <EuiBadge color="hollow">
-                7d avg: {row.volumeBaseline.toLocaleString()}/hr → current: {row.volumeCurrent.toLocaleString()}/hr
-              </EuiBadge>
-            </EuiFlexItem>
+            <p style={{ margin: '2px 0' }}>
+              <strong>7d avg:</strong> {row.volumeBaseline.toLocaleString()}/hr → <strong>Current:</strong> {row.volumeCurrent.toLocaleString()}/hr
+            </p>
           )}
           {row.p95Latency !== null && (
-            <EuiFlexItem grow={false}>
-              <EuiBadge color="hollow">P95 latency: {row.p95Latency} min</EuiBadge>
-            </EuiFlexItem>
+            <p style={{ margin: '2px 0' }}>
+              <strong>P95 latency:</strong> {row.p95Latency} min
+            </p>
           )}
           {platform === '—' && (
-            <EuiFlexItem grow={false}>
-              <EuiBadge color="hollow">Platform unmapped</EuiBadge>
-            </EuiFlexItem>
+            <p style={{ margin: '2px 0' }}>
+              <strong>Platform:</strong> unmapped
+            </p>
           )}
-        </EuiFlexGroup>
+        </EuiText>
       </EuiPanel>
     );
   });
@@ -2568,15 +2576,11 @@ const SiemReadinessPage: React.FC = () => {
 
               {/* Page header */}
               <div style={{ padding: '12px 24px 4px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                  <EuiFlexItem grow={false}>
-                    <EuiTitle size="m"><h1 style={{ fontSize: '1.35rem' }}>SIEM Readiness</h1></EuiTitle>
-                  </EuiFlexItem>
-                  <EuiFlexItem grow={false}>
-                    <EuiBadge color="danger">Issues detected</EuiBadge>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-                <EuiButtonEmpty size="s" iconType="gear">Configurations</EuiButtonEmpty>
+                <EuiTitle size="m"><h1 style={{ fontSize: '1.35rem' }}>SIEM Readiness</h1></EuiTitle>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <AddToChatButton />
+                  <EuiButtonEmpty size="s" iconType="gear">Configurations</EuiButtonEmpty>
+                </div>
               </div>
 
               <EuiPageSection paddingSize="l" style={{ paddingTop: 6 }}>
