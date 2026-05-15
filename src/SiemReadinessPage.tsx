@@ -1124,83 +1124,40 @@ const CategoryAccordion: React.FC<CategoryAccordionProps> = ({ category, items, 
   );
 };
 
-// ─── Rule donut chart ─────────────────────────────────────────────────────────
+// ─── Rule coverage bar ────────────────────────────────────────────────────────
 
-interface RuleDonutChartProps { covered: number; uncovered: number }
+interface RuleCoverageBarProps { covered: number; uncovered: number }
 
-const RuleDonutChart: React.FC<RuleDonutChartProps> = ({ covered, uncovered }) => {
-  const total = covered + uncovered;
-  const size = 180;
-  const cx = size / 2;
-  const cy = size / 2;
-  const r = 68;
-  const strokeWidth = 24;
-
-  // Build arc path for a segment: startAngle → endAngle (radians, 0 = top, clockwise)
-  const describeArc = (startDeg: number, endDeg: number): string => {
-    const toRad = (d: number) => ((d - 90) * Math.PI) / 180;
-    const x1 = cx + r * Math.cos(toRad(startDeg));
-    const y1 = cy + r * Math.sin(toRad(startDeg));
-    const x2 = cx + r * Math.cos(toRad(endDeg));
-    const y2 = cy + r * Math.sin(toRad(endDeg));
-    const large = endDeg - startDeg > 180 ? 1 : 0;
-    return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
-  };
-
-  // Angles
-  const coveredDeg  = total > 0 ? (covered  / total) * 360 : 0;
-  const uncoveredDeg = total > 0 ? (uncovered / total) * 360 : 360;
-
-  // Teal for covered (#00BFB3), orange for uncovered (#FF7E62)
-  const teal   = '#00BFB3';
-  const orange = '#FF7E62';
-  const gray   = '#D3DAE6';
+const RuleCoverageBar: React.FC<RuleCoverageBarProps> = ({ covered, uncovered }) => {
+  const total   = covered + uncovered;
+  const red     = '#BD271E';
+  const green   = '#017D73';
 
   return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size}>
-        {total === 0 ? (
-          // Full gray circle when no data
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke={gray} strokeWidth={strokeWidth} />
-        ) : coveredDeg === 360 ? (
-          // All covered — full teal circle
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke={teal} strokeWidth={strokeWidth} />
-        ) : uncoveredDeg === 360 ? (
-          // All uncovered — full orange circle
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke={orange} strokeWidth={strokeWidth} />
-        ) : (
-          <>
-            {/* Covered arc (teal) — starts at 0° */}
-            <path
-              d={describeArc(0, coveredDeg - 0.5)}
-              fill="none"
-              stroke={teal}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-            />
-            {/* Uncovered arc (orange) */}
-            <path
-              d={describeArc(coveredDeg + 0.5, 360 - 0.5)}
-              fill="none"
-              stroke={orange}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-            />
-          </>
+    <div style={{ paddingLeft: 24, minWidth: 200 }}>
+      {/* Stat */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, lineHeight: 1 }}>
+        <span style={{ fontSize: 36, fontWeight: 700, color: red, lineHeight: 1 }}>
+          {uncovered}
+        </span>
+        <span style={{ fontSize: 36, fontWeight: 700, color: '#1d2a3e', lineHeight: 1 }}>
+          /{total}
+        </span>
+      </div>
+      <EuiSpacer size="xs" />
+      <EuiText size="s" color="subdued" style={{ fontWeight: 400 }}>
+        rules are missing integrations
+      </EuiText>
+
+      {/* Bar */}
+      <EuiSpacer size="s" />
+      <div style={{ height: 6, borderRadius: 3, overflow: 'hidden', display: 'flex', background: '#D3DAE6' }}>
+        {uncovered > 0 && (
+          <div style={{ width: `${(uncovered / total) * 100}%`, background: red }} />
         )}
-      </svg>
-      {/* Center label */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        pointerEvents: 'none',
-      }}>
-        <span style={{ fontSize: 28, fontWeight: 700, lineHeight: 1, color: '#1d2a3e' }}>
-          {total}
-        </span>
-        <span style={{ fontSize: 11, color: '#69707D', textAlign: 'center', marginTop: 4, maxWidth: 80, lineHeight: 1.3 }}>
-          total enabled rules
-        </span>
+        {covered > 0 && (
+          <div style={{ flex: 1, background: green }} />
+        )}
       </div>
     </div>
   );
@@ -1595,12 +1552,12 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
         The following table shows the total number of enabled rules, and those with missing or disabled integrations.
       </EuiText>
 
-      {/* ── Donut chart + table layout ── */}
+      {/* ── Coverage bar + table layout ── */}
       <EuiFlexGroup alignItems="center" gutterSize="xl" responsive={false} style={{ marginBottom: 8 }}>
 
-        {/* Donut chart */}
-        <EuiFlexItem grow={false}>
-          <RuleDonutChart covered={coverage?.coveredRules.length ?? 0} uncovered={coverage?.uncoveredRules.length ?? 0} />
+        {/* Coverage bar */}
+        <EuiFlexItem grow={false} style={{ minWidth: 220 }}>
+          <RuleCoverageBar covered={coverage?.coveredRules.length ?? 0} uncovered={coverage?.uncoveredRules.length ?? 0} />
         </EuiFlexItem>
 
         {/* Integration status table */}
@@ -1618,10 +1575,10 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                   <EuiHealth color={row.statusColor}>{label}</EuiHealth>
                 ),
               },
-              { field: 'count', name: '# of rules associated', width: '180px' },
+              { field: 'count', name: '# of rules associated', width: '120px' },
               {
                 name: 'Actions',
-                width: '180px',
+                width: '140px',
                 render: (row: { statusColor: string; label: string; count: number; id: string }) => (
                   <EuiButtonEmpty size="xs" color="primary" data-test-subj={`siemReadiness-viewIntegrations-${row.id}`}>
                     View Integrations
