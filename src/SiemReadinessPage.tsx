@@ -39,6 +39,7 @@ import {
   EuiSpacer,
   EuiStat,
   EuiTab,
+  EuiTablePagination,
   EuiTabs,
   EuiText,
   EuiTitle,
@@ -799,11 +800,15 @@ const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
   // Multi-select state (Change 3)
   const [selectedFindings, setSelectedFindings] = useState<Set<string>>(new Set());
   const [toasts, setToasts] = useState<Array<{ id: string; title: string; color: 'success' | 'danger' }>>([]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
 
   const actions = useMemo(
     () => allActions.filter((a) => activeCats.has(a.pillar) && activeSevs.has(a.severity)),
     [allActions, activeCats, activeSevs]
   );
+
+  const pagedActions = actions.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   // Select-all state: none | indeterminate | all
   const allSelected   = actions.length > 0 && selectedFindings.size === actions.length;
@@ -965,7 +970,7 @@ const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
         />
       ) : (
         <EuiFlexGroup direction="column" gutterSize="s" responsive={false} data-test-subj="siemReadiness-actionsList">
-          {actions.map((action) => {
+          {pagedActions.map((action) => {
             const pillarLabel = { coverage: 'Coverage', quality: 'Quality', continuity: 'Continuity', retention: 'Retention' }[action.pillar].toUpperCase();
             const borderColor = action.severity === 'critical' ? '#ffc9c2' : '#FEECB3';
             const now = new Date();
@@ -1068,6 +1073,21 @@ const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
             );
           })}
         </EuiFlexGroup>
+      )}
+
+      {actions.length > 0 && (
+        <>
+          <EuiSpacer size="m" />
+          <EuiTablePagination
+            pageCount={Math.ceil(actions.length / pageSize)}
+            activePage={pageIndex}
+            onChangePage={(p) => setPageIndex(p)}
+            itemsPerPage={pageSize}
+            itemsPerPageOptions={[3, 5, 10]}
+            onChangeItemsPerPage={(s) => { setPageSize(s); setPageIndex(0); }}
+            data-test-subj="siemReadiness-actionsPagination"
+          />
+        </>
       )}
     </>
   );
