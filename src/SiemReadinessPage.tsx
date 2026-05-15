@@ -1137,7 +1137,7 @@ const RuleCoverageBar: React.FC<RuleCoverageBarProps> = ({ covered, uncovered })
     <div style={{ paddingLeft: 24, minWidth: 200 }}>
       {/* Stat */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, lineHeight: 1 }}>
-        <span style={{ fontSize: 36, fontWeight: 700, color: red, lineHeight: 1 }}>
+        <span style={{ fontSize: 36, fontWeight: 700, color: '#1d2a3e', lineHeight: 1 }}>
           {uncovered}
         </span>
         <span style={{ fontSize: 36, fontWeight: 700, color: '#1d2a3e', lineHeight: 1 }}>
@@ -1556,7 +1556,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
       <EuiFlexGroup alignItems="center" gutterSize="xl" responsive={false} style={{ marginBottom: 8 }}>
 
         {/* Coverage bar */}
-        <EuiFlexItem grow={false} style={{ minWidth: 220 }}>
+        <EuiFlexItem grow={false} style={{ minWidth: 418 }}>
           <RuleCoverageBar covered={coverage?.coveredRules.length ?? 0} uncovered={coverage?.uncoveredRules.length ?? 0} />
         </EuiFlexItem>
 
@@ -2389,11 +2389,11 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
             items={retentionFindings}
             columns={[
               { field: 'category', name: 'Log category' },
-              { field: 'actualDays', name: 'Current retention',
+              { field: 'actualDays', name: 'Current retention', width: '120px',
                 render: (days: number) => <EuiText size="s">{days > 0 ? `${days} days` : 'Not configured'}</EuiText>,
               },
               {
-                field: 'benchmarkDays', name: 'Benchmark',
+                field: 'benchmarkDays', name: 'Benchmark', width: '100px',
                 render: (days: number, row: RetentionFinding) => (
                   <EuiToolTip content={RETENTION_BENCHMARK_COMPLIANCE[days] ?? ''} data-test-subj={`siemReadiness-retentionBenchmarkTooltip-${row.id}`}>
                     <EuiText size="s" color="subdued" style={{ cursor: 'help', borderBottom: '1px dashed #98A2B3' }}>{days} days</EuiText>
@@ -2401,7 +2401,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
                 ),
               },
               {
-                field: 'status', name: 'Status',
+                field: 'status', name: 'Status', width: '140px',
                 render: (status: string) => (
                   <EuiBadge color={status === 'below' ? 'warning' : 'success'}>
                     {status === 'below' ? 'Below benchmark' : 'Meets benchmark'}
@@ -2430,7 +2430,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
                 render: () => null,
               },
               {
-                name: 'Action', width: '160px',
+                name: 'Action', width: '150px',
                 render: (row: RetentionFinding) =>
                   actionItemIds.has('retention-benchmark')
                     ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-retentionInActions-${row.id}`}>Actions</EuiButtonEmpty>
@@ -2566,27 +2566,20 @@ const SiemReadinessPage: React.FC = () => {
           <EuiFlexItem>
             <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'hidden', minHeight: 'calc(100vh - 64px)' }}>
 
-              {/* Page header — matches real Kibana: title + EuiBetaBadge + Configurations */}
-              <EuiPageHeader
-                pageTitle={
-                  <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                    <EuiFlexItem grow={false}>SIEM Readiness</EuiFlexItem>
-                    <EuiFlexItem grow={false}>
-                      <EuiBadge color="danger">Issues detected</EuiBadge>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
-                }
-                responsive={false}
-                paddingSize="l"
-                bottomBorder={false}
-                rightSideItems={[
-                  <EuiButtonEmpty size="s" iconType="gear" key="config">
-                    Configurations
-                  </EuiButtonEmpty>,
-                ]}
-              />
+              {/* Page header */}
+              <div style={{ padding: '12px 24px 4px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                  <EuiFlexItem grow={false}>
+                    <EuiTitle size="m"><h1 style={{ fontSize: '1.35rem' }}>SIEM Readiness</h1></EuiTitle>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiBadge color="danger">Issues detected</EuiBadge>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+                <EuiButtonEmpty size="s" iconType="gear">Configurations</EuiButtonEmpty>
+              </div>
 
-              <EuiPageSection paddingSize="l">
+              <EuiPageSection paddingSize="l" style={{ paddingTop: 6 }}>
 
                 {/* Overall status card — stats + pillar summaries */}
                 <OverallStatusCard summary={summary} />
