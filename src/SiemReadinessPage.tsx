@@ -1717,7 +1717,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                         <EuiText size="s" style={{ fontWeight: 600 }}>{row.category}</EuiText>
                       </EuiFlexItem>
                       {/* Right-side stats — stop propagation so links don't toggle */}
-                      <EuiFlexItem grow={false} onClick={(e) => e.stopPropagation()}>
+                      <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                         <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
                           <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Coverage:</EuiText></EuiFlexItem>
                           <EuiFlexItem grow={false} style={{ marginLeft: 4 }}>{coverageBadge(row.statusLabel)}</EuiFlexItem>
@@ -2081,7 +2081,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                       <EuiFlexItem>
                         <EuiText size="s" style={{ fontWeight: 600 }}>{cat.category}</EuiText>
                       </EuiFlexItem>
-                      <EuiFlexItem grow={false} onClick={(e) => e.stopPropagation()}>
+                      <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                         <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ paddingRight: 0 }}>
                           <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Status:</EuiText></EuiFlexItem>
                           <EuiFlexItem grow={false} style={{ marginLeft: 4 }}>{categoryStatusBadge(incompatFields)}</EuiFlexItem>
