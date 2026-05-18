@@ -14,6 +14,13 @@ import {
   EuiCard,
   EuiCheckbox,
   EuiCode,
+  EuiSwitch,
+  EuiModal,
+  EuiModalBody,
+  EuiModalFooter,
+  EuiModalHeader,
+  EuiModalHeaderTitle,
+  EuiOverlayMask,
   EuiEmptyPrompt,
   EuiGlobalToastList,
   EuiFieldSearch,
@@ -27,14 +34,15 @@ import {
   EuiInMemoryTable,
   EuiLink,
   EuiListGroup,
-  EuiListGroupItem,
-  EuiLoadingSpinner,
+  EuiListGroupItem,  EuiLoadingSpinner,
   EuiNotificationBadge,
   EuiPanel,
   EuiPageHeader,
   EuiPageSection,
   EuiPopover,
   EuiProgress,
+  EuiFieldText,
+  EuiSelect,
   EuiSelectable,
   EuiSpacer,
   EuiStat,
@@ -802,6 +810,7 @@ const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
   const [toasts, setToasts] = useState<Array<{ id: string; title: string; color: 'success' | 'danger' }>>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   const actions = useMemo(
     () => allActions.filter((a) => activeCats.has(a.pillar) && activeSevs.has(a.severity)),
@@ -1034,13 +1043,37 @@ const ActionsPanel: React.FC<ActionsPanelProps> = (props) => {
                           </EuiButtonEmpty>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
-                          <EuiButtonIcon
-                            size="xs"
-                            iconType="boxesHorizontal"
-                            color="primary"
-                            aria-label="More actions"
-                            data-test-subj={`siemReadiness-moreActions-${action.id}`}
-                          />
+                          <EuiPopover
+                            isOpen={openPopoverId === action.id}
+                            closePopover={() => setOpenPopoverId(null)}
+                            panelPaddingSize="s"
+                            anchorPosition="downRight"
+                            button={
+                              <EuiButtonIcon
+                                size="xs"
+                                iconType="boxesHorizontal"
+                                color="primary"
+                                aria-label="More actions"
+                                data-test-subj={`siemReadiness-moreActions-${action.id}`}
+                                onClick={() => setOpenPopoverId(openPopoverId === action.id ? null : action.id)}
+                              />
+                            }
+                          >
+                            <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                              <EuiListGroupItem
+                                iconType="productAgent"
+                                label="Add to chat"
+                                size="s"
+                                onClick={() => setOpenPopoverId(null)}
+                              />
+                              <EuiListGroupItem
+                                iconType="folderClosed"
+                                label="Create a case"
+                                size="s"
+                                onClick={() => setOpenPopoverId(null)}
+                              />
+                            </EuiListGroup>
+                          </EuiPopover>
                         </EuiFlexItem>
                       </EuiFlexGroup>
                     </EuiFlexItem>
@@ -1166,7 +1199,7 @@ const RuleCoverageBar: React.FC<RuleCoverageBarProps> = ({ covered, uncovered })
       </div>
       <EuiSpacer size="xs" />
       <EuiText size="s" color="subdued" style={{ fontWeight: 400 }}>
-        rules are missing integrations
+        rules are missing or have disabled integrations
       </EuiText>
 
       {/* Bar */}
@@ -1213,7 +1246,7 @@ function getTacticsFromIndex(indexName: string): string[] {
   return integration ? (INTEGRATION_MITRE[integration] ?? []) : [];
 }
 function getPlatformFromIndex(indexName: string): string {
-  return INDEX_PREFIX_TO_PLATFORM[getIndexPrefix(indexName)] ?? '—';
+  return INDEX_PREFIX_TO_PLATFORM[getIndexPrefix(indexName)] ?? '';
 }
 
 const CATEGORY_TO_INTEGRATION: Record<string, string> = {
@@ -1230,7 +1263,7 @@ function getTacticsFromCategory(category: string): string[] {
 
 // Shared tactics cell: shows up to 3 badges + "+N more" tooltip
 const TacticsCell: React.FC<{ tactics: string[] }> = ({ tactics }) => {
-  if (tactics.length === 0) return <EuiText size="s" color="subdued">—</EuiText>;
+  if (tactics.length === 0) return null;
   const visible = tactics.slice(0, 3);
   const rest    = tactics.slice(3);
   return (
@@ -1288,7 +1321,7 @@ const RulesAffectedFlyout: React.FC<RulesAffectedFlyoutProps> = ({ findingName, 
                   ? <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
                       {tactics.map((t) => <EuiFlexItem key={t} grow={false}><EuiBadge color="primary">{t}</EuiBadge></EuiFlexItem>)}
                     </EuiFlexGroup>
-                  : <EuiText size="s" color="subdued">—</EuiText>
+                  : null
               ),
             },
             {
@@ -1428,7 +1461,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
       width: '120px',
       render: (row: CategoryAccordionItem) => {
         const count = rulesByPkg.get(row.id);
-        if (!count) return <EuiText size="s" color="subdued">—</EuiText>;
+        if (!count) return null;
         const tactics = INTEGRATION_MITRE[row.id] ?? [];
         const flyoutRules: FlyoutRule[] = Array.from({ length: count }, (_, i) => ({
           name: `Rule using ${row.name} (${i + 1})`,
@@ -1693,7 +1726,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                             <EuiText size="xs" color="subdued">Rules affected:{' '}
                               {row.rulesCount > 0
                                 ? <EuiLink onClick={() => onAskAI?.(`What rules are affected by missing ${row.category} data and how do I fix it?`)}><strong>{row.rulesCount}</strong></EuiLink>
-                                : <strong style={{ color: '#1d2a3e' }}>—</strong>
+                                : null
                               }
                             </EuiText>
                           </EuiFlexItem>
@@ -1739,7 +1772,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                                 render: (count: number, sub: PlatformSubRow) =>
                                   count > 0
                                     ? <EuiLink onClick={() => onAskAI?.(`What rules are affected by issues with ${sub.name}?`)}>{count}</EuiLink>
-                                    : <EuiText size="s" color="subdued">—</EuiText>,
+                                    : null,
                               },
                               {
                                 field: 'tactics',
@@ -1749,7 +1782,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                                     ? <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
                                         {tactics.map((t) => <EuiFlexItem key={t} grow={false}><EuiBadge color="hollow">{t}</EuiBadge></EuiFlexItem>)}
                                       </EuiFlexGroup>
-                                    : <EuiText size="s" color="subdued">—</EuiText>,
+                                    : null,
                               },
                               {
                                 field: 'action',
@@ -1758,7 +1791,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                                 render: (action: PlatformSubRow['action']) =>
                                   action
                                     ? <EuiButtonEmpty size="xs" color="primary">{action}</EuiButtonEmpty>
-                                    : <EuiText size="s" color="subdued">—</EuiText>,
+                                    : null,
                               },
                             ] as Array<EuiBasicTableColumn<PlatformSubRow>>}
                             itemId="id"
@@ -1882,7 +1915,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
     {
       name: 'Platform',
       width: '10%',
-      render: (row: QualityIndexItem) => <EuiBadge color="hollow">{getPlatformFromIndex(row.indexName)}</EuiBadge>,
+      render: (row: QualityIndexItem) => { const p = getPlatformFromIndex(row.indexName); return p ? <EuiBadge color="hollow">{p}</EuiBadge> : null; },
     },
     {
       name: 'Actions',
@@ -2011,7 +2044,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                   onChange={(e) => setSearch(e.target.value)}
                   isClearable
                   compressed
-                  style={{ maxWidth: 240 }}
+                  fullWidth
                 />
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
@@ -2103,7 +2136,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                 {
                   field: 'issueType', name: 'Issue',
                   render: (type: string) => {
-                    const colorMap: Record<string, string> = { missing: 'danger', type_mismatch: 'warning', sparse: 'hollow' };
+                    const colorMap: Record<string, string> = { missing: 'danger', type_mismatch: 'warning', sparse: 'warning' };
                     const labelMap: Record<string, string> = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
                     return <EuiBadge color={colorMap[type] ?? 'hollow'}>{labelMap[type] ?? type}</EuiBadge>;
                   },
@@ -2237,7 +2270,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
               <strong>P95 latency:</strong> {row.p95Latency} min
             </p>
           )}
-          {platform === '—' && (
+          {platform === '' && (
             <p style={{ margin: '2px 0' }}>
               <strong>Platform:</strong> unmapped
             </p>
@@ -2318,7 +2351,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
           },
           {
             name: 'Platform', width: '110px',
-            render: (row: ContinuityFinding) => <EuiBadge color="hollow">{getPlatformFromIndex(row.dataset)}</EuiBadge>,
+            render: (row: ContinuityFinding) => { const p = getPlatformFromIndex(row.dataset); return p ? <EuiBadge color="hollow">{p}</EuiBadge> : null; },
           },
           {
             field: 'rulesAffected', name: 'Rules affected', width: '110px',
@@ -2444,7 +2477,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
                     ? <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
                         {tactics.map((t) => <EuiFlexItem key={t} grow={false}><EuiBadge color="hollow">{t}</EuiBadge></EuiFlexItem>)}
                       </EuiFlexGroup>
-                    : <EuiText size="s" color="subdued">—</EuiText>;
+                    : null;
                 },
               },
               {
@@ -2475,10 +2508,55 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+const ALL_CATEGORY_NAMES = ['Endpoint', 'Identity', 'Network', 'Cloud', 'Application/SaaS'] as const;
+
+interface PlatformConfig { id: string; name: string; category: string; derivedFrom: string; enabled: boolean }
+
+const DEFAULT_PLATFORMS: PlatformConfig[] = [
+  { id: 'palo-alto-prod',    name: 'Palo Alto Prod',    category: 'Network',          enabled: true,  derivedFrom: 'Detected from network.type: paloalto + observer.name: fw-prod-01' },
+  { id: 'vpn-corp',          name: 'VPN/Corp',           category: 'Network',          enabled: true,  derivedFrom: 'Detected from observer.type: vpn + host.name: corp-vpn-01' },
+  { id: 'aws-prod',          name: 'AWS Prod',           category: 'Cloud',            enabled: true,  derivedFrom: 'Detected from cloud.provider: aws + cloud.account.id: 123456' },
+  { id: 'aws-biztech',       name: 'AWS BizTech',        category: 'Cloud',            enabled: true,  derivedFrom: 'Detected from cloud.provider: aws + cloud.account.id: 789012' },
+  { id: 'macos-endpoints',   name: 'macOS Endpoints',    category: 'Endpoint',         enabled: true,  derivedFrom: 'Detected from host.os.type: macos + host.domain: corp.local' },
+  { id: 'windows-endpoints', name: 'Windows Endpoints',  category: 'Endpoint',         enabled: true,  derivedFrom: 'Detected from host.os.type: windows + host.domain: corp.local' },
+  { id: 'okta',              name: 'Okta',               category: 'Identity',         enabled: true,  derivedFrom: 'Detected from event.dataset: okta.system' },
+  { id: 'azure-ad',          name: 'Azure AD',           category: 'Identity',         enabled: true,  derivedFrom: 'Detected from event.dataset: azure.auditlogs' },
+  { id: 'google-workspace',  name: 'Google Workspace',   category: 'Application/SaaS', enabled: true,  derivedFrom: 'Detected from event.dataset: google_workspace.admin' },
+  { id: 'salesforce',        name: 'Salesforce',         category: 'Application/SaaS', enabled: true,  derivedFrom: 'Detected from event.dataset: salesforce.apex' },
+];
+
 const SiemReadinessPage: React.FC = () => {
   type SiemTab = 'actions' | VisibilityTabId;
   const [selectedTab, setSelectedTab] = useState<SiemTab>('actions');
   const { loading, coverage, categories, integrations, qualityResults, pipelines, retentionItems, ruleFieldIssues } = useSiemReadinessData();
+
+  // ── Configuration modal ───────────────────────────────────────────────────
+  const [configOpen, setConfigOpen] = useState(false);
+  const [enabledCategories, setEnabledCategories] = useState<Set<string>>(new Set(ALL_CATEGORY_NAMES));
+  const [tempCategories, setTempCategories] = useState<Set<string>>(new Set(ALL_CATEGORY_NAMES));
+  const [platforms, setPlatforms] = useState<PlatformConfig[]>(DEFAULT_PLATFORMS);
+  const [tempPlatforms, setTempPlatforms] = useState<PlatformConfig[]>(DEFAULT_PLATFORMS);
+
+  const openConfig = () => {
+    setTempCategories(new Set(enabledCategories));
+    setTempPlatforms(platforms.map(p => ({ ...p })));
+    setConfigOpen(true);
+  };
+  const saveConfig = () => {
+    setEnabledCategories(new Set(tempCategories));
+    setPlatforms(tempPlatforms);
+    setConfigOpen(false);
+  };
+  const toggleTemp = (cat: string) => setTempCategories(prev => {
+    const next = new Set(prev);
+    next.has(cat) ? next.delete(cat) : next.add(cat);
+    return next;
+  });
+  const updateTempPlatform = (id: string, patch: Partial<PlatformConfig>) =>
+    setTempPlatforms(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+  const [editingPlatformId, setEditingPlatformId] = useState<string | null>(null);
+
+  const filteredCategories = categories.filter(c => enabledCategories.has(c.category));
 
   // ── Compute ReadinessSummary ──────────────────────────────────────────────
   const summary: ReadinessSummary = useMemo(() => {
@@ -2599,7 +2677,7 @@ const SiemReadinessPage: React.FC = () => {
                 <EuiTitle size="m"><h1 style={{ fontSize: '1.35rem' }}>SIEM Readiness</h1></EuiTitle>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <AddToChatButton />
-                  <EuiButtonEmpty size="s" iconType="gear">Configurations</EuiButtonEmpty>
+                  <EuiButtonEmpty size="s" iconType="gear" onClick={openConfig}>Configurations</EuiButtonEmpty>
                 </div>
               </div>
 
@@ -2664,13 +2742,13 @@ const SiemReadinessPage: React.FC = () => {
                     ruleFieldIssues={ruleFieldIssues}
                     pipelines={pipelines}
                     retentionItems={retentionItems}
-                    categories={categories}
+                    categories={filteredCategories}
                   />
                 )}
-                {selectedTab === 'coverage'   && <CoverageTab   coverage={coverage} categories={categories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
-                {selectedTab === 'quality'    && <QualityTab    categories={categories} qualityResults={qualityResults} ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
-                {selectedTab === 'continuity' && <ContinuityTab categories={categories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
-                {selectedTab === 'retention'  && <RetentionTab  categories={categories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />}
+                {selectedTab === 'coverage'   && <CoverageTab   coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
+                {selectedTab === 'quality'    && <QualityTab    categories={filteredCategories} qualityResults={qualityResults} ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
+                {selectedTab === 'continuity' && <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
+                {selectedTab === 'retention'  && <RetentionTab  categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />}
 
               </EuiPageSection>
             </EuiPanel>
@@ -2678,6 +2756,134 @@ const SiemReadinessPage: React.FC = () => {
 
         </EuiFlexGroup>
       </div>
+
+      {/* ── Configuration modal ── */}
+      {configOpen && (
+        <EuiOverlayMask>
+          <EuiModal onClose={() => setConfigOpen(false)} style={{ minWidth: 600, maxHeight: '85vh' }}>
+            <EuiModalHeader>
+              <EuiModalHeaderTitle>Configuration</EuiModalHeaderTitle>
+            </EuiModalHeader>
+
+            <EuiModalBody style={{ overflowY: 'auto' }}>
+
+              {/* ── Section 1: Category applicability ── */}
+              <EuiTitle size="xs"><h4>Category applicability</h4></EuiTitle>
+              <EuiSpacer size="xs" />
+              <EuiText size="s" color="subdued">Select which data source categories apply to your environment.</EuiText>
+              <EuiSpacer size="m" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px 24px' }}>
+                {ALL_CATEGORY_NAMES.map((cat) => (
+                  <EuiCheckbox
+                    key={cat}
+                    id={`config-cat-${cat}`}
+                    label={cat}
+                    checked={tempCategories.has(cat)}
+                    onChange={() => toggleTemp(cat)}
+                  />
+                ))}
+              </div>
+
+              <EuiHorizontalRule margin="l" />
+
+              {/* ── Section 2: Platform configuration ── */}
+              <EuiTitle size="xs"><h4>Platform configuration</h4></EuiTitle>
+              <EuiSpacer size="xs" />
+              <EuiText size="s" color="subdued">
+                Review auto-discovered platforms and confirm which apply to your environment.
+              </EuiText>
+              <EuiSpacer size="m" />
+
+              {/* Auto-discovered rows */}
+              {tempPlatforms.filter(p => p.derivedFrom !== 'Added manually').map((p, idx) => (
+                <React.Fragment key={p.id}>
+                  {idx > 0 && <EuiSpacer size="s" />}
+                  <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+
+                    {/* LEFT: switch */}
+                    <EuiFlexItem grow={false}>
+                      <EuiSwitch
+                        label=""
+                        showLabel={false}
+                        checked={p.enabled}
+                        onChange={() => updateTempPlatform(p.id, { enabled: !p.enabled })}
+                        aria-label={`Include ${p.name} in readiness reporting`} style={{ transform: "scale(0.8)", transformOrigin: "left center" }}
+                      />
+                    </EuiFlexItem>
+
+                    {/* MIDDLE: name + source stacked */}
+                    <EuiFlexItem>
+                      <EuiFlexGroup direction="column" gutterSize="none" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiText size="s" style={{ fontWeight: 500 }}>{p.name}</EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiText size="xs" color="subdued">{p.derivedFrom}</EuiText>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+                    </EuiFlexItem>
+
+                    {/* RIGHT: category badge */}
+                    <EuiFlexItem grow={false}>
+                      <EuiBadge color="hollow" style={{ width: 'fit-content' }}>{p.category}</EuiBadge>
+                    </EuiFlexItem>
+
+                  </EuiFlexGroup>
+                </React.Fragment>
+              ))}
+
+              {/* Manually added rows (if any) */}
+              {tempPlatforms.some(p => p.derivedFrom === 'Added manually') && (
+                <>
+                  <EuiHorizontalRule margin="m" />
+                  <EuiText size="xs" color="subdued" style={{ marginBottom: 8 }}>Manually added</EuiText>
+                  {tempPlatforms.filter(p => p.derivedFrom === 'Added manually').map((p, idx) => (
+                    <React.Fragment key={p.id}>
+                      {idx > 0 && <EuiSpacer size="s" />}
+                      <EuiPanel paddingSize="s" hasBorder>
+                        <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiSwitch
+                              label="" showLabel={false}
+                              checked={p.enabled}
+                              onChange={() => updateTempPlatform(p.id, { enabled: !p.enabled })}
+                              aria-label={`Include ${p.name} in readiness reporting`} style={{ transform: "scale(0.8)", transformOrigin: "left center" }}
+                            />
+                          </EuiFlexItem>
+                          <EuiFlexItem>
+                            <EuiFlexGroup direction="column" gutterSize="none" responsive={false}>
+                              <EuiFlexItem grow={false}>
+                                <EuiText size="s" style={{ fontWeight: 500 }}>{p.name || 'Unnamed platform'}</EuiText>
+                              </EuiFlexItem>
+                              <EuiFlexItem grow={false}>
+                                <EuiText size="xs" color="subdued">Added manually</EuiText>
+                              </EuiFlexItem>
+                            </EuiFlexGroup>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiSelect
+                              compressed value={p.category}
+                              options={ALL_CATEGORY_NAMES.map(c => ({ value: c, text: c }))}
+                              onChange={(e) => updateTempPlatform(p.id, { category: e.target.value })}
+                            />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                      </EuiPanel>
+                    </React.Fragment>
+                  ))}
+                </>
+              )}
+
+              <EuiHorizontalRule margin="l" />
+            </EuiModalBody>
+
+            <EuiModalFooter>
+              <EuiButtonEmpty onClick={() => setConfigOpen(false)}>Cancel</EuiButtonEmpty>
+              <EuiButton fill onClick={saveConfig}>Save</EuiButton>
+            </EuiModalFooter>
+          </EuiModal>
+        </EuiOverlayMask>
+      )}
     </>
   );
 };
