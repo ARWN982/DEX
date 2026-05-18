@@ -1829,11 +1829,20 @@ type QualityIndexItem = {
 
 interface QualityTabProps { categories: CategoryGroup[]; qualityResults: QualityResult[]; ruleFieldIssues: RuleFieldIssue[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus; onAskAI?: (msg: string) => void }
 
-const PLATFORM_HEALTH: Array<{ name: string; pct: number }> = [
-  { name: 'GCP',              pct: 80  },
-  { name: 'AWS Prod',         pct: 87  },
-  { name: 'Identity',         pct: 100 },
-  { name: 'macOS Endpoints',  pct: 100 },
+interface ExecutionHealthRow { id: string; rule: string; lastRun: string; status: string; execTime: string; alertTrend: string }
+
+const EXECUTION_HEALTH_ROWS: ExecutionHealthRow[] = [
+  { id: '1', rule: 'Windows Process Injection via CreateRemoteThread', lastRun: '2 min ago',  status: 'Succeeded',    execTime: '1.2s',  alertTrend: 'Firing normally'          },
+  { id: '2', rule: 'AWS CloudTrail Unauthorized API Call',             lastRun: '18 min ago', status: 'Gap detected', execTime: '2.4s',  alertTrend: 'Silent — data issue'      },
+  { id: '3', rule: 'Okta User Locked Out',                            lastRun: '5 min ago',  status: 'Timed out',    execTime: '34.8s', alertTrend: 'Silent — no alerts in 7d' },
+  { id: '4', rule: 'Endpoint Defense Evasion via Timestomping',        lastRun: '3 min ago',  status: 'Failed',       execTime: '0.8s',  alertTrend: 'Silent — no alerts in 7d' },
+];
+
+const PLATFORM_HEALTH: Array<{ name: string; healthy: number; total: number }> = [
+  { name: 'GCP',             healthy: 16, total: 20 },
+  { name: 'AWS Prod',        healthy: 20, total: 23 },
+  { name: 'Identity',        healthy: 18, total: 18 },
+  { name: 'macOS Endpoints', healthy: 15, total: 15 },
 ];
 
 const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, ruleFieldIssues, loading, actionItemIds, pillarStatus, onAskAI }) => {
@@ -1928,11 +1937,10 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
     },
   ];
 
-  const overallHealthPct = Math.round(
-    PLATFORM_HEALTH.reduce((s, p) => s + p.pct, 0) / PLATFORM_HEALTH.length
-  );
-  const healthColor = overallHealthPct < 80 ? 'danger' : overallHealthPct < 95 ? 'warning' : 'success';
-  const pctColor = (pct: number) => pct >= 95 ? 'success' : pct >= 80 ? 'warning' : 'danger';
+  const healthHexColor = (healthy: number, total: number) => {
+    const pct = total > 0 ? (healthy / total) * 100 : 100;
+    return pct < 80 ? '#BD271E' : pct < 95 ? '#CA8500' : '#017D73';
+  };
 
   if (totalIncompatible === 0 && ruleFieldIssues.length === 0) {
     return (
@@ -1960,25 +1968,67 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
     <>
       {flyout && <RulesAffectedFlyout findingName={flyout.findingName} rules={flyout.rules} onClose={() => setFlyout(null)} />}
 
-      {/* ── Rule-data health — single card with dividers (matches OverallStatusCard style) ── */}
+      {/* ── Rule-data health — single card with dividers ── */}
       <EuiPanel hasBorder hasShadow={false} paddingSize="m">
         <div style={{ display: 'flex', margin: '0 -16px' }}>
-          {[{ name: 'Overall rule-data health', pct: overallHealthPct }, ...PLATFORM_HEALTH].map(({ name, pct }, idx) => {
-            const color = pctColor(pct);
-            const hexColor = color === 'danger' ? '#BD271E' : color === 'warning' ? '#CA8500' : '#017D73';
+
+          {/* Overall stat */}
+          {(() => {
+            const issues = 9; const total = 114;
+            const pct = ((total - issues) / total) * 100;
+            const fracColor: 'warning' | 'danger' | 'success' = issues === 0 ? 'success' : pct < 80 ? 'danger' : 'warning';
+            return (
+              <React.Fragment key="overall">
+                <div style={{ flex: 1, padding: '4px 16px 8px 16px' }}>
+                  <EuiText size="s" style={{ fontWeight: 500 }}>Overall</EuiText>
+                  <EuiSpacer size="xs" />
+                  <EuiFlexGroup gutterSize="xs" alignItems="baseline" responsive={false} wrap={false}>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="m" color={fracColor} style={{ fontWeight: 500 }}>{issues}/{total}</EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="s" color="subdued">rules have issues</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  <EuiSpacer size="xs" />
+                  {issues > 0
+                    ? <EuiLink onClick={() => onAskAI?.('Show me the actions required to fix Overall rule field issues.')}><EuiText size="xs">{issues} actions required</EuiText></EuiLink>
+                    : <EuiText size="xs" color="subdued">No actions required</EuiText>
+                  }
+                </div>
+              </React.Fragment>
+            );
+          })()}
+
+          {/* Per-platform stats */}
+          {PLATFORM_HEALTH.map(({ name, healthy, total }) => {
+            const issues = total - healthy;
+            const pct = (healthy / total) * 100;
+            const fracColor: 'warning' | 'danger' | 'success' = issues === 0 ? 'success' : pct < 80 ? 'danger' : 'warning';
             return (
               <React.Fragment key={name}>
-                {idx > 0 && (
-                  <div style={{ width: 0, borderLeft: `1px solid ${euiTheme.colors.lightShade}`, flexShrink: 0, margin: '8px 0' }} />
-                )}
+                <div style={{ width: 0, borderLeft: `1px solid ${euiTheme.colors.lightShade}`, flexShrink: 0, margin: '8px 0' }} />
                 <div style={{ flex: 1, padding: '4px 16px 8px 16px' }}>
-                  <EuiText style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, color: hexColor }}>{pct}%</EuiText>
+                  <EuiText size="s" style={{ fontWeight: 500 }}>{name}</EuiText>
                   <EuiSpacer size="xs" />
-                  <EuiText size="s" color="subdued" style={{ fontWeight: 600 }}>{name}</EuiText>
+                  <EuiFlexGroup gutterSize="xs" alignItems="baseline" responsive={false} wrap={false}>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="m" color={fracColor} style={{ fontWeight: 500 }}>{issues}/{total}</EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="s" color="subdued">rules have issues</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  <EuiSpacer size="xs" />
+                  {issues > 0
+                    ? <EuiLink onClick={() => onAskAI?.(`Show me the actions required to fix ${name} rule field issues.`)}><EuiText size="xs">{issues} actions required</EuiText></EuiLink>
+                    : <EuiText size="xs" color="subdued">No actions required</EuiText>
+                  }
                 </div>
               </React.Fragment>
             );
           })}
+
         </div>
       </EuiPanel>
 
@@ -2131,7 +2181,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             <EuiBasicTable
               items={ruleFieldIssues}
               columns={[
-                { field: 'ruleName', name: 'Rule', render: (name: string) => <EuiText size="s">{name}</EuiText> },
+                { field: 'ruleName', name: 'Rule', render: (name: string) => <EuiLink href="/app/security/rules" size="s">{name}</EuiLink> },
                 { field: 'field', name: 'Field', render: (f: string) => <EuiCode>{f}</EuiCode> },
                 {
                   field: 'issueType', name: 'Issue',
@@ -2165,6 +2215,87 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             body={<EuiText size="s"><p>All enabled rules are referencing fields that exist and are correctly typed.</p></EuiText>}
           />
         )}
+      </EuiPanel>
+
+      {/* ── Detection execution health ── */}
+      <EuiSpacer size="l" />
+      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
+        <EuiTitle size="s"><h3>Detection execution health</h3></EuiTitle>
+        <EuiSpacer size="xs" />
+        <EuiText size="s" color="subdued">
+          Rules that are failing, running slowly, or have stopped producing alerts against their historical baseline.
+        </EuiText>
+        <EuiSpacer size="m" />
+
+        {EXECUTION_HEALTH_ROWS.some(r => r.status !== 'Succeeded') && (
+          <>
+            <EuiCallOut
+              color="warning"
+              iconType="warning"
+              size="s"
+              title="3 rules have execution issues — they may be running but not detecting."
+            />
+            <EuiSpacer size="m" />
+          </>
+        )}
+
+        <EuiBasicTable
+          items={EXECUTION_HEALTH_ROWS}
+          columns={[
+            {
+              field: 'rule',
+              name: 'Rule',
+              render: (name: string) => <EuiLink href="/app/security/rules">{name}</EuiLink>,
+            },
+            {
+              field: 'lastRun',
+              name: 'Last run',
+              width: '120px',
+              render: (t: string) => <EuiText size="s" color="subdued">{t}</EuiText>,
+            },
+            {
+              field: 'status',
+              name: 'Status',
+              width: '120px',
+              render: (s: string) => {
+                const colorMap: Record<string, string> = {
+                  'Succeeded': 'success',
+                  'Failed': 'danger',
+                  'Timed out': 'warning',
+                  'Gap detected': 'warning',
+                };
+                return <EuiBadge color={colorMap[s] ?? 'hollow'}>{s}</EuiBadge>;
+              },
+            },
+            {
+              field: 'execTime',
+              name: 'Execution time',
+              width: '130px',
+              render: (t: string) => {
+                const secs = parseFloat(t);
+                return <EuiText size="s" color={secs > 30 ? 'warning' : undefined}>{t}</EuiText>;
+              },
+            },
+            {
+              field: 'alertTrend',
+              name: 'Alert trend',
+              render: (trend: string) => {
+                const color = trend === 'Silent — no alerts in 7d' ? 'warning' : 'subdued';
+                return <EuiText size="s" color={color}>{trend}</EuiText>;
+              },
+            },
+            {
+              name: 'Action',
+              width: '100px',
+              render: () => (
+                <EuiButtonEmpty size="xs" iconType="popout" iconSide="right" href="/app/security/rules">
+                  View rule
+                </EuiButtonEmpty>
+              ),
+            },
+          ] as Array<EuiBasicTableColumn<ExecutionHealthRow>>}
+          itemId="id"
+        />
       </EuiPanel>
     </>
   );
