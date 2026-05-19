@@ -1970,7 +1970,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
 
           {/* Overall stat */}
           {(() => {
-            const issues = 9; const total = 114;
+            const issues: number = 9; const total = 114;
             const pct = ((total - issues) / total) * 100;
             const fracColor: 'warning' | 'danger' | 'success' = issues === 0 ? 'success' : pct < 80 ? 'danger' : 'warning';
             return (
@@ -2177,7 +2177,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             <EuiBasicTable
               items={ruleFieldIssues}
               columns={[
-                { field: 'ruleName', name: 'Rule', render: (name: string) => <EuiLink href="/app/security/rules" size="s">{name}</EuiLink> },
+                { field: 'ruleName', name: 'Rule', render: (name: string) => <EuiLink href="/app/security/rules">{name}</EuiLink> },
                 { field: 'field', name: 'Field', render: (f: string) => <EuiCode>{f}</EuiCode> },
                 {
                   field: 'issueType', name: 'Issue',
