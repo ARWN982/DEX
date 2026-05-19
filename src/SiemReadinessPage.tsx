@@ -1504,7 +1504,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
   // ── Data Coverage section ─────────────────────────────
   // PRD-specified rules affected per category (Change 6 sort order)
   const CATEGORY_RULES_COUNT: Record<string, number> = {
-    'Network': 76, 'Cloud': 61, 'Endpoint': 24, 'Identity': 17, 'Application/SaaS': 17,
+    'Network': 24, 'Cloud': 19, 'Endpoint': 15, 'Identity': 11, 'Application/SaaS': 7,
   };
 
   const dataCategoryRows = useMemo(() => {
@@ -1580,7 +1580,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
       {noRules ? (
         <EuiCallOut color={calloutColor} size="s" title={<>No rules are currently enabled — get started by installing and enabling rules in <EuiLink href="#">detection rules</EuiLink>.</>} />
       ) : (coverage?.uncoveredRules.length ?? 0) > 0 ? (
-        <EuiCallOut color={calloutColor} size="s" title={<>{coverage?.uncoveredRules.length} rule{(coverage?.uncoveredRules.length ?? 0) !== 1 ? 's' : ''} have missing or disabled integrations. <EuiLink href="#">Learn more</EuiLink></>} />
+        <EuiCallOut color={calloutColor} size="s" title={<>76 rules have missing or disabled integrations. <EuiLink href="#">Learn more</EuiLink></>} />
       ) : (
         <EuiCallOut color="success" size="s" title="All enabled rules have required integrations." />
       )}
@@ -1610,15 +1610,15 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
 
         {/* Coverage bar */}
         <EuiFlexItem grow={false} style={{ minWidth: 418 }}>
-          <RuleCoverageBar covered={coverage?.coveredRules.length ?? 0} uncovered={coverage?.uncoveredRules.length ?? 0} />
+          <RuleCoverageBar covered={48} uncovered={76} />
         </EuiFlexItem>
 
         {/* Integration status table */}
         <EuiFlexItem>
           <EuiBasicTable
             items={[
-              { id: 'enabled', statusColor: 'success' as const, label: 'Enabled Integrations',             count: coverage?.coveredRules.length ?? 0 },
-              { id: 'missing', statusColor: 'danger'  as const, label: 'Missing or Disabled Integrations', count: coverage?.uncoveredRules.length ?? 0 },
+              { id: 'enabled', statusColor: 'success' as const, label: 'Enabled Integrations',             count: 48  },
+              { id: 'missing', statusColor: 'danger'  as const, label: 'Missing or Disabled Integrations', count: 76  },
             ]}
             columns={[
               {
@@ -1628,7 +1628,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                   <EuiHealth color={row.statusColor}>{label}</EuiHealth>
                 ),
               },
-              { field: 'count', name: '# of rules associated', width: '120px' },
+              { field: 'count', name: '# of rules associated', width: '240px' },
               {
                 name: 'Actions',
                 width: '140px',
@@ -1641,9 +1641,6 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
             ] as Array<EuiBasicTableColumn<{ id: string; statusColor: string; label: string; count: number }>>}
             itemId="id"
           />
-          <EuiText size="s" style={{ paddingLeft: 8, marginTop: 8 }}>
-            <strong>{totalEnabled}</strong>&nbsp;<span style={{ color: '#69707D' }}>Total enabled rules</span>
-          </EuiText>
         </EuiFlexItem>
       </EuiFlexGroup>
       </EuiPanel>
@@ -1832,10 +1829,9 @@ interface QualityTabProps { categories: CategoryGroup[]; qualityResults: Quality
 interface ExecutionHealthRow { id: string; rule: string; lastRun: string; status: string; execTime: string; alertTrend: string }
 
 const EXECUTION_HEALTH_ROWS: ExecutionHealthRow[] = [
-  { id: '1', rule: 'Windows Process Injection via CreateRemoteThread', lastRun: '2 min ago',  status: 'Succeeded',    execTime: '1.2s',  alertTrend: 'Firing normally'          },
-  { id: '2', rule: 'AWS CloudTrail Unauthorized API Call',             lastRun: '18 min ago', status: 'Gap detected', execTime: '2.4s',  alertTrend: 'Silent — data issue'      },
-  { id: '3', rule: 'Okta User Locked Out',                            lastRun: '5 min ago',  status: 'Timed out',    execTime: '34.8s', alertTrend: 'Silent — no alerts in 7d' },
-  { id: '4', rule: 'Endpoint Defense Evasion via Timestomping',        lastRun: '3 min ago',  status: 'Failed',       execTime: '0.8s',  alertTrend: 'Silent — no alerts in 7d' },
+  { id: '2', rule: 'AWS CloudTrail Unauthorized API Call',      lastRun: '18 min ago', status: 'Gap detected', execTime: '2.4s',  alertTrend: 'Silent — data issue'      },
+  { id: '3', rule: 'Okta User Locked Out',                     lastRun: '5 min ago',  status: 'Timed out',    execTime: '34.8s', alertTrend: 'Silent — no alerts in 7d' },
+  { id: '4', rule: 'Endpoint Defense Evasion via Timestomping', lastRun: '3 min ago',  status: 'Failed',       execTime: '0.8s',  alertTrend: 'Silent — no alerts in 7d' },
 ];
 
 const PLATFORM_HEALTH: Array<{ name: string; healthy: number; total: number }> = [
@@ -1992,8 +1988,8 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                   </EuiFlexGroup>
                   <EuiSpacer size="xs" />
                   {issues > 0
-                    ? <EuiLink onClick={() => onAskAI?.('Show me the actions required to fix Overall rule field issues.')}><EuiText size="xs">{issues} actions required</EuiText></EuiLink>
-                    : <EuiText size="xs" color="subdued">No actions required</EuiText>
+                    ? <EuiLink onClick={() => onAskAI?.('Show me the actions required to fix Overall rule field issues.')}><EuiText size="xs">{issues} actions to resolve</EuiText></EuiLink>
+                    : <EuiText size="xs" color="subdued">No actions to resolve</EuiText>
                   }
                 </div>
               </React.Fragment>
@@ -2021,8 +2017,8 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                   </EuiFlexGroup>
                   <EuiSpacer size="xs" />
                   {issues > 0
-                    ? <EuiLink onClick={() => onAskAI?.(`Show me the actions required to fix ${name} rule field issues.`)}><EuiText size="xs">{issues} actions required</EuiText></EuiLink>
-                    : <EuiText size="xs" color="subdued">No actions required</EuiText>
+                    ? <EuiLink onClick={() => onAskAI?.(`Show me the actions required to fix ${name} rule field issues.`)}><EuiText size="xs">{issues} actions to resolve</EuiText></EuiLink>
+                    : <EuiText size="xs" color="subdued">No actions to resolve</EuiText>
                   }
                 </div>
               </React.Fragment>
@@ -2200,8 +2196,8 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
                   name: 'Action', width: '130px',
                   render: (row: RuleFieldIssue) =>
                     actionItemIds.has(`quality-${row.id}`)
-                      ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-qualityInActions-${row.id}`}>Actions</EuiButtonEmpty>
-                      : <EuiButtonEmpty size="s" href="/app/security/rules" data-test-subj={`siemReadiness-qualityViewRuleAction-${row.id}`}>View rule</EuiButtonEmpty>,
+                      ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-qualityInActions-${row.id}`}>Action</EuiButtonEmpty>
+                      : <EuiButtonEmpty size="s" href="/app/security/rules" data-test-subj={`siemReadiness-qualityViewRuleAction-${row.id}`}>Action</EuiButtonEmpty>,
                 },
               ] as Array<EuiBasicTableColumn<RuleFieldIssue>>}
               itemId="id"
@@ -2286,9 +2282,9 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             },
             {
               name: 'Action',
-              width: '100px',
+              width: '200px',
               render: () => (
-                <EuiButtonEmpty size="xs" iconType="popout" iconSide="right" href="/app/security/rules">
+                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/security/rules">
                   View rule
                 </EuiButtonEmpty>
               ),
@@ -2412,9 +2408,9 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
   });
 
   const continuityStats = [
-    { label: 'Silent streams',          value: silentStreamCount, hexColor: silentStreamCount > 0 ? '#BD271E' : '#017D73' },
-    { label: 'Volume drops (>50%)',     value: volumeDropCount,   hexColor: volumeDropCount > 0   ? '#BD271E' : '#017D73' },
-    { label: 'Streams above latency SLA', value: highLatencyCount, hexColor: highLatencyCount > 0 ? '#CA8500' : '#017D73' },
+    { label: 'Silent streams',            value: silentStreamCount, hexColor: silentStreamCount > 0 ? '#BD271E' : '#017D73', rulesAffected: silentStreamCount * 3 },
+    { label: 'Volume drops (>50%)',       value: volumeDropCount,   hexColor: volumeDropCount > 0   ? '#BD271E' : '#017D73', rulesAffected: volumeDropCount * 12  },
+    { label: 'Streams above latency SLA', value: highLatencyCount,  hexColor: highLatencyCount > 0  ? '#CA8500' : '#017D73', rulesAffected: highLatencyCount * 2  },
   ];
 
   return (
@@ -2422,7 +2418,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
       {/* ── Stats card — standalone above the findings panel, matches Quality tab style ── */}
       <EuiPanel hasBorder hasShadow={false} paddingSize="m">
         <div style={{ display: 'flex', margin: '0 -16px' }}>
-          {continuityStats.map(({ label, value, hexColor }, idx) => (
+          {continuityStats.map(({ label, value, hexColor, rulesAffected }, idx) => (
             <React.Fragment key={label}>
               {idx > 0 && (
                 <div style={{ width: 0, borderLeft: `1px solid ${euiTheme.colors.lightShade}`, flexShrink: 0, margin: '8px 0' }} />
@@ -2431,6 +2427,16 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
                 <EuiText style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.2, color: hexColor }}>{value}</EuiText>
                 <EuiSpacer size="xs" />
                 <EuiText size="s" color="subdued" style={{ fontWeight: 600 }}>{label}</EuiText>
+                {rulesAffected > 0 && (
+                  <>
+                    <EuiSpacer size="xs" />
+                    <div style={{ display: 'inline-block' }}>
+                      <EuiBadge color="hollow" iconType="radar" iconSide="left">
+                        {rulesAffected} rules affected
+                      </EuiBadge>
+                    </div>
+                  </>
+                )}
               </div>
             </React.Fragment>
           ))}
@@ -2814,8 +2820,47 @@ const SiemReadinessPage: React.FC = () => {
 
               <EuiPageSection paddingSize="l" style={{ paddingTop: 6 }}>
 
-                {/* Overall status card — stats + pillar summaries */}
-                <OverallStatusCard summary={summary} />
+                {/* ── Pillar summary — single card ── */}
+                <EuiPanel hasBorder hasShadow={false} paddingSize="none">
+                  <EuiFlexGroup gutterSize="none" responsive={false}>
+                    {([
+                      { id: 'coverage',   label: 'Coverage',   severity: 'Critical' as const, severityColor: 'danger'  as const, num: '7',  numColor: '#BD271E', desc: 'integrations are required', blast: '76', actions: 4 },
+                      { id: 'quality',    label: 'Quality',    severity: 'Critical' as const, severityColor: 'danger'  as const, num: '9',  numColor: '#BD271E', desc: 'rule field issues detected',        blast: '9',  actions: 9 },
+                      { id: 'continuity', label: 'Continuity', severity: 'Warning'  as const, severityColor: 'warning' as const, num: '2',  numColor: '#CA8500', desc: 'volume drops · 1 high latency',     blast: '26', actions: 3 },
+                      { id: 'retention',  label: 'Retention',  severity: 'Warning'  as const, severityColor: 'warning' as const, num: '2',  numColor: '#CA8500', desc: 'categories below benchmark',        blast: null, actions: 2 },
+                    ]).map(({ id, label, severity, severityColor, num, numColor, desc, blast, actions }, idx) => (
+                      <EuiFlexItem key={id} grow={1} style={{ borderRight: idx < 3 ? '1px solid #D3DAE6' : undefined, padding: 16 }}>
+                        {/* Line 1 — title + badge */}
+                        <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiText size="s" style={{ fontWeight: 700 }}>{label}</EuiText>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiBadge color={severityColor}>{severity}</EuiBadge>
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                        <EuiSpacer size="xs" />
+                        {/* Line 2 — leading number */}
+                        <EuiText style={{ fontSize: 24, fontWeight: 500, lineHeight: 1.2, color: numColor }}>{num}</EuiText>
+                        {/* Line 3 — description */}
+                        <EuiText size="s" color="subdued">{desc}</EuiText>
+                        <EuiSpacer size="s" />
+                        {/* Line 4 — blast radius badge */}
+                        <div style={{ display: 'inline-block' }}>
+                          <EuiBadge color="hollow" iconType="radar" iconSide="left">
+                            {blast !== null ? `${blast} rules affected` : '— rules affected'}
+                          </EuiBadge>
+                        </div>
+                        <EuiSpacer size="xs" />
+                        {/* Line 5 — actions link */}
+                        {actions > 0
+                          ? <EuiLink onClick={() => setSelectedTab('actions')}><EuiText size="xs">{actions} actions to resolve</EuiText></EuiLink>
+                          : <EuiText size="xs" color="subdued">No actions to resolve</EuiText>
+                        }
+                      </EuiFlexItem>
+                    ))}
+                  </EuiFlexGroup>
+                </EuiPanel>
                 <EuiSpacer size="l" />
 
 
