@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
+  EuiPage,
+  EuiPageBody,
   EuiButton,
   EuiButtonEmpty,
   EuiButtonIcon,
+  EuiButtonGroup,
   EuiFlexGroup,
   EuiFlexItem,
   EuiSpacer,
@@ -18,14 +21,23 @@ import {
   EuiHealth,
   EuiIcon,
   EuiLink,
+  EuiCode,
   EuiCodeBlock,
+  EuiDescriptionList,
   EuiHorizontalRule,
-  EuiAccordion,
   EuiBasicTable,
+  EuiTablePagination,
+  EuiFlyout,
+  EuiFlyoutHeader,
+  EuiFlyoutBody,
+  EuiFlyoutFooter,
+  EuiAccordion,
+  EuiProgress,
   EuiFilterGroup,
   EuiFilterButton,
   EuiPopover,
   EuiSelectable,
+  EuiContextMenu,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -50,112 +62,107 @@ interface DetectionRule {
   enabled: boolean;
 }
 
-// 90-day alerts chart
-const AlertsChart: React.FC = () => {
-  const W = 500, H = 120, padL = 36, padR = 8, padT = 8, padB = 24;
-  const chartW = W - padL - padR;
-  const chartH = H - padT - padB;
-
-  // ~13 weeks of data (91 days, sampled weekly)
-  const weeks = ['Jan 10','Jan 17','Jan 24','Jan 31','Feb 7','Feb 14','Feb 21','Feb 28','Mar 7','Mar 14','Mar 21','Mar 28','Apr 4'];
-  const alerts   = [28, 34, 22, 41, 38, 29, 45, 52, 36, 48, 31, 43, 38];
-  const falsePos = [8,  12, 6,  15, 11, 7,  18, 20, 9,  16, 8,  14, 10];
-
-  const maxVal = 60;
-  const n = alerts.length;
-
-  const px = (i: number) => padL + (i / (n - 1)) * chartW;
-  const py = (v: number) => padT + chartH - (v / maxVal) * chartH;
-
-  const alertsPath  = alerts.map((v, i)  => `${i === 0 ? 'M' : 'L'}${px(i)},${py(v)}`).join(' ');
-  const falsePath   = falsePos.map((v, i) => `${i === 0 ? 'M' : 'L'}${px(i)},${py(v)}`).join(' ');
-  const alertsFill  = `${alertsPath} L${px(n-1)},${padT+chartH} L${padL},${padT+chartH} Z`;
-  const falseFill   = `${falsePath} L${px(n-1)},${padT+chartH} L${padL},${padT+chartH} Z`;
-
-  const yTicks = [0, 15, 30, 45, 60];
-
-  return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
-      {/* Grid lines */}
-      {yTicks.map(v => (
-        <line key={v} x1={padL} y1={py(v)} x2={W - padR} y2={py(v)} stroke="#e0e5ee" strokeWidth="1" strokeDasharray="3,3" />
-      ))}
-
-      {/* Y-axis labels */}
-      {yTicks.map(v => (
-        <text key={v} x={padL - 4} y={py(v) + 4} textAnchor="end" fontSize="9" fill="#98a2b3">{v}</text>
-      ))}
-
-      {/* Filled areas */}
-      <path d={alertsFill} fill="#54b399" fillOpacity="0.12" />
-      <path d={falseFill}  fill="#e7664c" fillOpacity="0.12" />
-
-      {/* Lines */}
-      <path d={alertsPath} fill="none" stroke="#54b399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d={falsePath}  fill="none" stroke="#e7664c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-
-      {/* Dots */}
-      {alerts.map((v, i) => <circle key={i} cx={px(i)} cy={py(v)} r="3" fill="#54b399" />)}
-      {falsePos.map((v, i) => <circle key={i} cx={px(i)} cy={py(v)} r="3" fill="#e7664c" />)}
-
-      {/* X-axis labels — every other week */}
-      {weeks.map((w, i) => i % 2 === 0 && (
-        <text key={i} x={px(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="#98a2b3">{w}</text>
-      ))}
-    </svg>
-  );
-};
-
 const RuleDetailsPage: React.FC = () => {
   const { ruleId } = useParams<{ ruleId: string }>();
   const navigate = useNavigate();
-
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'executions'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'alerts' | 'exceptions' | 'execution'>('overview');
   const [isEnabled, setIsEnabled] = useState(true);
-  const [summaryState, setSummaryState] = useState<'idle' | 'generating' | 'generated'>('idle');
-  const [summaryOpen, setSummaryOpen] = useState(false);
-  const [exceptionsOpen, setExceptionsOpen] = useState(true);
-  const [artifactsOpen, setArtifactsOpen] = useState(true);
-  const [investigationOpen, setInvestigationOpen] = useState(false);
-
-  // Execution tab state
+  const [showWarning, setShowWarning] = useState(false);
+  const [aboutViewToggle, setAboutViewToggle] = useState('details');
   const [executionPageIndex, setExecutionPageIndex] = useState(0);
   const [executionPageSize, setExecutionPageSize] = useState(10);
-  const [showSourceEventRange, setShowSourceEventRange] = useState(false);
+  const [gapFillPageIndex, setGapFillPageIndex] = useState(0);
+  const [gapFillPageSize, setGapFillPageSize] = useState(10);
+  const [showSourceEventRange, setShowSourceEventRange] = useState(true);
   const [showMetricsColumns, setShowMetricsColumns] = useState(false);
-  const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
-  const [runTypeOptions, setRunTypeOptions] = useState([{ label: 'Scheduled' }, { label: 'Manual' }, { label: 'Gap fill' }]);
-  const [statusOptions, setStatusOptions] = useState([{ label: 'Succeeded' }, { label: 'Failed' }, { label: 'Error' }]);
+  const [runTypeOptions, setRunTypeOptions] = useState([
+    { label: 'Scheduled' },
+    { label: 'Manual' },
+    { label: 'Gap fill' },
+  ]);
+  const [statusOptions, setStatusOptions] = useState([
+    { label: 'Succeeded' },
+    { label: 'Failed' },
+    { label: 'Error' },
+  ]);
   const [runTypePopoverOpen, setRunTypePopoverOpen] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const runTypeActiveCount = runTypeOptions.filter((o: any) => o.checked === 'on').length;
   const statusActiveCount = statusOptions.filter((o: any) => o.checked === 'on').length;
+  const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
+  const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
+  const [isHistoryPaneOpen, setIsHistoryPaneOpen] = useState(false);
+  const [expandedHistoryVersion, setExpandedHistoryVersion] = useState<number | null>(5);
 
-  // Execution flow
-  const [expandedFlowSteps, setExpandedFlowSteps] = useState<Record<number, boolean>>({});
-  const toggleFlowStep = (idx: number) => setExpandedFlowSteps(prev => ({ ...prev, [idx]: !prev[idx] }));
-  const executionFlowSteps = [
-    { label: 'Start rule execution', duration: 'Mar 5 @ 2026 19:36:41.095', children: [] },
-    { label: 'Query Elasticsearch', duration: '3m 124 ms', children: [] },
-    { label: 'Process results', duration: '124 ms', children: [
-      { label: 'No index matching logs-endpoint.alerts-*', duration: '25 ms' },
-      { label: 'Changing rule status to "succeeded"', duration: '25 ms' },
-    ]},
-    { label: 'Generate alerts if found', duration: '234 ms', children: [] },
-    { label: 'Completed', duration: '24 ms', children: [] },
+  const versionHistory = [
+    { timestamp: 'On May 12 2026 @14.23', author: 'Alex Nightingale', detail: '4 changes',  ruleVersion: 'R77', version: 'V4', isCurrent: true,  note: null },
+    { timestamp: 'On May 12 2026 @11.23', author: 'Pavel M',          detail: '29 changes', ruleVersion: 'R77', version: 'V4', isCurrent: false, note: "Removed 'Okta tokens' tag" },
+    { timestamp: 'On May 10 2026 @17.18', author: 'Pavel M',          detail: '5 changes',  ruleVersion: 'R76', version: 'V4', isCurrent: false, note: null },
+    { timestamp: 'On May 10 2026 @17.18', author: 'Pavel M',          detail: '5 changes',  ruleVersion: 'R76', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 09 2026 @17.18', author: 'Pavel M',          detail: 'Enabled the rule',   ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 09 2026 @10.42', author: 'Pavel M',          detail: 'Disabled the rule',  ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.42', author: 'Alex Nightingale', detail: '23 changes', ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.42', author: 'Alex Nightingale', detail: '11 changes', ruleVersion: 'R75', version: 'V2', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.34', author: 'Alex Nightingale', detail: '23 changes', ruleVersion: 'R74', version: 'V2', isCurrent: false, note: null },
+    { timestamp: 'On May 03 2026 @10.34', author: 'Alex Nightingale', detail: '7 changes',  ruleVersion: 'R74', version: 'V1', isCurrent: false, note: null },
   ];
-
-  // Flyout accordion sections
-  const [flyoutSections, setFlyoutSections] = useState<Record<string, boolean>>({
-    summary: true, message: true, alerts: true, metrics: true, flow: true, matched: true,
-  });
-  const toggleFlyoutSection = (key: string) => setFlyoutSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const [selectedExecution, setSelectedExecution] = useState<any>(null);
+  const [summaryState, setSummaryState] = useState<'idle' | 'generating' | 'generated'>('idle');
 
   const generateSummary = () => {
     setSummaryState('generating');
     setTimeout(() => setSummaryState('generated'), 2500);
   };
+  const [flyoutSections, setFlyoutSections] = useState<Record<string, boolean>>({
+    summary: true,
+    message: true,
+    alerts: true,
+    metrics: true,
+    flow: true,
+    logs: true,
+    matched: true,
+  });
+  const toggleFlyoutSection = (key: string) =>
+    setFlyoutSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  const [expandedFlowSteps, setExpandedFlowSteps] = useState<Record<number, boolean>>({});
+  const toggleFlowStep = (idx: number) =>
+    setExpandedFlowSteps((prev) => ({ ...prev, [idx]: !prev[idx] }));
+
+  const executionFlowSteps = [
+    {
+      label: 'Start rule execution',
+      duration: 'Mar 5 @ 2026 19:36:41.095',
+      children: [],
+    },
+    {
+      label: 'Query Elasticsearch',
+      duration: '3m 124 ms',
+      children: [],
+    },
+    {
+      label: 'Process results',
+      duration: '124 ms',
+      children: [
+        { label: 'No index matching logs-endpoint.alerts-*', duration: '25 ms' },
+        { label: 'Changing rule status to "succeeded"', duration: '25 ms' },
+      ],
+    },
+    {
+      label: 'Generate alerts if found',
+      duration: '234 ms',
+      children: [],
+    },
+    {
+      label: 'Completed',
+      duration: '24 ms',
+      children: [],
+    },
+  ];
+  const [flyoutTab, setFlyoutTab] = useState('overview');
+  const [isCompactHeader, setIsCompactHeader] = useState(false);
+
+  // Find the rule from parsed data
   const rule = parsedRulesData.find((r: any) => r.id === ruleId) as DetectionRule | undefined;
 
   if (!rule) {
@@ -167,498 +174,731 @@ const RuleDetailsPage: React.FC = () => {
           <EuiCallOut title="Rule not found" color="danger" iconType="alert">
             <p>The requested rule could not be found.</p>
             <EuiSpacer size="s" />
-            <EuiButton onClick={() => navigate('/detection-rules')}>Back to Rules</EuiButton>
+            <EuiButton onClick={() => navigate('/detection-rules')}>
+              Back to Rules
+            </EuiButton>
           </EuiCallOut>
         </div>
       </>
     );
   }
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'low': return 'success';
-      case 'medium': return 'warning';
-      case 'high': case 'critical': return 'danger';
-      default: return 'subdued';
+  const getSeverityColor = (severity: string): 'success' | 'warning' | 'danger' => {
+    switch (severity.toLowerCase()) {
+      case 'low':
+        return 'success';
+      case 'medium':
+        return 'warning';
+      case 'high':
+      case 'critical':
+        return 'danger';
+      default:
+        return 'success';
     }
   };
+
+  const tabs = [
+    { id: 'overview' as const, label: 'Overview' },
+    { id: 'alerts' as const, label: 'Alerts' },
+    { id: 'exceptions' as const, label: 'Rule exceptions' },
+    { id: 'execution' as const, label: 'Execution results' },
+  ];
+
+  const visibleTabs = isHistoryPaneOpen ? [] : tabs;
 
   return (
     <>
       <SecurityHeader onMenuClick={() => {}} />
       <SecuritySideNav />
 
-      <div style={{ backgroundColor: '#F6F9FC', height: 'calc(100vh - 56px)', marginTop: 48, marginLeft: 80, padding: 8, display: 'flex', overflow: 'hidden' }}>
-        <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart" style={{ flex: 1, minHeight: 0 }}>
-          {/* Secondary Nav */}
-          <EuiFlexItem grow={false} style={{ height: '100%' }}>
-            <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'hidden', height: '100%' }}>
+      <div style={{ 
+        backgroundColor: '#F6F9FC', 
+        minHeight: '100vh', 
+        marginTop: 48,
+        marginLeft: 80,
+        paddingLeft: '8px',
+        paddingRight: '8px',
+        paddingTop: '8px',
+        paddingBottom: '8px',
+      }}>
+        <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart">
+          {/* Secondary Navigation */}
+          <EuiFlexItem grow={false}>
+            <EuiPanel 
+              paddingSize="none" 
+              hasShadow={true}
+              style={{ 
+                borderRadius: 8, 
+                overflow: 'hidden',
+                minHeight: 'calc(100vh - 64px)'
+              }}
+            >
               <RulesSecondaryNav />
             </EuiPanel>
           </EuiFlexItem>
 
-          {/* Main Panel */}
-          <EuiFlexItem style={{ height: '100%', minWidth: 0 }}>
-            <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, height: '100%', overflowY: 'auto' }}>
-              <div style={{ padding: '16px 24px' }}>
-
-                {/* Back */}
-                <EuiButtonEmpty iconType="arrowLeft" size="s" onClick={() => navigate('/detection-rules')} style={{ marginBottom: 8 }}>
-                  Rules
-                </EuiButtonEmpty>
-
-                {/* Rule header */}
-                <EuiFlexGroup justifyContent="spaceBetween" alignItems="flexStart" responsive={false}>
+          {/* Main Content */}
+          <EuiFlexItem>
+            <EuiPanel 
+              paddingSize="none" 
+              hasShadow={true}
+              style={{ 
+                borderRadius: 8, 
+                overflow: 'hidden',
+                minHeight: 'calc(100vh - 64px)'
+              }}
+            >
+              <div style={{ padding: '24px' }}>
+                {/* Title row: back arrow + rule name + action buttons */}
+                <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
                   <EuiFlexItem>
-                    <EuiTitle size="l"><h1>{rule.name}</h1></EuiTitle>
-                    <EuiSpacer size="xs" />
-                    <EuiFlexGroup gutterSize="l" alignItems="center" responsive={false} wrap>
-                      <EuiFlexItem grow={false}><EuiText size="xs" color="subdued"><strong>Created by:</strong> Elastic on Mar 16, 2024 @ 10:32:56</EuiText></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiText size="xs" color="subdued"><strong>Updated by:</strong> John Doe on Jan 13, 2026 @ 14:23:24</EuiText></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiText size="xs" color="subdued"><strong>Elastic version:</strong> 209</EuiText></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiText size="xs" color="subdued"><strong>Revision:</strong> 29</EuiText></EuiFlexItem>
-                    </EuiFlexGroup>
-                    <EuiSpacer size="xs" />
                     <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}><EuiText size="xs" color="subdued"><strong>Last response:</strong></EuiText></EuiFlexItem>
                       <EuiFlexItem grow={false}>
-                        <EuiHealth color={rule.lastResponse === 'Succeeded' ? 'success' : 'danger'} style={{ fontSize: 12 }}>
-                          {rule.lastResponse === 'Succeeded' ? 'Succeeded' : 'Failed'} at Jan 14, 2026 @ 19:13:10
-                        </EuiHealth>
+                        <EuiButtonIcon
+                          iconType="arrowLeft"
+                          aria-label="Back to rules"
+                          color="text"
+                          size="s"
+                          onClick={() => navigate('/detection-rules')}
+                        />
                       </EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiButtonIcon iconType="refresh" aria-label="Refresh" size="xs" color="text" /></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiButtonIcon iconType="bell" aria-label="Notifications" size="xs" color="text" /></EuiFlexItem>
+                      <EuiFlexItem>
+                        <EuiTitle size="l">
+                          <h1>{rule.name}</h1>
+                        </EuiTitle>
+                      </EuiFlexItem>
                     </EuiFlexGroup>
                   </EuiFlexItem>
-
-                  {/* Actions */}
                   <EuiFlexItem grow={false}>
                     <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}><EuiSwitch label="Enable" checked={isEnabled} onChange={e => setIsEnabled(e.target.checked)} /></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiButton size="s" iconType="clock">History</EuiButton></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiButton size="s" iconType="pencil">Edit rule</EuiButton></EuiFlexItem>
-                      <EuiFlexItem grow={false}><EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="s" /></EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiSwitch
+                          label={isEnabled ? 'Enabled' : 'Disabled'}
+                          checked={isEnabled}
+                          onChange={(e) => !isHistoryPaneOpen && setIsEnabled(e.target.checked)}
+                          disabled={isHistoryPaneOpen}
+                          compressed
+                        />
+                      </EuiFlexItem>
+                      {!isHistoryPaneOpen && (
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="play" size="s">
+                          Manual run
+                        </EuiButtonEmpty>
+                      </EuiFlexItem>
+                      )}
+                      {!isHistoryPaneOpen && (
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="discuss" size="s">
+                          Add to chat
+                        </EuiButtonEmpty>
+                      </EuiFlexItem>
+                      )}
+                      {!isHistoryPaneOpen && <EuiFlexItem grow={false}>
+                        <EuiPopover
+                          button={
+                            <EuiButtonIcon
+                              iconType="boxesHorizontal"
+                              aria-label="More actions"
+                              size="s"
+                              color="text"
+                              onClick={() => setIsMoreActionsOpen((v) => !v)}
+                            />
+                          }
+                          isOpen={isMoreActionsOpen}
+                          closePopover={() => setIsMoreActionsOpen(false)}
+                          panelPaddingSize="none"
+                          anchorPosition="downRight"
+                        >
+                          <EuiContextMenu
+                            initialPanelId={0}
+                            panels={[
+                              {
+                                id: 0,
+                                items: [
+                                  {
+                                    name: 'History',
+                                    icon: 'clock',
+                                    onClick: () => {
+                                      setIsMoreActionsOpen(false);
+                                      setIsHistoryPaneOpen(true);
+                                      setSelectedTab('overview');
+                                    },
+                                  },
+                                  {
+                                    name: 'Duplicate rule',
+                                    icon: 'copy',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Export rule',
+                                    icon: 'exportAction',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Snooze notifications',
+                                    icon: 'bell',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Refresh',
+                                    icon: 'refresh',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Delete rule',
+                                    icon: 'trash',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  { isSeparator: true },
+                                  {
+                                    name: 'Add integrations',
+                                    icon: 'plusInCircle',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Documentation',
+                                    icon: 'popout',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                  {
+                                    name: 'Feedback',
+                                    icon: 'editorComment',
+                                    onClick: () => setIsMoreActionsOpen(false),
+                                  },
+                                ],
+                              },
+                            ]}
+                          />
+                        </EuiPopover>
+                      </EuiFlexItem>}
+                      {!isHistoryPaneOpen && (
+                      <EuiFlexItem grow={false}>
+                        <EuiButton iconType="pencil" size="s" fill>
+                          Edit
+                        </EuiButton>
+                      </EuiFlexItem>
+                      )}
                     </EuiFlexGroup>
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+
+                {/* Metadata - single row */}
+                <EuiSpacer size="xs" />
+                <EuiFlexGroup gutterSize="m" responsive={false} alignItems="center" wrap>
+                  <EuiFlexItem grow={false}>
+                    <EuiHealth color="warning" style={{ fontSize: '12px' }}>
+                      Warning at Mar 24, 2026 @ 12:32:54.909
+                    </EuiHealth>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiText size="s" color="subdued">
+                      Created by: analyst on Oct 10, 2024 @ 00:11:03.178
+                    </EuiText>
+                  </EuiFlexItem>
+                  <EuiFlexItem grow={false}>
+                    <EuiText size="s" color="subdued">
+                      Updated by: analyst on Feb 8, 2026 @ 04:37:53.533
+                    </EuiText>
                   </EuiFlexItem>
                 </EuiFlexGroup>
 
                 <EuiSpacer size="m" />
 
-                {/* Tabs */}
-                <EuiTabs>
-                  <EuiTab isSelected={selectedTab === 'overview'} onClick={() => setSelectedTab('overview')}>Overview</EuiTab>
-                  <EuiTab isSelected={selectedTab === 'executions'} onClick={() => setSelectedTab('executions')}>Executions</EuiTab>
-                </EuiTabs>
+                {/* Tabs — hidden when history pane is open */}
+                {!isHistoryPaneOpen && (
+                  <EuiTabs size="l">
+                    {visibleTabs.map((tab) => (
+                      <EuiTab
+                        key={tab.id}
+                        isSelected={selectedTab === tab.id}
+                        onClick={() => setSelectedTab(tab.id)}
+                      >
+                        {tab.label}
+                      </EuiTab>
+                    ))}
+                  </EuiTabs>
+                )}
 
                 <EuiSpacer size="m" />
 
-                {/* ── OVERVIEW TAB ── */}
+                {/* Warning Callout */}
+                {showWarning && (
+                  <>
+                    <EuiCallOut
+                      title="Warning at Mar 18, 2026 @ 21:14:17.686"
+                      color="warning"
+                      iconType="warning"
+                      onDismiss={() => setShowWarning(false)}
+                    >
+                      <EuiText size="s">
+                        Unable to find warning indices for rule {rule.name}. This warning will persist until one of the following occurs: a matching index is created or the rule is disabled.
+                      </EuiText>
+                      <EuiSpacer size="s" />
+                      <EuiButtonEmpty size="xs" iconType="help">
+                        Ask Assistant
+                      </EuiButtonEmpty>
+                    </EuiCallOut>
+                    <EuiSpacer size="m" />
+                  </>
+                )}
+
+                {/* Main Content: About and Definition */}
                 {selectedTab === 'overview' && (
-                  <EuiFlexGroup gutterSize="none" alignItems="flexStart" responsive={false}>
-
-                    {/* LEFT column */}
-                    <EuiFlexItem style={{ paddingRight: 24, maxWidth: '61%' }}>
-
-                      {/* AI-generated summary */}
-                      <div style={{ border: '1px solid #d3dae6', borderRadius: 6, overflow: 'hidden', marginBottom: 16 }}>
-                        <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '10px 14px', cursor: 'pointer', background: '#fff' }} onClick={() => setSummaryOpen(!summaryOpen)} responsive={false}>
-                          <EuiFlexItem grow={false}><EuiIcon type={summaryOpen ? 'arrowDown' : 'arrowRight'} size="s" /></EuiFlexItem>
-                          <EuiFlexItem grow={false}><EuiText size="s" style={{ fontWeight: 700 }}>AI-generated summary</EuiText></EuiFlexItem>
-                          <EuiFlexItem grow={false}><EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} /></EuiFlexItem>
-                          <EuiFlexItem grow={true} />
-                          {summaryState === 'generated' && (
-                            <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                              <EuiButton size="s" iconType="discuss" style={{ background: '#e8e3fc', borderColor: 'transparent', color: '#5a3dc8', borderRadius: 8 }}>Add to chat</EuiButton>
-                            </EuiFlexItem>
-                          )}
-                          <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                            <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" color="text" size="xs" />
+                  <EuiFlexGroup gutterSize="l" alignItems="stretch">
+                    {/* Left Column: About (60% width) */}
+                    <EuiFlexItem grow={6}>
+                      <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ height: '100%' }}>
+                        <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiTitle size="m">
+                              <h2>About</h2>
+                            </EuiTitle>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiButtonGroup
+                              legend="About view toggle"
+                              options={[
+                                { id: 'details', label: 'Details' },
+                                { id: 'investigation', label: 'Investigation guide' },
+                              ]}
+                              idSelected={aboutViewToggle}
+                              onChange={(id) => setAboutViewToggle(id)}
+                              buttonSize="s"
+                            />
                           </EuiFlexItem>
                         </EuiFlexGroup>
-                        {summaryOpen && (
-                          <div style={{ padding: '0 14px 14px' }}>
-                            {summaryState === 'idle' && (
-                              <div style={{ border: '1px solid #d3dae6', borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-                                <EuiText size="s" color="subdued">Analyse the rule and generate an AI summary with recommended actions.</EuiText>
-                                <EuiButton size="s" iconType="sparkles" onClick={generateSummary} style={{ whiteSpace: 'nowrap', flexShrink: 0, background: '#e8e3fc', borderColor: 'transparent', color: '#5a3dc8' }}>Generate AI content</EuiButton>
-                              </div>
-                            )}
-                            {summaryState === 'generating' && (
-                              <div style={{ border: '1px solid #d3dae6', borderRadius: 8, padding: 16, background: '#fafafa' }}>
-                                <EuiText size="s" color="subdued" style={{ fontStyle: 'italic', marginBottom: 12 }}>Generating AI content ...</EuiText>
-                                <div style={{ height: 10, borderRadius: 5, background: 'linear-gradient(90deg, #c5b8f5, #e8e3fc, #c5b8f5)', marginBottom: 8 }} />
-                                <div style={{ height: 10, borderRadius: 5, width: '65%', background: 'linear-gradient(90deg, #c5b8f5, #e8e3fc, #c5b8f5)' }} />
-                              </div>
-                            )}
-                            {summaryState === 'generated' && (
-                              <div style={{ border: '1px solid #d3dae6', borderRadius: 8, overflow: 'hidden' }}>
-                                <div style={{ padding: 16, border: '1.5px dashed #7B61FF', borderRadius: 6, margin: 12, background: 'rgba(232,227,252,0.5)' }}>
-                                  <EuiText size="s"><p style={{ margin: 0 }}>This rule detects suspicious process activity. It has a low false positive rate and is currently generating alerts for lateral movement behaviour on Windows endpoints.</p></EuiText>
-                                </div>
-                                <EuiHorizontalRule margin="none" />
-                                <div style={{ padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <EuiText size="xs" color="subdued">Generated by AI on mmm dd, yyyy at hh:mm</EuiText>
-                                  <div style={{ display: 'flex', gap: 4 }}>
-                                    <EuiButtonIcon iconType="refresh" aria-label="Regenerate" color="text" size="xs" onClick={() => setSummaryState('idle')} />
-                                    <EuiButtonIcon iconType="copy" aria-label="Copy" color="text" size="xs" />
-                                    <EuiButtonIcon iconType="thumbsUp" aria-label="Helpful" color="text" size="xs" />
-                                    <EuiButtonIcon iconType="thumbsDown" aria-label="Not helpful" color="text" size="xs" />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
 
-                      {/* Combined Last response + Stats card */}
-                      <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ marginBottom: 16, borderRadius: 6 }}>
-                        {/* Last response row */}
-                        <div style={{ padding: '10px 16px', borderBottom: '1px solid #d3dae6' }}>
-                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 6 }}>
-                            <EuiFlexItem grow={false}><EuiText size="s" style={{ fontWeight: 700 }}>Last response:</EuiText></EuiFlexItem>
-                            <EuiFlexItem grow={false}><EuiBadge color="danger" iconType="alert">Failed</EuiBadge></EuiFlexItem>
-                            <EuiFlexItem grow={false}><EuiText size="s" color="subdued">at Jan 14, 2026 @ 19:13:10</EuiText></EuiFlexItem>
-                          </EuiFlexGroup>
-                          <EuiText size="xs" color="subdued"><strong>Reason:</strong> Query timeout after 30s while evaluating ESQL on index logs-*.</EuiText>
-                        </div>
-                        {/* 5 stats */}
-                        <EuiFlexGroup gutterSize="none" responsive={false}>
-                          {[
-                            { title: 'Alert yield', value: '0.02%', color: undefined },
-                            { title: 'Failure rate', value: '0.4%', color: undefined },
-                            { title: 'Gaps', value: '13 min', color: '#bd271e' },
-                            { title: 'Suppression rate', value: '99.8%', color: undefined },
-                            { title: 'Unique entities', value: '14 hosts', color: undefined },
-                          ].map(({ title, value, color }, i, arr) => (
-                            <EuiFlexItem key={title} style={{ padding: '12px 16px', borderRight: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                              <EuiText size="xs" color="subdued" style={{ marginBottom: 4 }}>{title}</EuiText>
-                              <EuiText style={{ fontSize: 20, fontWeight: 700, color: color || 'inherit' }}>{value}</EuiText>
-                            </EuiFlexItem>
-                          ))}
-                        </EuiFlexGroup>
-                      </EuiPanel>
+                        <EuiSpacer size="m" />
 
-                      {/* Alerts over time */}
-                      <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ marginBottom: 16 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, marginBottom: 8 }}>Alerts over time</EuiText>
-                        <AlertsChart />
-                        <EuiSpacer size="xs" />
-                        <EuiFlexGroup gutterSize="l" responsive={false} alignItems="center">
-                          {[
-                            { color: '#54b399', label: 'Alerts', desc: 'Total alerts detected' },
-                            { color: '#e7664c', label: 'False positives', desc: 'Alerts marked as false positive' },
-                          ].map(({ color, label, desc }) => (
-                            <EuiFlexItem grow={false} key={label}>
-                              <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                <EuiFlexItem grow={false}><div style={{ width: 24, height: 3, borderRadius: 2, background: color }} /></EuiFlexItem>
-                                <EuiFlexItem><EuiText size="xs"><strong>{label}</strong> — {desc}</EuiText></EuiFlexItem>
-                              </EuiFlexGroup>
-                            </EuiFlexItem>
-                          ))}
-                        </EuiFlexGroup>
-                      </EuiPanel>
-
-                      {/* Exceptions */}
-                      <div style={{ marginBottom: 16 }}>
-                        <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ cursor: 'pointer', marginBottom: exceptionsOpen ? 10 : 0 }} onClick={() => setExceptionsOpen(!exceptionsOpen)} responsive={false}>
-                          <EuiFlexItem grow={false}><EuiIcon type={exceptionsOpen ? 'arrowDown' : 'arrowRight'} size="s" /></EuiFlexItem>
-                          <EuiFlexItem><EuiText size="s" style={{ fontWeight: 700 }}>Exceptions</EuiText></EuiFlexItem>
-                        </EuiFlexGroup>
-                        {exceptionsOpen && [
-                          { name: 'Trusted Administrative Tool Execution', code: 'Effective_process.nameMATCHES CompatTelRunner.exe' },
-                          { name: 'Approved PowerShell Usage', code: 'Effective_process.nameMATCHES CompatTelRunner.exe' },
-                        ].map((ex, i) => (
-                          <EuiFlexGroup key={i} gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}
-                            style={{ padding: '10px 14px', border: '1px solid #d3dae6', borderRadius: 4, marginBottom: 8, background: '#fafbfc' }}>
-                            <EuiFlexItem>
-                              <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} wrap>
-                                <EuiFlexItem grow={false}><EuiText size="s">{ex.name}</EuiText></EuiFlexItem>
-                                <EuiFlexItem grow={false}><EuiText size="xs" style={{ fontFamily: 'monospace', color: '#343741' }}>{ex.code}</EuiText></EuiFlexItem>
-                              </EuiFlexGroup>
-                            </EuiFlexItem>
-                            <EuiFlexItem grow={false}><EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" /></EuiFlexItem>
-                          </EuiFlexGroup>
-                        ))}
-                      </div>
-
-                      {/* Artifacts heading */}
-                      <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ cursor: 'pointer', marginBottom: artifactsOpen ? 10 : 0 }} onClick={() => setArtifactsOpen(!artifactsOpen)} responsive={false}>
-                        <EuiFlexItem grow={false}><EuiIcon type={artifactsOpen ? 'arrowDown' : 'arrowRight'} size="s" /></EuiFlexItem>
-                        <EuiFlexItem><EuiText size="s" style={{ fontWeight: 700 }}>Artifacts</EuiText></EuiFlexItem>
-                      </EuiFlexGroup>
-
-                      {artifactsOpen && (
-                        <EuiFlexGroup direction="column" gutterSize="m">
-
-                          {/* Investigation guide panel */}
-                          <EuiFlexItem>
-                            <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ borderRadius: 6 }}>
-                              <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '12px 16px', cursor: 'pointer' }} onClick={() => setInvestigationOpen(!investigationOpen)} responsive={false}>
-                                <EuiFlexItem grow={false}><EuiIcon type={investigationOpen ? 'arrowDown' : 'arrowRight'} size="s" /></EuiFlexItem>
-                                <EuiFlexItem grow={false}><EuiIcon type="documentation" size="s" /></EuiFlexItem>
-                                <EuiFlexItem><EuiText size="s" style={{ fontWeight: 600 }}>Investigation guide</EuiText></EuiFlexItem>
-                              </EuiFlexGroup>
-                              {investigationOpen && (
-                                <div style={{ padding: '0 16px 12px 40px', borderTop: '1px solid #d3dae6' }}>
-                                  <EuiSpacer size="s" />
-                                  <EuiText size="s" color="subdued">Follow these steps to investigate the alert and determine the appropriate response.</EuiText>
-                                </div>
-                              )}
-                            </EuiPanel>
-                          </EuiFlexItem>
-
-                          {/* Dashboards panel */}
-                          <EuiFlexItem>
-                            <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ borderRadius: 6 }}>
-                              <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false} style={{ padding: '12px 16px' }}>
-                                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><EuiIcon type="dashboardApp" size="s" /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="s" style={{ fontWeight: 700 }}>Dashboards</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                                <EuiButtonIcon iconType="plusInCircle" aria-label="Add dashboard" size="s" />
-                              </EuiFlexGroup>
-                              {['[Metrics MySQL] Database Overview', '[Logs MySQL] Overview', '[Elastic Agent] CloudWatch Input Metrics'].map((d, i, arr) => (
-                                <EuiFlexGroup key={i} gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}
-                                  style={{ padding: '10px 16px', borderTop: '1px solid #d3dae6' }}>
+                        <EuiDescriptionList
+                          type="column"
+                          style={{ rowGap: '24px', columnGap: '64px' }}
+                          listItems={[
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>Description</EuiText>,
+                              description: <EuiText size="s">{rule.description || 'No description available.'}</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Version</EuiText>,
+                              description: <EuiBadge color="hollow">209</EuiBadge>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Revision</EuiText>,
+                              description: <EuiBadge color="hollow">29</EuiBadge>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Author</EuiText>,
+                              description: <EuiText size="s">Elastic</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Severity</EuiText>,
+                              description: (
+                                <EuiHealth color={getSeverityColor(rule.severity)}>
+                                  {rule.severity.charAt(0).toUpperCase() + rule.severity.slice(1)}
+                                </EuiHealth>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Risk score</EuiText>,
+                              description: <EuiText size="s">{rule.riskScore}</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Reference URLs</EuiText>,
+                              description: (
+                                <ul style={{ margin: 0, paddingLeft: 0, listStylePosition: 'inside' }}>
+                                  <li>
+                                    <EuiLink href="#" external>
+                                      https://research.checkpoint.com/2020/resolving-your-way-into-domain-admin-exploiting-a-17-year-old-bug-in-windows-dns-servers/
+                                    </EuiLink>
+                                  </li>
+                                  <li>
+                                    <EuiLink href="#" external>
+                                      https://msrc-blog.microsoft.com/2020/07/14/july-2020-security-update-cve-2020-1350-vulnerability-in-windows-domain-name-system-dns-server/
+                                    </EuiLink>
+                                  </li>
+                                  <li>
+                                    <EuiLink href="#" external>
+                                      https://www.elastic.co/security-labs/detection-rules-for-sigred-vulnerability
+                                    </EuiLink>
+                                  </li>
+                                </ul>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>False positive examples</EuiText>,
+                              description: (
+                                <EuiText size="s">
+                                  <p>
+                                    Verified test sets will legitimately spawn when dns.exe service is in a occurring event. 
+                                    Denial of Service (DoS) attempts by intentionally crashing the service will also cause new/fault dns to spawn.
+                                  </p>
+                                </EuiText>
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>License</EuiText>,
+                              description: <EuiText size="s">Elastic License v2</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>MITRE ATT&CK™</EuiText>,
+                              description: (
+                                <EuiFlexGroup direction="column" gutterSize="xs">
                                   <EuiFlexItem>
-                                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                                      <EuiFlexItem grow={false}><EuiLink href="#">{d}</EuiLink></EuiFlexItem>
-                                      <EuiFlexItem grow={false}><EuiButtonIcon iconType="popout" aria-label="Open" size="xs" color="primary" /></EuiFlexItem>
-                                    </EuiFlexGroup>
+                                    <EuiLink href="#">Lateral Movement [TA0008]</EuiLink>
                                   </EuiFlexItem>
-                                  <EuiFlexItem grow={false}><EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" /></EuiFlexItem>
+                                  <EuiFlexItem style={{ paddingLeft: 16 }}>
+                                    <EuiLink href="#">Exploitation of Remote Services [T1210]</EuiLink>
+                                  </EuiFlexItem>
                                 </EuiFlexGroup>
-                              ))}
-                            </EuiPanel>
-                          </EuiFlexItem>
-
-                          {/* Cases panel */}
-                          <EuiFlexItem>
-                            <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
-                              <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
-                                <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                                  <EuiFlexItem grow={false}><EuiIcon type="casesApp" size="s" /></EuiFlexItem>
-                                  <EuiFlexItem><EuiText size="s" style={{ fontWeight: 700 }}>Cases</EuiText></EuiFlexItem>
-                                </EuiFlexGroup>
-                                <EuiFlexItem grow={false}><EuiLink href="#"><EuiText size="s">View cases</EuiText></EuiLink></EuiFlexItem>
-                              </EuiFlexGroup>
-                              <EuiText style={{ fontSize: 28, fontWeight: 700, marginTop: 8 }}>5</EuiText>
-                              <EuiText size="xs" color="subdued">Active cases</EuiText>
-                            </EuiPanel>
-                          </EuiFlexItem>
-
-                        </EuiFlexGroup>
-                      )}
+                              ),
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Timestamp override</EuiText>,
+                              description: <EuiText size="s">event.ingested</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Max alerts per run</EuiText>,
+                              description: <EuiText size="s">100</EuiText>,
+                            },
+                            {
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Tags</EuiText>,
+                                description: (
+                                  <EuiFlexGroup gutterSize="s" wrap>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Domain: Endpoint</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">OS: Windows</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Use Case: Threat Detection</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Tactic: Lateral Movement</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Resources: Investigation Guide</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: Elastic Defend</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: Windows Security Event Log</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: System</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: SentinelOne</EuiBadge>
+                                    </EuiFlexItem>
+                                    <EuiFlexItem grow={false}>
+                                      <EuiBadge color="hollow">Data Source: Crowdstrike</EuiBadge>
+                                    </EuiFlexItem>
+                                  </EuiFlexGroup>
+                                ),
+                              },
+                            ]}
+                          />
+                      </EuiPanel>
                     </EuiFlexItem>
 
-                    {/* RIGHT column — Rule conditions */}
-                    <EuiFlexItem style={{ borderLeft: '1px solid #d3dae6', paddingLeft: 24, minWidth: 0 }}>
-                      <EuiTitle size="s"><h3>Rule conditions</h3></EuiTitle>
-                      <EuiHorizontalRule margin="s" />
+                    {/* Right Column: Definition & Schedule (40% width) */}
+                    <EuiFlexItem grow={4}>
+                      <EuiFlexGroup direction="column" gutterSize="m">
+                        {/* Definition Section */}
+                        <EuiFlexItem>
+                          <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m">
+                            <EuiTitle size="m">
+                              <h2>Definition</h2>
+                            </EuiTitle>
+                            <EuiSpacer size="m" />
+                            <EuiDescriptionList
+                              type="column"
+                              style={{ rowGap: '24px', columnGap: '64px' }}
+                              listItems={[
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Index patterns</EuiText>,
+                                description: (
+                                  <EuiFlexGroup gutterSize="s" wrap>
+                                    {['endgame-*', 'logs-crowdstrike.fdr*', 'logs-endpoint.events.process-*', 
+                                      'logs-m365_defender.event-*', 'logs-sentinel_one_cloud_funnel.*', 
+                                      'logs-system.security*', 'logs-windows.forwarded*', 
+                                      'logs-windows.sysmon_operational-*', 'winlogbeat-*'].map((pattern, idx) => (
+                                      <EuiFlexItem grow={false} key={idx}>
+                                        <EuiBadge color="hollow">{pattern}</EuiBadge>
+                                      </EuiFlexItem>
+                                    ))}
+                                  </EuiFlexGroup>
+                                ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>EQL query</EuiText>,
+                                  description: (
+                                    <EuiText size="s" style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+{`process where host.os.type == "windows" and event.type == "start"
+  and process.parent.name : "dns.exe" and
+  not process.executable :
+      ("?:\\Windows\\System32\\werfault.exe",
+       "?:\\Windows\\System32\\conhost.exe",
+       "?:\\Program Files\\BeyondTrust\\One2OneHost.exe*") and
+  /* Consisterthis specific exclusion as it uses NT Object paths */
+  (process.name : ("cmd.exe", "powershell.exe",
+                   "?:\\DeviceHarddiskVolume?\\Windows\\System32\\conhost.exe")
+   and
+   not process.parent.executable :
+       ("?:\\Program Files\\BeyondTrust\\One2OneHost.exe*"))`}
+                                    </EuiText>
+                                  ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Rule type</EuiText>,
+                                  description: <EuiText size="s">Event Correlation</EuiText>,
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Related integrations</EuiText>,
+                                  description: (
+                                  <EuiFlexGroup direction="column" gutterSize="s">
+                                    {[
+                                      { name: 'CrowdStrike', status: 'Not installed', color: 'default' },
+                                      { name: 'Elastic Defend', status: 'Installed', color: 'success' },
+                                      { name: 'Microsoft Defender XDR', status: 'Not installed', color: 'default' },
+                                      { name: 'SentinelOne Cloud Funnel', status: 'Not installed', color: 'default' },
+                                      { name: 'Windows', status: 'Not installed', color: 'default' },
+                                    ].map((integration, idx) => (
+                                      <EuiFlexItem key={idx}>
+                                        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                                          <EuiFlexItem grow={false}>
+                                            <EuiLink href="#">{integration.name}</EuiLink>
+                                          </EuiFlexItem>
+                                          <EuiFlexItem grow={false}>
+                                            <EuiBadge color={integration.color as any}>{integration.status}</EuiBadge>
+                                          </EuiFlexItem>
+                                        </EuiFlexGroup>
+                                      </EuiFlexItem>
+                                    ))}
+                                  </EuiFlexGroup>
+                                ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Required fields</EuiText>,
+                                  description: (
+                                    <EuiFlexGroup direction="column" gutterSize="xs">
+                                      {['event.type', 'host.os.type', 'process.executable', 'process.name', 'process.parent.name'].map((field, idx) => (
+                                        <EuiFlexItem key={idx}>
+                                          <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                                            <EuiFlexItem grow={false}>
+                                              <EuiIcon type="tokenField" size="s" />
+                                            </EuiFlexItem>
+                                            <EuiFlexItem>
+                                              <EuiText size="s">{field}</EuiText>
+                                            </EuiFlexItem>
+                                          </EuiFlexGroup>
+                                        </EuiFlexItem>
+                                      ))}
+                                    </EuiFlexGroup>
+                                  ),
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Timeline template</EuiText>,
+                                  description: <EuiText size="s">None</EuiText>,
+                                },
+                            ]}
+                            />
+                          </EuiPanel>
+                        </EuiFlexItem>
 
-                      {/* Each section uses marginBottom: 24 for consistent spacing */}
-
-                      {/* Rule type */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 4 }}>Rule type</EuiText>
-                        <EuiText size="s">ES|QL</EuiText>
-                      </div>
-
-                      {/* Query */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Query</EuiText>
-                        <EuiCodeBlock language="sql" fontSize="s" paddingSize="s" isCopyable>
-{`FROM metrics-us-east-1:traces-apm-default
-| STATS cpu = AVG(CPU) BY host.name`}
-                        </EuiCodeBlock>
-                      </div>
-
-                      {/* Index patterns */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Index patterns</EuiText>
-                        <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
-                          {['logs-endpoint.events.process-*', 'logs-system.security*', 'winlogbeat-*'].map(p => (
-                            <EuiFlexItem grow={false} key={p}><EuiBadge color="hollow">{p}</EuiBadge></EuiFlexItem>
-                          ))}
-                        </EuiFlexGroup>
-                      </div>
-
-                      {/* Description */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Description</EuiText>
-                        <EuiText size="s">{rule.description || 'Identifies unusual processes running from the WBEM path, uncommon outside WMI-related Windows processes.'}</EuiText>
-                      </div>
-
-                      {/* Metadata table */}
-                      <div style={{ marginBottom: 36, border: '1px solid #d3dae6', borderRadius: 4, overflow: 'hidden' }}>
-                        {[
-                          { label: 'Rule type', value: <EuiText size="s">ES|QL</EuiText> },
-                          { label: 'Author', value: <EuiBadge color="hollow" iconType="logoElastic" iconSide="left">Elastic</EuiBadge> },
-                          { label: 'Severity', value: <EuiHealth color={getSeverityColor(rule.severity)}>{rule.severity?.charAt(0).toUpperCase() + rule.severity?.slice(1) || 'High'}</EuiHealth> },
-                          { label: 'Risk score', value: <EuiText size="s">{String(rule.riskScore || 73)}</EuiText> },
-                          { label: 'License', value: <EuiText size="s">Elastic Licence v2</EuiText> },
-                          { label: 'Max alerts per run', value: <EuiText size="s">100</EuiText> },
-                        ].map(({ label, value }, i, arr) => (
-                          <div key={label} style={{ display: 'flex', alignItems: 'center', borderBottom: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                            <div style={{ width: '50%', flexShrink: 0, padding: '8px 12px', borderRight: '1px solid #d3dae6' }}>
-                              <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21' }}>{label}</EuiText>
-                            </div>
-                            <div style={{ padding: '8px 12px' }}>{value}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Tags */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Tags</EuiText>
-                        <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
-                          {['Tag name number 1', 'Tag name number 2', 'Tag name number 3'].map(t => (
-                            <EuiFlexItem grow={false} key={t}><EuiBadge color="hollow">{t}</EuiBadge></EuiFlexItem>
-                          ))}
-                        </EuiFlexGroup>
-                      </div>
-
-                      {/* Related integrations */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Related integrations</EuiText>
-                        <div style={{ border: '1px solid #d3dae6', borderRadius: 4, overflow: 'hidden' }}>
-                          {[
-                            { name: 'Elastic Defend', status: 'Enabled' },
-                            { name: 'Network Packet Capture', status: 'Enabled' },
-                          ].map(({ name, status }, i, arr) => (
-                            <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderBottom: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                              <EuiLink href="#">{name}</EuiLink>
-                              <EuiButtonIcon iconType="popout" aria-label="Open" size="xs" color="primary" />
-                              <EuiBadge color="success">{status}</EuiBadge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Required fields */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Required fields</EuiText>
-                        <div style={{ border: '1px solid #d3dae6', borderRadius: 4, overflow: 'hidden' }}>
-                          {['event.type', 'File.path'].map((f, i, arr) => (
-                            <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                              <EuiIcon type="tokenField" size="s" color="primary" style={{ flexShrink: 0 }} />
-                              <EuiText size="s" style={{ fontFamily: 'monospace' }}>{f}</EuiText>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* MITRE ATT&CK */}
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>MITRE ATT&CK™</EuiText>
-                        <EuiLink href="#"><EuiText size="s">Defense Evasion (TA0005)</EuiText></EuiLink>
-                        <div style={{ paddingLeft: 16, marginTop: 4 }}>
-                          <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ marginBottom: 2 }}>
-                            <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">└─</EuiText></EuiFlexItem>
-                            <EuiFlexItem><EuiLink href="#"><EuiText size="xs">File and Directory Permissions Modification (T1222)</EuiText></EuiLink></EuiFlexItem>
-                          </EuiFlexGroup>
-                          <div style={{ paddingLeft: 16 }}>
-                            <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                              <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">└─</EuiText></EuiFlexItem>
-                              <EuiFlexItem><EuiLink href="#"><EuiText size="xs">Windows File and Directory Permissions Modification (T1222.001)</EuiText></EuiLink></EuiFlexItem>
-                            </EuiFlexGroup>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Timeline template */}
-                      <div>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 2 }}>Timeline template</EuiText>
-                        <EuiText size="s">None</EuiText>
-                      </div>
+                        {/* Schedule Section */}
+                        <EuiFlexItem>
+                          <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m">
+                            <EuiTitle size="m">
+                              <h2>Schedule</h2>
+                            </EuiTitle>
+                            <EuiSpacer size="m" />
+                            <EuiDescriptionList
+                              type="column"
+                              style={{ rowGap: '24px', columnGap: '64px' }}
+                              listItems={[
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Runs every</EuiText>,
+                                  description: <EuiText size="s">5m</EuiText>,
+                                },
+                                {
+                                  title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Additional look-back time</EuiText>,
+                                  description: <EuiText size="s">4m</EuiText>,
+                                },
+                              ]}
+                            />
+                          </EuiPanel>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
                     </EuiFlexItem>
-
                   </EuiFlexGroup>
                 )}
 
-                {/* ── EXECUTIONS TAB ── */}
-                {selectedTab === 'executions' && (
-                  <EuiFlexGroup gutterSize="none" alignItems="stretch" responsive={false}>
+                {selectedTab === 'execution' && (
+                  <>
+                    {/* Execution log */}
+                    <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ borderRadius: '6px' }}>
 
-                    {/* LEFT: Execution log */}
-                    <EuiFlexItem style={{ paddingRight: 24, maxWidth: '61%' }}>
-                  <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
-                    <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}><EuiTitle size="m"><h2>Execution log</h2></EuiTitle></EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiFlexGroup gutterSize="s" responsive={false}>
-                          <EuiFlexItem grow={false}>
-                            <EuiFilterGroup>
-                              <EuiPopover
-                                button={<EuiFilterButton iconType="arrowDown" iconSide="right" onClick={() => setRunTypePopoverOpen(!runTypePopoverOpen)} isSelected={runTypePopoverOpen} numFilters={runTypeOptions.length} numActiveFilters={runTypeActiveCount} hasActiveFilters={runTypeActiveCount > 0}>Run type</EuiFilterButton>}
-                                isOpen={runTypePopoverOpen} closePopover={() => setRunTypePopoverOpen(false)} panelPaddingSize="none"
-                              >
-                                <EuiSelectable searchable searchProps={{ placeholder: 'Filter list', compressed: true }} options={runTypeOptions} onChange={opts => setRunTypeOptions(opts)}>
-                                  {(list, search) => <div style={{ width: 240 }}><div style={{ padding: '8px 8px 4px' }}>{search}</div>{list}</div>}
-                                </EuiSelectable>
-                              </EuiPopover>
-                            </EuiFilterGroup>
-                          </EuiFlexItem>
-                          <EuiFlexItem grow={false}>
-                            <EuiFilterGroup>
-                              <EuiPopover
-                                button={<EuiFilterButton iconType="arrowDown" iconSide="right" onClick={() => setStatusPopoverOpen(!statusPopoverOpen)} isSelected={statusPopoverOpen} numFilters={statusOptions.length} numActiveFilters={statusActiveCount} hasActiveFilters={statusActiveCount > 0}>Status</EuiFilterButton>}
-                                isOpen={statusPopoverOpen} closePopover={() => setStatusPopoverOpen(false)} panelPaddingSize="none"
-                              >
-                                <EuiSelectable searchable searchProps={{ placeholder: 'Filter list', compressed: true }} options={statusOptions} onChange={opts => setStatusOptions(opts)}>
-                                  {(list, search) => <div style={{ width: 240 }}><div style={{ padding: '8px 8px 4px' }}>{search}</div>{list}</div>}
-                                </EuiSelectable>
-                              </EuiPopover>
-                            </EuiFilterGroup>
-                          </EuiFlexItem>
-                          <EuiFlexItem grow={false}><EuiButton size="s" iconType="calendar">Last 90 days</EuiButton></EuiFlexItem>
-                        </EuiFlexGroup>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
+                      {/* Panel title row with filter dropdowns */}
+                      <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiTitle size="m"><h2>Execution log</h2></EuiTitle>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                            <EuiFlexItem grow={false}>
+                              <EuiFilterGroup>
+                                <EuiPopover
+                                  button={
+                                    <EuiFilterButton
+                                      iconType="arrowDown"
+                                      iconSide="right"
+                                      onClick={() => setRunTypePopoverOpen(!runTypePopoverOpen)}
+                                      isSelected={runTypePopoverOpen}
+                                      numFilters={runTypeOptions.length}
+                                      numActiveFilters={runTypeActiveCount}
+                                      hasActiveFilters={runTypeActiveCount > 0}
+                                    >
+                                      Run type
+                                    </EuiFilterButton>
+                                  }
+                                  isOpen={runTypePopoverOpen}
+                                  closePopover={() => setRunTypePopoverOpen(false)}
+                                  panelPaddingSize="none"
+                                >
+                                  <EuiSelectable
+                                    searchable
+                                    searchProps={{ placeholder: 'Filter list', compressed: true }}
+                                    options={runTypeOptions}
+                                    onChange={(opts) => setRunTypeOptions(opts)}
+                                  >
+                                    {(list, search) => (
+                                      <div style={{ width: 240 }}>
+                                        <div style={{ padding: '8px 8px 4px' }}>{search}</div>
+                                        {list}
+                                      </div>
+                                    )}
+                                  </EuiSelectable>
+                                </EuiPopover>
+                              </EuiFilterGroup>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiFilterGroup>
+                                <EuiPopover
+                                  button={
+                                    <EuiFilterButton
+                                      iconType="arrowDown"
+                                      iconSide="right"
+                                      onClick={() => setStatusPopoverOpen(!statusPopoverOpen)}
+                                      isSelected={statusPopoverOpen}
+                                      numFilters={statusOptions.length}
+                                      numActiveFilters={statusActiveCount}
+                                      hasActiveFilters={statusActiveCount > 0}
+                                    >
+                                      Status
+                                    </EuiFilterButton>
+                                  }
+                                  isOpen={statusPopoverOpen}
+                                  closePopover={() => setStatusPopoverOpen(false)}
+                                  panelPaddingSize="none"
+                                >
+                                  <EuiSelectable
+                                    searchable
+                                    searchProps={{ placeholder: 'Filter list', compressed: true }}
+                                    options={statusOptions}
+                                    onChange={(opts) => setStatusOptions(opts)}
+                                  >
+                                    {(list, search) => (
+                                      <div style={{ width: 240 }}>
+                                        <div style={{ padding: '8px 8px 4px' }}>{search}</div>
+                                        {list}
+                                      </div>
+                                    )}
+                                  </EuiSelectable>
+                                </EuiPopover>
+                              </EuiFilterGroup>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButton size="s" iconType="calendar">Last 90 days</EuiButton>
+                            </EuiFlexItem>
+                          </EuiFlexGroup>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
 
-                    <EuiSpacer size="m" />
+                      <EuiSpacer size="m" />
 
-                    {/* Summary health bar */}
-                    <EuiPanel color="plain" hasBorder hasShadow={false} paddingSize="none">
-                      <div style={{ padding: '14px 16px', display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-                        <EuiText size="s"><strong>Overall health:</strong></EuiText>
-                        <EuiBadge color="danger">Action required</EuiBadge>
-                        <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
-                        <EuiText size="s"><strong>Last run:</strong></EuiText>
-                        <EuiBadge color="danger">Failed</EuiBadge>
-                        <EuiText size="s" color="subdued">4 min ago</EuiText>
-                        <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
-                        <EuiText size="s"><strong>Failure rate:</strong></EuiText>
-                        <EuiBadge color="danger">0.4%</EuiBadge>
-                        <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
-                        <EuiText size="s"><strong>Total executions:</strong></EuiText>
-                        <EuiBadge color="hollow">1532</EuiBadge>
-                        <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
-                        <EuiText size="s"><strong>Gaps:</strong></EuiText>
-                        <EuiBadge color="warning">2 detected</EuiBadge>
-                      </div>
-                    </EuiPanel>
+                      {/* Summary health bar */}
+                      <EuiPanel color="plain" hasBorder hasShadow={false} paddingSize="none">
+                        <div style={{ padding: '14px 16px', display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                          <EuiText size="s"><strong>Overall health:</strong></EuiText>
+                          <EuiBadge color="danger">Action required</EuiBadge>
 
-                    <EuiSpacer size="m" />
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
 
-                    <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
-                      <EuiFlexItem grow={false}><EuiText size="s" color="subdued">Showing 40 rule executions</EuiText></EuiFlexItem>
-                      <EuiFlexItem grow={false}>
-                        <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
-                          <EuiFlexItem grow={false}><EuiSwitch label="Show source event time range" checked={showSourceEventRange} onChange={e => setShowSourceEventRange(e.target.checked)} compressed /></EuiFlexItem>
-                          <EuiFlexItem grow={false}><EuiSwitch label="Show metrics columns" checked={showMetricsColumns} onChange={e => setShowMetricsColumns(e.target.checked)} compressed /></EuiFlexItem>
-                          <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Updated 3 minutes ago</EuiText></EuiFlexItem>
-                          <EuiFlexItem grow={false}><EuiButtonIcon iconType="refresh" aria-label="Refresh" size="s" /></EuiFlexItem>
-                        </EuiFlexGroup>
-                      </EuiFlexItem>
-                    </EuiFlexGroup>
-                    <EuiSpacer size="m" />
+                          <EuiText size="s"><strong>Last run:</strong></EuiText>
+                          <EuiBadge color="danger">Failed</EuiBadge>
+                          <EuiText size="s" color="subdued">4 min ago</EuiText>
 
-                    <EuiBasicTable
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Failure rate:</strong></EuiText>
+                          <EuiBadge color="danger">0.4%</EuiBadge>
+
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Total executions:</strong></EuiText>
+                          <EuiBadge color="hollow">1532</EuiBadge>
+
+                          <div style={{ width: 1, height: 16, background: '#d3dae6' }} />
+
+                          <EuiText size="s"><strong>Gaps:</strong></EuiText>
+                          <EuiBadge color="warning">2 detected</EuiBadge>
+                        </div>
+                      </EuiPanel>
+
+                      <EuiSpacer size="m" />
+
+                      {/* Filters and controls */}
+                      <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiText size="s" color="subdued">Showing 40 rule executions</EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                            <EuiFlexItem grow={false}>
+                              <EuiSwitch
+                                label="Show source event time range"
+                                checked={showSourceEventRange}
+                                onChange={(e) => setShowSourceEventRange(e.target.checked)}
+                                compressed
+                              />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiSwitch
+                                label="Show metrics columns"
+                                checked={showMetricsColumns}
+                                onChange={(e) => setShowMetricsColumns(e.target.checked)}
+                                compressed
+                              />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiText size="xs" color="subdued">Updated 3 minutes ago</EuiText>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButtonIcon iconType="refresh" aria-label="Refresh" size="s" />
+                            </EuiFlexItem>
+                          </EuiFlexGroup>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+
+                      <EuiSpacer size="m" />
+
+                      <EuiBasicTable
                       items={[
-                        { id: '1', status: 'failed', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 1, matchedEvents: 63, message: 'The rule is attempting to query data from Elasticsearch indices...' },
-                        { id: '2', status: 'succeeded', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 2, matchedEvents: 36, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '1', status: 'succeeded', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', duration: '00:01:24', alertsCreated: 1, matchedEvents: 63, message: 'The rule is attempting to query data from Elasticsearch indices...' },
+                        { id: '2', status: 'failed', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 2, matchedEvents: 36, message: 'The rule is attempting to query data from Elasticsearch indices...' },
                         { id: '3', status: 'succeeded', runType: 'Manual', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', duration: '00:01:24', alertsCreated: 0, matchedEvents: 244, message: 'The rule is attempting to query data from Elasticsearch indices...' },
                         { id: '4', status: 'failed', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 1, matchedEvents: 164, message: 'The rule is attempting to query data from Elasticsearch indices...' },
                         { id: '5', status: 'succeeded', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 0, matchedEvents: 64, message: 'The rule is attempting to query data from Elasticsearch indices...' },
@@ -669,186 +909,829 @@ const RuleDetailsPage: React.FC = () => {
                         { id: '10', status: 'error', runType: 'Scheduled', timestamp: 'Aug 11, 2026 @11:51:07', sourceEventRange: '', duration: '00:01:24', alertsCreated: 0, matchedEvents: 153, message: 'The rule is attempting to query data from Elasticsearch indices...' },
                       ].slice(executionPageIndex * executionPageSize, (executionPageIndex + 1) * executionPageSize)}
                       columns={[
-                        { field: 'status', name: 'Status', width: '120px', render: (s: string) => <div style={{ whiteSpace: 'nowrap' }}><EuiHealth color={s === 'succeeded' ? 'success' : s === 'failed' ? 'danger' : 'warning'}>{s.charAt(0).toUpperCase() + s.slice(1)}</EuiHealth></div> },
-                        { field: 'runType', name: 'Run type', width: '110px' },
-                        { field: 'timestamp', name: 'Timestamp', width: '200px', render: (t: string) => <div style={{ whiteSpace: 'nowrap' }}>{t}</div> },
-                        ...(showSourceEventRange ? [{ field: 'sourceEventRange', name: 'Source event time range', width: '280px' }] : []),
-                        { field: 'duration', name: 'Duration', width: '100px' },
-                        { field: 'alertsCreated', name: 'Alerts created', width: '120px' },
-                        { field: 'matchedEvents', name: 'Matched events', width: '130px' },
-                        { field: 'message', name: 'Message', truncateText: true },
-                        { name: 'Action', width: '100px', render: () => <EuiLink onClick={() => setIsFlyoutVisible(true)}>View details</EuiLink> },
+                        {
+                          field: 'status',
+                          name: 'Status',
+                          width: '120px',
+                          truncateText: false,
+                          render: (status: string) => {
+                            const color = status === 'succeeded' ? 'success' : status === 'failed' ? 'danger' : 'warning';
+                            return (
+                              <div style={{ whiteSpace: 'nowrap' }}>
+                                <EuiHealth color={color}>{status.charAt(0).toUpperCase() + status.slice(1)}</EuiHealth>
+                              </div>
+                            );
+                          },
+                        },
+                        {
+                          field: 'runType',
+                          name: 'Run type',
+                          width: '110px',
+                        },
+                        {
+                          field: 'timestamp',
+                          name: 'Timestamp',
+                          width: '200px',
+                          truncateText: false,
+                          render: (timestamp: string) => (
+                            <div style={{ whiteSpace: 'nowrap' }}>{timestamp}</div>
+                          ),
+                        },
+                        ...(showSourceEventRange ? [{
+                          field: 'sourceEventRange',
+                          name: 'Source event time range',
+                          width: '280px',
+                        }] : []),
+                        {
+                          field: 'duration',
+                          name: 'Duration',
+                          width: '100px',
+                        },
+                        {
+                          field: 'alertsCreated',
+                          name: 'Alerts created',
+                          width: '120px',
+                        },
+                        {
+                          field: 'matchedEvents',
+                          name: 'Matched events',
+                          width: '130px',
+                        },
+                        {
+                          field: 'message',
+                          name: 'Message',
+                          truncateText: true,
+                        },
+                        {
+                          name: 'Action',
+                          width: '100px',
+                          render: (item: any) => (
+                            <EuiLink 
+                              onClick={() => {
+                                setSelectedExecution(item);
+                                setIsFlyoutVisible(true);
+                              }}
+                            >
+                              View details
+                            </EuiLink>
+                          ),
+                        },
                       ]}
-                      pagination={{ pageIndex: executionPageIndex, pageSize: executionPageSize, totalItemCount: 40, pageSizeOptions: [10, 25, 50], showPerPageOptions: true }}
-                      onChange={({ page }: any) => { if (page) { setExecutionPageIndex(page.index); setExecutionPageSize(page.size); } }}
+                      pagination={{
+                        pageIndex: executionPageIndex,
+                        pageSize: executionPageSize,
+                        totalItemCount: 40,
+                        pageSizeOptions: [10, 25, 50],
+                        showPerPageOptions: true,
+                      }}
+                      onChange={({ page }: any) => {
+                        if (page) {
+                          setExecutionPageIndex(page.index);
+                          setExecutionPageSize(page.size);
+                        }
+                      }}
                     />
-                  </EuiPanel>
-                    </EuiFlexItem>
+                    </EuiPanel>
 
-                    {/* RIGHT: Rule conditions (same as Overview) */}
-                    <EuiFlexItem style={{ borderLeft: '1px solid #d3dae6', paddingLeft: 24, minWidth: 0 }}>
-                      <EuiTitle size="s"><h3>Rule conditions</h3></EuiTitle>
-                      <EuiHorizontalRule margin="s" />
+                    <EuiSpacer size="l" />
 
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 4 }}>Rule type</EuiText>
-                        <EuiText size="s">ES|QL</EuiText>
-                      </div>
+                    {/* Manual/Gap fill tasks */}
+                    <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ borderRadius: '6px' }}>
+                      <EuiTitle size="m">
+                        <h2>Manual/Gap fill tasks</h2>
+                      </EuiTitle>
+                      <EuiSpacer size="m" />
 
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Query</EuiText>
-                        <EuiCodeBlock language="sql" fontSize="s" paddingSize="s" isCopyable>
-{`FROM metrics-us-east-1:traces-apm-default
-| STATS cpu = AVG(CPU) BY host.name`}
-                        </EuiCodeBlock>
-                      </div>
+                      <EuiFlexGroup gutterSize="s" alignItems="center" justifyContent="spaceBetween" responsive={false}>
+                        <EuiFlexItem grow={false}>
+                          <EuiText size="s" color="subdued">
+                            Showing 20 execution tasks
+                          </EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem grow={false}>
+                          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+                            <EuiFlexItem grow={false}>
+                              <EuiText size="xs" color="subdued">
+                                Updated 3 minutes ago
+                              </EuiText>
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButtonIcon iconType="refresh" aria-label="Refresh" size="s" />
+                            </EuiFlexItem>
+                            <EuiFlexItem grow={false}>
+                              <EuiButton size="s" iconType="calendar">
+                                Last 90 days
+                              </EuiButton>
+                            </EuiFlexItem>
+                          </EuiFlexGroup>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
 
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Index patterns</EuiText>
-                        <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
-                          {['logs-endpoint.events.process-*', 'logs-system.security*', 'winlogbeat-*'].map(p => (
-                            <EuiFlexItem grow={false} key={p}><EuiBadge color="hollow">{p}</EuiBadge></EuiFlexItem>
-                          ))}
-                        </EuiFlexGroup>
-                      </div>
+                      <EuiSpacer size="m" />
 
-                      <div style={{ marginBottom: 36, border: '1px solid #d3dae6', borderRadius: 4, overflow: 'hidden' }}>
-                        {[
-                          { label: 'Rule type', value: <EuiText size="s">ES|QL</EuiText> },
-                          { label: 'Author', value: <EuiBadge color="hollow" iconType="logoElastic" iconSide="left">Elastic</EuiBadge> },
-                          { label: 'Severity', value: <EuiHealth color={getSeverityColor(rule.severity)}>{rule.severity?.charAt(0).toUpperCase() + rule.severity?.slice(1) || 'High'}</EuiHealth> },
-                          { label: 'Risk score', value: <EuiText size="s">{String(rule.riskScore || 73)}</EuiText> },
-                          { label: 'License', value: <EuiText size="s">Elastic Licence v2</EuiText> },
-                          { label: 'Max alerts per run', value: <EuiText size="s">100</EuiText> },
-                        ].map(({ label, value }, i, arr) => (
-                          <div key={label} style={{ display: 'flex', alignItems: 'center', borderBottom: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                            <div style={{ width: '50%', flexShrink: 0, padding: '8px 12px', borderRight: '1px solid #d3dae6' }}>
-                              <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21' }}>{label}</EuiText>
-                            </div>
-                            <div style={{ padding: '8px 12px' }}>{value}</div>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Related integrations</EuiText>
-                        <div style={{ border: '1px solid #d3dae6', borderRadius: 4, overflow: 'hidden' }}>
-                          {[{ name: 'Elastic Defend', status: 'Enabled' }, { name: 'Network Packet Capture', status: 'Enabled' }].map(({ name, status }, i, arr) => (
-                            <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderBottom: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                              <EuiLink href="#">{name}</EuiLink>
-                              <EuiButtonIcon iconType="popout" aria-label="Open" size="xs" color="primary" />
-                              <EuiBadge color="success">{status}</EuiBadge>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div style={{ marginBottom: 36 }}>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 6 }}>Required fields</EuiText>
-                        <div style={{ border: '1px solid #d3dae6', borderRadius: 4, overflow: 'hidden' }}>
-                          {['event.type', 'File.path'].map((f, i, arr) => (
-                            <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: i < arr.length - 1 ? '1px solid #d3dae6' : 'none' }}>
-                              <EuiIcon type="tokenField" size="s" color="primary" style={{ flexShrink: 0 }} />
-                              <EuiText size="s" style={{ fontFamily: 'monospace' }}>{f}</EuiText>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <EuiText size="s" style={{ fontWeight: 700, color: '#1a1c21', marginBottom: 4 }}>Timeline template</EuiText>
-                        <EuiText size="s">None</EuiText>
-                      </div>
-                    </EuiFlexItem>
-
-                  </EuiFlexGroup>
+                      <EuiBasicTable
+                      items={[
+                        { id: '1', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'John@doe.com', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 10, completed: 10, totalTasks: 25 },
+                        { id: '2', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'Auto gap fill', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 1, completed: 1, totalTasks: 2 },
+                        { id: '3', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'Auto gap fill', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 0, completed: 0, totalTasks: 1 },
+                        { id: '4', status: 'in-progress', createdAt: 'Aug 11, 2023 @11:51:07', createdBy: 'Auto gap fill', sourceEventRange: 'Aug 10, 2023 @15:33:09 - Aug 10, 2023 @15:34:08', errors: 0, pending: 0, running: 0, completed: 0, totalTasks: 1 },
+                      ].slice(gapFillPageIndex * gapFillPageSize, (gapFillPageIndex + 1) * gapFillPageSize)}
+                      columns={[
+                        {
+                          field: 'status',
+                          name: 'Status',
+                          width: '120px',
+                          render: (status: string) => (
+                            <EuiHealth color="primary">In progress</EuiHealth>
+                          ),
+                        },
+                        {
+                          field: 'createdAt',
+                          name: 'Created at',
+                          width: '180px',
+                        },
+                        {
+                          field: 'createdBy',
+                          name: 'Created by',
+                          width: '150px',
+                        },
+                        {
+                          field: 'sourceEventRange',
+                          name: 'Source event time range',
+                          width: '280px',
+                        },
+                        {
+                          field: 'errors',
+                          name: 'Errors',
+                          width: '80px',
+                        },
+                        {
+                          field: 'pending',
+                          name: 'Pending',
+                          width: '80px',
+                        },
+                        {
+                          field: 'running',
+                          name: 'Running',
+                          width: '80px',
+                        },
+                        {
+                          field: 'completed',
+                          name: 'Completed',
+                          width: '100px',
+                        },
+                        {
+                          field: 'totalTasks',
+                          name: 'Total tasks',
+                          width: '100px',
+                        },
+                        {
+                          name: 'Action',
+                          width: '80px',
+                          render: () => (
+                            <EuiLink href="#">Stop</EuiLink>
+                          ),
+                        },
+                      ]}
+                      pagination={{
+                        pageIndex: gapFillPageIndex,
+                        pageSize: gapFillPageSize,
+                        totalItemCount: 20,
+                        pageSizeOptions: [10, 25, 50],
+                        showPerPageOptions: true,
+                      }}
+                      onChange={({ page }: any) => {
+                        if (page) {
+                          setGapFillPageIndex(page.index);
+                          setGapFillPageSize(page.size);
+                        }
+                      }}
+                    />
+                    </EuiPanel>
+                  </>
                 )}
 
+                {selectedTab !== 'overview' && selectedTab !== 'execution' && (
+                  <EuiText textAlign="center" color="subdued">
+                    <p>No {selectedTab} data available</p>
+                  </EuiText>
+                )}
               </div>
             </EuiPanel>
           </EuiFlexItem>
+
+          {/* Version History Pane */}
+          {isHistoryPaneOpen && (
+            <EuiFlexItem grow={false} style={{ width: 640 }}>
+              <EuiPanel
+                paddingSize="none"
+                hasShadow={true}
+                style={{
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  minHeight: 'calc(100vh - 64px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {/* Pane header */}
+                <div style={{
+                  padding: '14px 16px',
+                  borderBottom: '1px solid #D3DAE6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                }}>
+                  <EuiText style={{ fontWeight: 700, fontSize: 16 }}>Version history</EuiText>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <EuiButtonIcon iconType="calendar" aria-label="Calendar" color="text" size="s" />
+                    <EuiButtonIcon iconType="sortable" aria-label="Filter" color="text" size="s" />
+                    <div style={{ width: 1, height: 16, background: '#D3DAE6', margin: '0 4px' }} />
+                    <EuiButtonIcon
+                      iconType="cross"
+                      aria-label="Close history"
+                      color="text"
+                      size="s"
+                      onClick={() => setIsHistoryPaneOpen(false)}
+                    />
+                  </div>
+                </div>
+
+                {/* Version list */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                  {versionHistory.map((entry, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        margin: '12px 8px',
+                        borderRadius: 6,
+                        border: '1px solid #D3DAE6',
+                        background: entry.isCurrent ? '#EEF2FF' : '#fff',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          gap: 8,
+                          cursor: entry.note ? 'pointer' : 'default',
+                        }}
+                        onClick={() =>
+                          entry.note &&
+                          setExpandedHistoryVersion(
+                            expandedHistoryVersion === idx ? null : idx
+                          )
+                        }
+                      >
+                        {/* Left: timestamp + author */}
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <EuiText size="s" style={{ fontWeight: 600 }}>{entry.timestamp}</EuiText>
+                          <EuiText size="xs" color="subdued">
+                            {entry.author} &bull; {entry.detail}
+                          </EuiText>
+                        </div>
+
+                        {/* Right: badges */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                          {entry.isCurrent && (
+                            <span style={{
+                              fontSize: 11,
+                              color: '#69707D',
+                              border: '1px solid #D3DAE6',
+                              borderRadius: 4,
+                              padding: '2px 6px',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              Current version
+                            </span>
+                          )}
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#343741',
+                            border: '1px solid #D3DAE6',
+                            borderRadius: 12,
+                            padding: '2px 8px',
+                          }}>
+                            {entry.ruleVersion}
+                          </span>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#343741',
+                            border: '1px solid #D3DAE6',
+                            borderRadius: 12,
+                            padding: '2px 8px',
+                          }}>
+                            {entry.version}
+                          </span>
+                        </div>
+
+                        <EuiButtonIcon
+                          iconType="boxesHorizontal"
+                          aria-label="Version actions"
+                          color="text"
+                          size="xs"
+                          style={{ flexShrink: 0 }}
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        />
+                      </div>
+
+                      {/* Expanded note */}
+                      {entry.note && expandedHistoryVersion === idx && (
+                        <div style={{
+                          margin: '0 12px 10px',
+                          padding: '6px 10px',
+                          background: '#F0F4FA',
+                          borderRadius: 4,
+                          border: '1px solid #D3DAE6',
+                        }}>
+                          <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#343741' }}>
+                            {entry.note}
+                          </EuiText>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Footer */}
+                <div style={{
+                  padding: '12px 16px',
+                  borderTop: '1px solid #D3DAE6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexShrink: 0,
+                }}>
+                  <EuiIcon type="clock" size="s" color="subdued" />
+                  <EuiText size="xs" color="subdued">On Jan 1 2026 @ 00:00 History started</EuiText>
+                </div>
+              </EuiPanel>
+            </EuiFlexItem>
+          )}
         </EuiFlexGroup>
       </div>
 
       {/* Execution Details Flyout */}
       {isFlyoutVisible && (
-        <div style={{ position: 'fixed', right: 0, top: 0, bottom: 0, width: 640, background: '#fff', boxShadow: '-4px 0 16px rgba(0,0,0,0.15)', zIndex: 1000, overflowY: 'auto', padding: 24 }}>
-          <EuiFlexGroup justifyContent="spaceBetween" alignItems="center" responsive={false} style={{ marginBottom: 24 }}>
-            <EuiTitle size="s"><h2>Execution ID 9a1a2dae</h2></EuiTitle>
-            <EuiButtonIcon iconType="cross" aria-label="Close" size="s" onClick={() => setIsFlyoutVisible(false)} />
-          </EuiFlexGroup>
-          <EuiText size="xs" color="subdued" style={{ marginBottom: 24 }}>Aug 11, 2026 @11:51:07</EuiText>
-          <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ marginBottom: 24 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 16 }}>
-              <div><EuiText size="xs" color="subdued">Status</EuiText><EuiSpacer size="xs" /><EuiHealth color="success">Succeeded</EuiHealth></div>
-              <div><EuiText size="xs" color="subdued">Run type</EuiText><EuiSpacer size="xs" /><EuiText size="s">Scheduled</EuiText></div>
+        <EuiFlyout
+          onClose={() => setIsFlyoutVisible(false)}
+          size={640}
+          ownFocus={false}
+          hideCloseButton
+          paddingSize="none"
+          maxWidth={false}
+          resizable
+          minWidth={420}
+          aria-labelledby="executionDetailsFlyoutTitle"
+        >
+          {/* Compact header (sticky) */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 19,
+            background: '#fff',
+            borderBottom: '1px solid #d3dae6',
+            boxShadow: '0 4px 8px -2px rgba(0,0,0,0.08)',
+            transform: isCompactHeader ? 'translateY(0)' : 'translateY(-100%)',
+            opacity: isCompactHeader ? 1 : 0,
+            pointerEvents: isCompactHeader ? 'auto' : 'none',
+            transition: 'transform 240ms cubic-bezier(0.4,0,0.2,1), opacity 180ms ease'
+          }}>
+            <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <EuiText size="s" style={{ 
+                fontWeight: 600, 
+                flex: 1, 
+                whiteSpace: 'nowrap', 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis' 
+              }}>
+                Execution ID 9a1a2dae
+              </EuiText>
+              <EuiBadge color="success">Succeeded</EuiBadge>
             </div>
-          </EuiPanel>
+          </div>
 
-          {/* Flyout sections */}
-          {[
-            { key: 'summary', label: 'Execution summary', extra: <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} /> },
-            { key: 'metrics', label: 'Execution Metrics' },
-            { key: 'flow', label: 'Execution Flow' },
-            { key: 'matched', label: 'Matched events' },
-          ].map(({ key, label, extra }) => (
-            <div key={key} style={{ borderBottom: '1px solid #d3dae6', marginBottom: 4 }}>
-              <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection(key)} responsive={false}>
-                <EuiFlexItem grow={false}><EuiIcon type={flyoutSections[key] ? 'arrowDown' : 'arrowRight'} size="s" /></EuiFlexItem>
-                <EuiFlexItem grow={false}><EuiText size="s" style={{ fontWeight: 700 }}>{label}</EuiText></EuiFlexItem>
-                {extra && <EuiFlexItem grow={false}>{extra}</EuiFlexItem>}
-              </EuiFlexGroup>
-              {flyoutSections[key] && (
-                <div style={{ paddingBottom: 12 }}>
-                  {key === 'summary' && <EuiText size="s" color="subdued"><p>This rule executed successfully but encountered a configuration issue. No indices matched the index pattern (logs-endpoint.alerts-*).</p></EuiText>}
-                  {key === 'metrics' && (
-                    <EuiFlexGroup gutterSize="l" responsive={false}>
-                      {[{ l: 'Execution time', v: '00:00:00:054' }, { l: 'Events matched', v: '12' }, { l: 'Gap detected', v: '-' }].map(({ l, v }) => (
-                        <EuiFlexItem key={l}><EuiText size="xs" color="subdued">{l}</EuiText><EuiText size="s">{v}</EuiText></EuiFlexItem>
-                      ))}
-                    </EuiFlexGroup>
+          <EuiFlyoutBody className="executionFlyoutBody">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Full header - scrolls naturally */}
+              <div style={{ padding: '28px 16px 16px 16px', background: '#fff', position: 'relative' }}>
+                {/* Close button */}
+                <div style={{ position: 'absolute', top: 12, right: 12 }}>
+                  <EuiButtonIcon
+                    iconType="cross"
+                    aria-label="Close flyout"
+                    color="text"
+                    size="s"
+                    onClick={() => setIsFlyoutVisible(false)}
+                  />
+                </div>
+
+                <EuiTitle size="s">
+                  <h2 id="executionDetailsFlyoutTitle" style={{ 
+                    color: '#1a1c21',
+                    fontWeight: 600,
+                    lineHeight: '28px',
+                    fontSize: 20
+                  }}>
+                    Execution ID 9a1a2dae
+                  </h2>
+                </EuiTitle>
+                <EuiText size="xs" color="subdued" style={{ marginTop: 4 }}>
+                  Aug 11, 2026 @11:51:07
+                </EuiText>
+
+                {/* Info panel — 2 columns only */}
+                <EuiPanel 
+                  hasBorder 
+                  hasShadow={false} 
+                  paddingSize="m" 
+                  style={{ marginTop: 12, borderRadius: 4 }}
+                >
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                    {[
+                      { label: 'Status', content: <EuiHealth color="success">Succeeded</EuiHealth> },
+                      { label: 'Run type', content: <EuiText size="s">Scheduled</EuiText> },
+                    ].map((item, idx, arr) => (
+                      <div
+                        key={item.label}
+                        style={{
+                          paddingRight: idx < arr.length - 1 ? 16 : 0,
+                          paddingLeft: idx > 0 ? 16 : 0,
+                          borderRight: idx < arr.length - 1 ? '1px solid #d3dae6' : 'none',
+                        }}
+                      >
+                        <EuiText size="xs" color="subdued" style={{ fontWeight: 600 }}>
+                          {item.label}
+                        </EuiText>
+                        <EuiSpacer size="xs" />
+                        {item.content}
+                      </div>
+                    ))}
+                  </div>
+                </EuiPanel>
+              </div>
+
+              {/* Body section with accordions */}
+              <div style={{ padding: '8px 16px 24px', background: '#fff', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {/* Execution summary */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  {/* Header row */}
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('summary')}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type={flyoutSections.summary ? 'arrowDown' : 'arrowRight'} size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Execution summary</EuiText>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={true} />
+                    {summaryState === 'generated' && (
+                      <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                        <EuiButton
+                          size="s"
+                          iconType="discuss"
+                          style={{ background: '#e8e3fc', borderColor: 'transparent', color: '#5a3dc8', borderRadius: 8 }}
+                        >
+                          Add to chat
+                        </EuiButton>
+                      </EuiFlexItem>
+                    )}
+                    <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                      <EuiButtonIcon iconType="boxesHorizontal" aria-label="More options" color="text" size="xs" />
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+
+                  {/* Expanded content */}
+                  {flyoutSections.summary && (
+                    <div style={{ paddingBottom: 12 }}>
+
+                      {/* STATE: idle — prompt + generate button */}
+                      {summaryState === 'idle' && (
+                        <div style={{
+                          border: '1px solid #d3dae6',
+                          borderRadius: 8,
+                          padding: '12px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 16,
+                          background: '#fff',
+                        }}>
+                          <EuiText size="s" color="subdued">
+                            Analyse the execution result and generate an AI summary with recommended actions.
+                          </EuiText>
+                          <EuiButton
+                            size="s"
+                            iconType="sparkles"
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); generateSummary(); }}
+                            style={{ whiteSpace: 'nowrap', flexShrink: 0, background: '#e8e3fc', borderColor: 'transparent', color: '#5a3dc8' }}
+                          >
+                            Generate AI content
+                          </EuiButton>
+                        </div>
+                      )}
+
+                      {/* STATE: generating — loading skeleton */}
+                      {summaryState === 'generating' && (
+                        <div style={{
+                          border: '1px solid #d3dae6',
+                          borderRadius: 8,
+                          padding: '16px',
+                          background: '#fafafa',
+                        }}>
+                          <EuiText size="s" color="subdued" style={{ marginBottom: 12, fontStyle: 'italic' }}>
+                            Generating AI content ...
+                          </EuiText>
+                          <div style={{ height: 10, borderRadius: 5, background: 'linear-gradient(90deg, #c5b8f5 0%, #e8e3fc 60%, #c5b8f5 100%)', marginBottom: 8, backgroundSize: '200% 100%' }} />
+                          <div style={{ height: 10, borderRadius: 5, width: '65%', background: 'linear-gradient(90deg, #c5b8f5 0%, #e8e3fc 60%, #c5b8f5 100%)', backgroundSize: '200% 100%' }} />
+                        </div>
+                      )}
+
+                      {/* STATE: generated — AI content */}
+                      {summaryState === 'generated' && (
+                        <div style={{ border: '1px solid #d3dae6', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
+                          {/* Dotted content area */}
+                          <div style={{ padding: '16px', border: '1.5px dashed #7B61FF', borderRadius: 6, margin: 12, background: 'rgba(232, 227, 252, 0.5)' }}>
+                            <EuiText size="s">
+                              <p style={{ margin: 0, lineHeight: '20px', color: '#343741' }}>
+                                This rule executed successfully but encountered a configuration issue. The query returned 0 
+                                matching events because no indices matched the rule's index pattern (logs-endpoint.alerts-*). As a 
+                                result, no alerts were generated.
+                              </p>
+                            </EuiText>
+                            <EuiSpacer size="s" />
+                            <EuiText size="xs" style={{ fontWeight: 700 }}>Recommended actions</EuiText>
+                            <EuiText size="s">
+                              <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
+                                <li>Verify that the index pattern is correct.</li>
+                                <li>Confirm that data is being ingested into the expected indices.</li>
+                                <li>If Endpoint Security was recently deployed, alerts may appear once data is available.</li>
+                              </ul>
+                            </EuiText>
+                          </div>
+
+                          {/* Footer */}
+                          <EuiHorizontalRule margin="none" />
+                          <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <EuiText size="xs" color="subdued">Generated by AI on mmm dd, yyyy at hh:mm</EuiText>
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              <EuiButtonIcon iconType="refresh" aria-label="Regenerate" color="text" size="xs" onClick={() => setSummaryState('idle')} />
+                              <EuiButtonIcon iconType="copy" aria-label="Copy" color="text" size="xs" />
+                              <EuiButtonIcon iconType="thumbsUp" aria-label="Helpful" color="text" size="xs" />
+                              <EuiButtonIcon iconType="thumbsDown" aria-label="Not helpful" color="text" size="xs" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
                   )}
-                  {key === 'flow' && (
-                    <div style={{ background: '#f0f4f9', border: '1px solid #d3dae6', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                </div>
+
+                {/* Message */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('message')}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type={flyoutSections.message ? 'arrowDown' : 'arrowRight'} size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Message</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  {flyoutSections.message && (
+                    <div style={{ paddingBottom: 12 }}>
+                      <EuiCodeBlock language="text" fontSize="s" paddingSize="m" isCopyable={false}>
+                        Rule executed successfully
+                      </EuiCodeBlock>
+                    </div>
+                  )}
+                </div>
+
+                {/* Alerts */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('alerts')}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type={flyoutSections.alerts ? 'arrowDown' : 'arrowRight'} size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Alerts</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  {flyoutSections.alerts && (<div style={{ paddingBottom: 12 }}>
+                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 4 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                        {[
+                          { label: 'Alerts created', value: '5' },
+                          { label: 'Candidate alerts', value: '5' },
+                        ].map((item, idx, arr) => (
+                          <div
+                            key={item.label}
+                            style={{
+                              paddingRight: idx < arr.length - 1 ? 16 : 0,
+                              paddingLeft: idx > 0 ? 16 : 0,
+                              borderRight: idx < arr.length - 1 ? '1px solid #d3dae6' : 'none',
+                            }}
+                          >
+                            <EuiText size="s" style={{ fontWeight: 600 }}>{item.label}</EuiText>
+                            <EuiSpacer size="xs" />
+                            <EuiText size="m" style={{ fontWeight: 700 }}>{item.value}</EuiText>
+                          </div>
+                        ))}
+                      </div>
+                    </EuiPanel>
+                  </div>)}
+                </div>
+
+                {/* Execution Metrics */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('metrics')}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type={flyoutSections.metrics ? 'arrowDown' : 'arrowRight'} size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Execution Metrics</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  {flyoutSections.metrics && (<div style={{ paddingBottom: 12 }}>
+                    <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
+                      <EuiFlexGroup gutterSize="l">
+                        <EuiFlexItem>
+                          <EuiText size="xs" color="subdued" style={{ fontWeight: 600 }}>
+                            Execution time ⓘ
+                          </EuiText>
+                          <EuiSpacer size="xs" />
+                          <EuiText size="s">00:00:00:054</EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                          <EuiText size="xs" color="subdued" style={{ fontWeight: 600 }}>
+                            Events matched
+                          </EuiText>
+                          <EuiSpacer size="xs" />
+                          <EuiText size="s">12</EuiText>
+                        </EuiFlexItem>
+                        <EuiFlexItem>
+                          <EuiText size="xs" color="subdued" style={{ fontWeight: 600 }}>
+                            Gap detected ⓘ
+                          </EuiText>
+                          <EuiSpacer size="xs" />
+                          <EuiText size="s">-</EuiText>
+                        </EuiFlexItem>
+                      </EuiFlexGroup>
+                    </EuiPanel>
+                  </div>)}
+                </div>
+
+                {/* Execution Flow */}
+                <div style={{ borderBottom: '1px solid #d3dae6' }}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('flow')}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type={flyoutSections.flow ? 'arrowDown' : 'arrowRight'} size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Execution Flow</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  {flyoutSections.flow && (
+                    <div style={{ paddingBottom: 12 }}>
+                    <div style={{
+                      background: '#f0f4f9',
+                      border: '1px solid #d3dae6',
+                      borderRadius: 12,
+                      padding: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
+                    }}>
                       {executionFlowSteps.map((step, idx) => (
                         <div key={idx}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: '#fff', border: '1px solid #d3dae6', borderRadius: 10, cursor: step.children.length > 0 ? 'pointer' : 'default' }} onClick={() => step.children.length > 0 && toggleFlowStep(idx)}>
+                          {/* Parent step card */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '12px 16px',
+                              background: '#fff',
+                              border: '1px solid #d3dae6',
+                              borderRadius: 10,
+                              cursor: step.children.length > 0 ? 'pointer' : 'default',
+                            }}
+                            onClick={() => step.children.length > 0 && toggleFlowStep(idx)}
+                          >
                             <EuiIcon type="check" size="s" color="success" style={{ flexShrink: 0 }} />
-                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#1a1c21' }}>{step.label}</span>
-                            <span style={{ fontSize: 13, color: '#69707d', whiteSpace: 'nowrap' }}>{step.duration}</span>
-                            <EuiIcon type={step.children.length > 0 && expandedFlowSteps[idx] ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" />
+                            <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#1a1c21' }}>
+                              {step.label}
+                            </span>
+                            <span style={{ fontSize: 13, color: '#69707d', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              {step.duration}
+                            </span>
+                            {step.children.length > 0 ? (
+                              <EuiIcon
+                                type={expandedFlowSteps[idx] ? 'arrowDown' : 'arrowRight'}
+                                size="s"
+                                color="subdued"
+                                style={{ flexShrink: 0 }}
+                              />
+                            ) : (
+                              <EuiIcon type="arrowRight" size="s" color="subdued" style={{ flexShrink: 0 }} />
+                            )}
                           </div>
-                          {expandedFlowSteps[idx] && step.children.map((child, ci) => (
-                            <div key={ci} style={{ marginLeft: 24, marginTop: 6, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: '#f5f7fa', border: '1px solid #d3dae6', borderRadius: 8 }}>
-                              <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#006bb8' }}>{'>_'}</EuiText>
-                              <span style={{ flex: 1, fontSize: 13, fontFamily: 'monospace', color: '#343741' }}>{child.label}</span>
-                              <span style={{ fontSize: 12, color: '#69707d' }}>{child.duration}</span>
+
+                          {/* Child step cards */}
+                          {expandedFlowSteps[idx] && step.children.length > 0 && (
+                            <div style={{ paddingLeft: 24, display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+                              {step.children.map((child, cIdx) => (
+                                <div
+                                  key={cIdx}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    padding: '10px 16px',
+                                    background: '#f5f7fa',
+                                    border: '1px solid #d3dae6',
+                                    borderRadius: 8,
+                                  }}
+                                >
+                                  <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#006bb8', flexShrink: 0 }}>
+                                    {'> _'}
+                                  </EuiText>
+                                  <span style={{ flex: 1, fontSize: 13, fontFamily: 'monospace', color: '#343741' }}>
+                                    {child.label}
+                                  </span>
+                                  <span style={{ fontSize: 12, color: '#69707d', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                    {child.duration}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
                         </div>
                       ))}
                     </div>
-                  )}
-                  {key === 'matched' && (
-                    <EuiBasicTable
-                      items={[
-                        { time: '11:50:10', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
-                        { time: '11:50:13', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
-                      ]}
-                      columns={[
-                        { field: 'time', name: 'Time', width: '80px' },
-                        { field: 'host', name: 'Host', width: '140px' },
-                        { field: 'user', name: 'User', width: '60px' },
-                        { field: 'process', name: 'Process', width: '80px' },
-                        { field: 'file', name: 'File' },
-                      ]}
-                    />
+                    </div>
                   )}
                 </div>
-              )}
+
+                {/* Matched events */}
+                <div>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" style={{ padding: '8px 0', cursor: 'pointer' }} onClick={() => toggleFlyoutSection('matched')}>
+                    <EuiFlexItem grow={false}>
+                      <EuiIcon type={flyoutSections.matched ? 'arrowDown' : 'arrowRight'} size="s" />
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiText size="s" style={{ fontWeight: 700 }}>Matched events</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                  {flyoutSections.matched && (
+                    <div style={{ paddingBottom: 12 }}>
+                      <EuiPanel hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 6 }}>
+                        <EuiBasicTable
+                          items={[
+                            { time: '11:50:10', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
+                            { time: '11:50:13', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
+                            { time: '11:50:16', host: 'james-fleet-714-2', user: 'root', process: 'wget', file: 'Media' },
+                          ]}
+                          columns={[
+                            { field: 'time', name: 'Time', width: '80px' },
+                            { field: 'host', name: 'Host', width: '140px' },
+                            { field: 'user', name: 'User', width: '60px' },
+                            { field: 'process', name: 'Process', width: '80px' },
+                            { field: 'file', name: 'File', width: '80px' },
+                          ]}
+                        />
+                      </EuiPanel>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+          </EuiFlyoutBody>
+
+          <EuiFlyoutFooter style={{ padding: '12px 16px', background: '#fff', borderTop: '1px solid #d3dae6' }}>
+            <EuiFlexGroup justifyContent="flexEnd" gutterSize="s" alignItems="center" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty iconType="discuss" iconSide="left" size="s" color="primary">
+                  Add to chat
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButton fill iconType="arrowDown" iconSide="right" size="s">
+                  Take action
+                </EuiButton>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlyoutFooter>
+        </EuiFlyout>
       )}
     </>
   );
