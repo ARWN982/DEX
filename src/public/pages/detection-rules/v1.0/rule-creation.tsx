@@ -144,7 +144,10 @@ const RuleCreationPage: React.FC = () => {
               hasShadow={true}
               style={{ borderRadius: 8, overflow: 'hidden', height: '100%' }}
             >
-              <RulesSecondaryNav />
+              <RulesSecondaryNav
+                selectedSection="installed"
+                onSectionChange={() => {}}
+              />
             </EuiPanel>
           </EuiFlexItem>
 

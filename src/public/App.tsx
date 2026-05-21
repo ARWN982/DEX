@@ -20,6 +20,7 @@ import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules"
 import InboxPage from "./pages/detection-rules/v1.0/inbox";
 import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
 import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
+import AgentsPage from "./pages/agents/AgentsPage";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -95,6 +96,10 @@ const App: React.FC = () => {
 
             {/* SIEM Readiness */}
             <Route path="/siem-readiness" element={<SiemReadinessPage />} />
+
+            {/* Agents */}
+            <Route path="/agents" element={<AgentsPage />} />
+
 
             {/* Rule details route - must come before the catch-all */}
             <Route

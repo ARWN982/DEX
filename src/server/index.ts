@@ -18,6 +18,7 @@ import projectsRoutes from "./routes/projects";
 import screenshotsRoutes from "./routes/screenshots";
 import templateMetadataRoutes from "./routes/templateMetadata";
 import versionsRoutes from "./routes/versions";
+import siemReadinessRoutes from "./routes/siemReadiness";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use("/api/projects", projectsRoutes);
 app.use("/api", screenshotsRoutes);
 app.use("/api/versions", versionsRoutes);
 app.use("/api/comments", commentsRoutes);
+app.use("/api", siemReadinessRoutes);
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
