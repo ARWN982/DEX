@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   EuiBadge,
   EuiButtonEmpty,
+  EuiButtonGroup,
   EuiButtonIcon,
   EuiFieldSearch,
   EuiFilterButton,
@@ -656,9 +657,14 @@ const TOKEN_WORKFLOWS: { label: string; value: string; color: string }[] = [
   { label: 'Gap analysis',          value: '27k',  color: '#9e3a16' },
 ];
 
+const SUMMARY_DIVIDER = (
+  <div style={{ width: 0, borderLeft: '1px solid #D3DAE6', flexShrink: 0, margin: '8px 0' }} />
+);
+
 const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) => {
   const [rulesFlyoutOpen, setRulesFlyoutOpen] = useState(false);
   const [gapsFlyoutOpen, setGapsFlyoutOpen] = useState(false);
+  const [activeView, setActiveView] = useState<'needs-me' | 'activity-log'>('needs-me');
   const [sharedSearch, setSharedSearch] = useState('');
   const [typeOptions, setTypeOptions] = useState<{ label: string; checked?: 'on' }[]>([
     { label: 'Fixed execution failure' },
@@ -670,28 +676,99 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
   const activeTypeLabels = typeOptions.filter((o) => o.checked === 'on').map((o) => o.label);
 
   const pendingCount = useMemo(
-    () => MOCK_AUTODEX_LOGS.filter((l) => l.needsApproval).length,
+    () => MOCK_AUTODEX_LOGS.filter((l) => l.needsApproval || l.isSuggestion).length,
     []
   );
   const totalCount = MOCK_AUTODEX_LOGS.length;
 
-  const colHeader = (title: string, badge?: React.ReactNode) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-      <EuiText style={{ fontWeight: 600, fontSize: 20, lineHeight: '24px' }}>
-        {title}
-      </EuiText>
-      {badge}
-    </div>
-  );
-
   return (
-    <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Left area: toolbar + two log columns ─────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12, minHeight: 0 }}>
+      {/* ── Summary card — horizontal stats at top ── */}
+      <EuiPanel hasBorder hasShadow={false} paddingSize="none">
+        <div style={{ display: 'flex' }}>
 
-      {/* ── Shared search + type filter ──────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+          <div style={{ flex: 1, padding: '16px 20px' }}>
+            <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Actions required</EuiText>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#BD271E', margin: '0 0 2px', lineHeight: 1.1 }}>
+              {pendingCount}
+            </p>
+            <EuiText size="xs" color="subdued">pending review</EuiText>
+          </div>
+
+          {SUMMARY_DIVIDER}
+
+          <div style={{ flex: 1, padding: '16px 20px' }}>
+            <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Activities today</EuiText>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#017D73', margin: '0 0 2px', lineHeight: 1.1 }}>
+              {totalCount}
+            </p>
+            <EuiBadge color="success" iconType="sortUp" style={{ fontSize: 11 }}>+12% this week</EuiBadge>
+          </div>
+
+          {SUMMARY_DIVIDER}
+
+          <div style={{ flex: 1, padding: '16px 20px' }}>
+            <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Approval rate</EuiText>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>
+              91%
+            </p>
+            <EuiText size="xs" color="subdued">accepted of proposed</EuiText>
+          </div>
+
+          {SUMMARY_DIVIDER}
+
+          <div style={{ flex: 1, padding: '16px 20px' }}>
+            <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Total tokens used</EuiText>
+            <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>
+              1.24M
+            </p>
+            <EuiText size="xs" color="subdued">this month</EuiText>
+          </div>
+
+        </div>
+      </EuiPanel>
+
+      {/* ── View toggle + toolbar ── */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <EuiButtonGroup
+          legend="AutoDEX view"
+          options={[
+            {
+              id: 'needs-me',
+              label: (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Action list
+                  {pendingCount > 0 && (
+                    <span                     style={{
+                      background: '#BD271E', color: '#fff', borderRadius: 10,
+                      fontSize: 11, fontWeight: 600, padding: '1px 7px', lineHeight: '16px',
+                    }}>
+                      {pendingCount}
+                    </span>
+                  )}
+                </span>
+              ) as unknown as string,
+            },
+            {
+              id: 'activity-log',
+              label: (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Activity log
+                  <span style={{ background: '#D3DAE6', color: '#516381', borderRadius: 10, fontSize: 11, fontWeight: 600, padding: '1px 7px', lineHeight: '16px' }}>
+                    {totalCount}
+                  </span>
+                </span>
+              ) as unknown as string,
+            },
+          ]}
+          idSelected={activeView}
+          onChange={(id) => setActiveView(id as typeof activeView)}
+          buttonSize="s"
+          color="primary"
+        />
+
+        <div style={{ display: 'flex', gap: 8, flex: 1 }}>
           <EuiFieldSearch
             placeholder="Search activities"
             value={sharedSearch}
@@ -733,144 +810,37 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
               </EuiSelectable>
             </EuiPopover>
           </EuiFilterGroup>
+        </div>
       </div>
 
-      {/* ── Two log columns ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0, alignItems: 'flex-start' }}>
-
-      {/* ── Left column: Approvals ───────────────────────────────────────────── */}
-      <EuiPanel
-        hasBorder
-        hasShadow={false}
-        paddingSize="m"
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-      >
-        {colHeader(
-          'Approvals needed',
-          <EuiBadge color="warning">{pendingCount}</EuiBadge>
+      {/* ── Content panel ── */}
+      <EuiPanel hasBorder={false} hasShadow={false} paddingSize="none">
+        {activeView === 'needs-me' ? (
+          <>
+            <AutoDexActivityLog
+              onOpenAIAssistant={onOpenAIAssistant}
+              requiresApproval
+              pendingOnly
+              grouped={false}
+              reasoningBorderColor="#F5A700"
+              hideToolbar
+              searchValue={sharedSearch}
+              activeTypeLabels={activeTypeLabels}
+            />
+          </>
+        ) : (
+          <>
+            <AutoDexActivityLog
+              onOpenAIAssistant={onOpenAIAssistant}
+              requiresApproval={false}
+              grouped={false}
+              reasoningBorderColor="#017D73"
+              hideToolbar
+              searchValue={sharedSearch}
+              activeTypeLabels={activeTypeLabels}
+            />
+          </>
         )}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          <AutoDexActivityLog
-            onOpenAIAssistant={onOpenAIAssistant}
-            requiresApproval
-            pendingOnly
-            grouped={false}
-            reasoningBorderColor="#F5A700"
-            hideToolbar
-            searchValue={sharedSearch}
-            activeTypeLabels={activeTypeLabels}
-          />
-        </div>
-      </EuiPanel>
-
-      {/* ── Middle column: Activity log ──────────────────────────────────────── */}
-      <EuiPanel
-        hasBorder
-        hasShadow={false}
-        paddingSize="m"
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}
-      >
-        {colHeader(
-          'Activity log',
-          <EuiBadge color="primary">{totalCount} today</EuiBadge>
-        )}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          <AutoDexActivityLog
-            onOpenAIAssistant={onOpenAIAssistant}
-            requiresApproval={false}
-            grouped={false}
-            reasoningBorderColor="#017D73"
-            hideToolbar
-            searchValue={sharedSearch}
-            activeTypeLabels={activeTypeLabels}
-          />
-        </div>
-      </EuiPanel>
-
-      </div>{/* end two log columns */}
-      </div>{/* end left area */}
-
-      {/* ── Right column: Summary ────────────────────────────────────────────── */}
-      <EuiPanel
-        hasBorder
-        hasShadow={false}
-        paddingSize="none"
-        style={{
-          flex: '0 0 264px',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '12px 8px 20px 12px',
-          overflowY: 'auto',
-        }}
-      >
-        {/* Title */}
-        <EuiText style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', marginBottom: 12 }}>
-          Summary
-        </EuiText>
-        <EuiHorizontalRule margin="none" style={{ marginBottom: 0 }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-
-          {/* ── Approvals ── */}
-          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
-            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
-              Approvals
-            </EuiText>
-            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#eaae01', margin: '0 0 2px' }}>
-              {pendingCount}
-            </p>
-            <EuiText size="s" style={{ color: '#343741' }}>approvals needed</EuiText>
-          </div>
-          <EuiHorizontalRule margin="none" />
-
-          {/* ── Activity ── */}
-          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
-            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
-              Activity
-            </EuiText>
-            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#065b58', margin: '0 0 2px' }}>
-              15
-            </p>
-            <EuiText size="s" style={{ color: '#343741', marginBottom: 6 }}>activities completed</EuiText>
-            <EuiBadge color="success" iconType="sortUp">+12% this week</EuiBadge>
-          </div>
-          <EuiHorizontalRule margin="none" />
-
-          {/* ── Approval rate ── */}
-          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
-            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
-              Approval rate
-            </EuiText>
-            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#516381', margin: '0 0 2px' }}>
-              91%
-            </p>
-            <EuiText size="s" style={{ color: '#343741', marginBottom: 6 }}>accepted of proposed changes</EuiText>
-            <EuiBadge color="success" iconType="sortUp">+12% this week</EuiBadge>
-          </div>
-          <EuiHorizontalRule margin="none" />
-
-          {/* ── Total tokens ── */}
-          <div style={{ paddingTop: 24, paddingBottom: 24 }}>
-            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', marginBottom: 10 }}>
-              Total tokens
-            </EuiText>
-            <p style={{ fontSize: 30, fontWeight: 600, lineHeight: '36px', color: '#516381', margin: '0 0 2px' }}>
-              1.24M
-            </p>
-            <EuiText size="s" style={{ color: '#343741', marginBottom: 16 }}>of tokens used</EuiText>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {TOKEN_WORKFLOWS.map((w) => (
-                <div key={w.label}>
-                  <p style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: w.color, margin: '0 0 1px' }}>
-                    {w.value}
-                  </p>
-                  <EuiText size="s" style={{ color: '#343741' }}>{w.label}</EuiText>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
       </EuiPanel>
 
       {rulesFlyoutOpen && (

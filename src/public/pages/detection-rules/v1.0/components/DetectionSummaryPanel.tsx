@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   EuiBadge,
   EuiBasicTable,
   EuiButtonEmpty,
   EuiButtonIcon,
-  EuiCallOut,
   EuiFlexGroup,
   EuiFlexItem,
   EuiHealth,
@@ -102,7 +100,7 @@ const SignalCard: React.FC<SignalCardProps> = ({
     hasBorder
     hasShadow={false}
     paddingSize="m"
-    style={{ borderLeft: `3px solid ${accentColor}`, height: '100%', display: 'flex', flexDirection: 'column' }}
+    style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
   >
     {/* Header */}
     <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} style={{ marginBottom: 6 }}>
@@ -224,7 +222,6 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
   onViewRules,
   onNavigateToRule,
 }) => {
-  const navigate = useNavigate();
   const [openDrill, setOpenDrill] = useState<DrillCategory>(null);
   // 'off' | 'running' | 'healthy'
   const [autoDexState, setAutoDexState] = useState<'off' | 'running' | 'healthy'>('off');
@@ -256,15 +253,6 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
   const updatesAutoDexLine = autoDex.updatedCount > 0
     ? `AutoDEX applied ${autoDex.updatedCount} updates` : undefined;
 
-  // Part 2 (Option D): callout title segments
-  const calloutSegments: string[] = [];
-  if (autoDex.fixedCount > 0) calloutSegments.push(`fixed ${autoDex.fixedCount} failure${autoDex.fixedCount > 1 ? 's' : ''}`);
-  if (autoDex.tunedCount > 0) calloutSegments.push(`tuned ${autoDex.tunedCount} rule${autoDex.tunedCount > 1 ? 's' : ''}`);
-  if (autoDex.installedCount > 0) calloutSegments.push(`installed ${autoDex.installedCount} rule${autoDex.installedCount > 1 ? 's' : ''}`);
-  if (autoDex.updatedCount > 0) calloutSegments.push(`updated ${autoDex.updatedCount} rule${autoDex.updatedCount > 1 ? 's' : ''}`);
-  const showCallout = calloutSegments.length > 0;
-  const calloutTitle = `AutoDEX activity today: ${calloutSegments.join(' · ')}`;
-
   // AutoDEX in-progress badge added to each card header when running
   const autoDexBadge = isRunning ? (
     <EuiBadge
@@ -283,25 +271,6 @@ export const DetectionSummaryPanel: React.FC<DetectionSummaryPanelProps> = ({
 
   return (
     <div>
-      {/* ── Part 2 (Option D): AutoDEX activity callout strip — above cards ── */}
-      {showCallout && (
-        <EuiCallOut
-          color="success"
-          iconType="sparkles"
-          title={calloutTitle}
-          style={{ marginBottom: 16 }}
-        >
-          <EuiButtonEmpty
-            size="s"
-            iconType="popout"
-            color="success"
-            onClick={() => navigate('/autodex')}
-          >
-            View in AutoDEX
-          </EuiButtonEmpty>
-        </EuiCallOut>
-      )}
-
       {/* ── Four signal cards ─────────────────────────────────────── */}
       <EuiFlexGroup gutterSize="m" responsive={false} alignItems="stretch">
 

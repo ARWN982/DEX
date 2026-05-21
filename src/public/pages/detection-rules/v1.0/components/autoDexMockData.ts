@@ -23,6 +23,7 @@ export interface AutoDexMockLog {
   fullReasoning?: AutoDexLogFullReasoning;
   status: 'success';
   needsApproval: boolean;
+  isSuggestion?: boolean;
 }
 
 export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
@@ -178,17 +179,18 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     status: 'success',
     needsApproval: true,
   },
-  // ── Rule updates (new category, requires approval) ─────────────────────────
+  // ── Suggestion (no approval needed — known error with a fix proposal) ────────
   {
     id: '6',
     timestamp: 'Apr 14, 2026 @ 16:11:30',
-    action: 'Rule updates',
-    actionColor: 'primary',
+    action: 'Execution failure',
+    actionColor: 'danger',
     rule: 'Windows Registry Modification via reg.exe',
     reasoning:
-      'Version 2.1→2.2: Elastic Security Labs added new registry key patterns that broaden detection scope. AutoDEX flagged this for analyst review before applying.',
+      'Rule is generating low-confidence alerts due to a broad registry key match. AutoDEX has a suggested exception scope that would reduce noise by an estimated 74% without affecting true-positive detection.',
     status: 'success',
-    needsApproval: true,
+    needsApproval: false,
+    isSuggestion: true,
   },
   {
     id: '7',
