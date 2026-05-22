@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { EuiPanel, EuiProgress, EuiSpacer, EuiText, EuiToolTip, useEuiTheme } from '@elastic/eui';
-import { css } from '@emotion/react';
+import { EuiPanel, EuiProgress, EuiSpacer, EuiText, EuiToolTip } from '@elastic/eui';
 import React, { memo, useMemo } from 'react';
 import type { CoverageOverviewMitreTactic } from '../model/coverage_overview/mitre_tactic';
 import { coverageOverviewPanelWidth } from './constants';
@@ -19,8 +18,6 @@ export interface CoverageOverviewTacticPanelProps {
 }
 
 const CoverageOverviewTacticPanelComponent = ({ tactic }: CoverageOverviewTacticPanelProps) => {
-  const { euiTheme } = useEuiTheme();
-
   const coveredTechniques = useMemo(() => getNumOfCoveredTechniques(tactic), [tactic]);
 
   const ProgressLabel = useMemo(
@@ -38,28 +35,25 @@ const CoverageOverviewTacticPanelComponent = ({ tactic }: CoverageOverviewTactic
       hasShadow={false}
       hasBorder
       paddingSize="s"
-      css={css`
-        background: ${euiTheme.colors.lightestShade};
-        border-color: ${euiTheme.colors.mediumShade};
-        width: ${coverageOverviewPanelWidth}px;
-      `}
+      style={{
+        background: '#F5F7FA',
+        borderColor: '#D3DAE6',
+        width: coverageOverviewPanelWidth,
+        borderRadius: 4,
+      }}
     >
       <EuiToolTip content={tactic.name}>
         <EuiText
           tabIndex={0}
-          css={css`
-            h4 {
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-          `}
           aria-label={tactic.name}
           title={tactic.name}
           grow={false}
           size="xs"
+          style={{ overflow: 'hidden' }}
         >
-          <h4>{tactic.name}</h4>
+          <h4 style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 12, fontWeight: 700 }}>
+            {tactic.name}
+          </h4>
         </EuiText>
       </EuiToolTip>
 

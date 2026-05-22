@@ -6,7 +6,6 @@
  */
 
 import { EuiFlexGroup, EuiFlexItem, EuiPanel, EuiText } from '@elastic/eui';
-import { css } from '@emotion/css';
 import React, { memo, useCallback, useMemo } from 'react';
 import type { CoverageOverviewMitreTechnique } from '../model/coverage_overview/mitre_technique';
 import { getTotalRuleCount } from '../model/coverage_overview/mitre_technique';
@@ -48,12 +47,7 @@ const CoverageOverviewMitreTechniquePanelComponent = ({
   const SubtechniqueInfo = useMemo(
     () => (
       <EuiFlexGroup justifyContent="spaceBetween">
-        <EuiFlexItem
-          className={css`
-            white-space: nowrap;
-          `}
-          grow={false}
-        >
+        <EuiFlexItem style={{ whiteSpace: 'nowrap' }} grow={false}>
           <EuiText size="xs">{i18n.SUBTECHNIQUES}</EuiText>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
@@ -67,23 +61,31 @@ const CoverageOverviewMitreTechniquePanelComponent = ({
   return (
     <EuiPanel
       data-test-subj="coverageOverviewTechniquePanel"
-      className={css`
-        background: ${techniqueColors?.backgroundColor};
-        color: ${techniqueColors?.textColor};
-        width: ${coverageOverviewPanelWidth}px;
-      `}
+      style={{
+        background: techniqueColors?.backgroundColor ?? '#ffffff',
+        color: techniqueColors?.textColor ?? '#343741',
+        width: coverageOverviewPanelWidth,
+        borderRadius: 4,
+        cursor: 'pointer',
+      }}
       hasShadow={false}
       hasBorder={!techniqueColors}
       paddingSize="s"
       onClick={handlePanelOnClick}
       element="div"
     >
-      <EuiFlexGroup css={{ height: '100%' }} direction="column" justifyContent="spaceBetween">
+      <EuiFlexGroup style={{ height: '100%' }} direction="column" justifyContent="spaceBetween">
         <EuiFlexItem>
-          <EuiText data-test-subj={`coverageOverviewTechniqueTitle-${technique.id}`} size="xs">
-            <h4>{technique.name}</h4>
+          <EuiText
+            data-test-subj={`coverageOverviewTechniqueTitle-${technique.id}`}
+            size="xs"
+            style={{ color: techniqueColors?.textColor ?? undefined }}
+          >
+            <h4 style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3, color: 'inherit' }}>
+              {technique.name}
+            </h4>
           </EuiText>
-          {SubtechniqueInfo}
+          {technique.subtechniques.length > 0 && SubtechniqueInfo}
         </EuiFlexItem>
         {isExpanded && (
           <EuiFlexItem grow={false}>
