@@ -35,42 +35,33 @@ const CoverageOverviewDashboardComponent = () => {
 
   return (
     /*
-     * Outer wrapper: column flex that fills the parent's height.
-     * The parent (from index.tsx) is `overflowY: auto`, so the sticky
-     * header sticks within that scroll container.
+     * Column flex that fills the parent (which is also a flex column).
+     * Header section: shrinks to content, never scrolls, always visible.
+     * Grid section:   fills remaining height, scrolls independently in both axes.
      */
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
 
-      {/* ── Sticky header: title + filter bar ── */}
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          background: 'white',
-          paddingBottom: 8,
-        }}
-      >
+      {/* ── Fixed header: title + filters — always visible, constrained to panel width ── */}
+      <div style={{ flexShrink: 0, overflow: 'hidden' }}>
         <CoverageOverviewHeader />
         <CoverageOverviewFiltersPanel />
         <EuiSpacer size="m" />
       </div>
 
-      {/* ── Horizontally scrollable tactics grid ── */}
+      {/* ── Independently scrollable tactics grid ── */}
       <div
         style={{
-          overflowX: 'auto',
-          overflowY: 'visible',
-          paddingBottom: 24,
-          /* Give the scrollbar some breathing room */
-          paddingRight: 4,
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',          /* scrolls in BOTH directions */
+          paddingBottom: 16,
         }}
       >
         <EuiFlexGroup
           gutterSize="m"
           wrap={false}
           responsive={false}
-          style={{ width: 'max-content', minWidth: '100%' }}
+          style={{ width: 'max-content', alignItems: 'flex-start' }}
         >
           {data?.mitreTactics.map((tactic) => (
             <EuiFlexGroup
