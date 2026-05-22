@@ -38,6 +38,9 @@ import {
   EuiPopover,
   EuiSelectable,
   EuiContextMenu,
+  EuiFieldSearch,
+  EuiListGroup,
+  EuiListGroupItem,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -92,7 +95,301 @@ const RuleDetailsPage: React.FC = () => {
   const [isFlyoutVisible, setIsFlyoutVisible] = useState(false);
   const [isMoreActionsOpen, setIsMoreActionsOpen] = useState(false);
   const [isHistoryPaneOpen, setIsHistoryPaneOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'ui' | 'json'>('ui');
+  const [selectedHistoryIdx, setSelectedHistoryIdx] = useState<number>(0);
   const [expandedHistoryVersion, setExpandedHistoryVersion] = useState<number | null>(5);
+  const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
+  const [filterSearch, setFilterSearch] = useState('');
+  const [diffChangeIdx, setDiffChangeIdx] = useState(0);
+
+  type DiffLine = { text: string; type: 'normal' | 'added' | 'removed' };
+
+  // Full JSON base lines shared across versions
+  const BASE_JSON: DiffLine[] = [
+    { text: '{', type: 'normal' },
+    { text: '  "name": "Okta Credential Stuffing with Successful Account Takeover",', type: 'normal' },
+    { text: '  "description": "Detects a full credential stuffing attack chain in Okta where the same user', type: 'normal' },
+    { text: '    and source IP exhibit multiple failed logins, at least one MFA failure, a successful', type: 'normal' },
+    { text: '    authentication, followed by post-compromise activity such as privilege grants or policy', type: 'normal' },
+    { text: '    modifications. This sequence indicates a likely successful account takeover.",', type: 'normal' },
+    { text: '  "risk_score": 73,', type: 'normal' },
+    { text: '  "severity": "high",', type: 'normal' },
+    { text: '  "type": "esql",', type: 'normal' },
+    { text: '  "language": "esql",', type: 'normal' },
+    { text: '  "query": "FROM logs-okta* | WHERE event.dataset == \\"okta.system\\"',  type: 'normal' },
+    { text: '    | STATS failed_logins = COUNT(*) WHERE event.action == \\"user.session.start\\"', type: 'normal' },
+    { text: '    AND event.outcome == \\"failure\\" AND okta.outcome.reason == \\"INVALID_CREDENTIALS\\",', type: 'normal' },
+    { text: '    mfa_failures = COUNT(*) WHERE event.action IN (\\"user.mfa.attempt_bypass\\"),', type: 'normal' },
+    { text: '    successful_logins = COUNT(*) WHERE event.outcome == \\"success\\"', type: 'normal' },
+    { text: '    BY user.name, source.ip | WHERE failed_logins >= 3 AND successful_logins >= 1",', type: 'normal' },
+    { text: '  "index": ["logs-okta*"],', type: 'normal' },
+    { text: '  "interval": "5m",', type: 'normal' },
+    { text: '  "from": "now-30m",', type: 'normal' },
+    { text: '  "to": "now",', type: 'normal' },
+    { text: '  "enabled": true,', type: 'normal' },
+    { text: '  "author": ["Elastic"],', type: 'normal' },
+    { text: '  "license": "Elastic License v2",', type: 'normal' },
+    { text: '  "rule_id": "okta-credstuff-takeover-001",', type: 'normal' },
+    { text: '  "version": 4,', type: 'normal' },
+    { text: '  "tags": [', type: 'normal' },
+    { text: '    "Domain: Identity",', type: 'normal' },
+    { text: '    "Data Source: Okta",', type: 'normal' },
+    { text: '    "Use Case: Identity and Access Audit",', type: 'normal' },
+    { text: '    "Tactic: Credential Access",', type: 'normal' },
+    { text: '    "Tactic: Initial Access",', type: 'normal' },
+    { text: '    "Resources: Investigation Guide"', type: 'normal' },
+    { text: '  ],', type: 'normal' },
+    { text: '  "threat": [', type: 'normal' },
+    { text: '    { "framework": "MITRE ATT&CK",', type: 'normal' },
+    { text: '      "tactic": { "id": "TA0006", "name": "Credential Access" },', type: 'normal' },
+    { text: '      "technique": [{ "id": "T1110", "name": "Brute Force",', type: 'normal' },
+    { text: '        "subtechnique": [{ "id": "T1110.004", "name": "Credential Stuffing" }] }]', type: 'normal' },
+    { text: '    },', type: 'normal' },
+    { text: '    { "framework": "MITRE ATT&CK",', type: 'normal' },
+    { text: '      "tactic": { "id": "TA0001", "name": "Initial Access" },', type: 'normal' },
+    { text: '      "technique": [{ "id": "T1078", "name": "Valid Accounts" }]', type: 'normal' },
+    { text: '    }', type: 'normal' },
+    { text: '  ],', type: 'normal' },
+    { text: '  "false_positives": [', type: 'normal' },
+    { text: '    "Legitimate users who fail multiple logins then successfully authenticate', type: 'normal' },
+    { text: '      and perform admin actions. Tune thresholds based on baseline behavior."', type: 'normal' },
+    { text: '  ],', type: 'normal' },
+    { text: '  "references": [', type: 'normal' },
+    { text: '    "https://attack.mitre.org/techniques/T1110/004/",', type: 'normal' },
+    { text: '    "https://developer.okta.com/docs/reference/api/system-log/"', type: 'normal' },
+    { text: '  ],', type: 'normal' },
+    { text: '  "max_signals": 100,', type: 'normal' },
+    { text: '  "exceptions_list": [],', type: 'normal' },
+    { text: '  "actions": []', type: 'normal' },
+    { text: '}', type: 'normal' },
+  ];
+
+  const VERSION_DIFFS: DiffLine[][] = [
+    // Index 0 — current: 4 changes (risk_score, severity, tags, version)
+    [
+      ...BASE_JSON.slice(0, 2),
+      ...BASE_JSON.slice(2, 6),
+      { text: '  "risk_score": 73,', type: 'added' },
+      { text: '  "risk_score": 47,', type: 'removed' },
+      { text: '  "severity": "high",', type: 'added' },
+      { text: '  "severity": "medium",', type: 'removed' },
+      ...BASE_JSON.slice(9, 25),
+      { text: '  "version": 4,', type: 'added' },
+      { text: '  "version": 3,', type: 'removed' },
+      ...BASE_JSON.slice(26, 32),
+      { text: '    "Resources: Investigation Guide"', type: 'added' },
+      ...BASE_JSON.slice(32),
+    ],
+    // Index 1 — 1 week ago: description + tag removed
+    [
+      ...BASE_JSON.slice(0, 2),
+      { text: '  "description": "Detects a full credential stuffing attack chain in Okta where the same user', type: 'added' },
+      { text: '    and source IP exhibit multiple failed logins, at least one MFA failure...',  type: 'added' },
+      { text: '  "description": "Monitors for Okta token creation events that may indicate', type: 'removed' },
+      { text: '    unauthorised access or lateral movement within Okta.",', type: 'removed' },
+      ...BASE_JSON.slice(6, 25),
+      { text: '  "version": 3,', type: 'added' },
+      { text: '  "version": 2,', type: 'removed' },
+      ...BASE_JSON.slice(26, 31),
+      { text: '    "Tactic: Initial Access"', type: 'removed' },
+      ...BASE_JSON.slice(32),
+    ],
+    // Index 2 — 2 weeks ago: risk_score + severity
+    [
+      ...BASE_JSON.slice(0, 6),
+      { text: '  "risk_score": 47,', type: 'added' },
+      { text: '  "risk_score": 21,', type: 'removed' },
+      { text: '  "severity": "medium",', type: 'added' },
+      { text: '  "severity": "low",', type: 'removed' },
+      ...BASE_JSON.slice(9),
+    ],
+    // Index 3 — 1 month ago: query update + index
+    [
+      ...BASE_JSON.slice(0, 10),
+      { text: '  "query": "FROM logs-okta* | WHERE event.dataset == \\"okta.system\\"',  type: 'added' },
+      { text: '    | STATS failed_logins = COUNT(*) ...",', type: 'added' },
+      { text: '  "query": "event.dataset: okta.system AND event.action: user.token.create",', type: 'removed' },
+      ...BASE_JSON.slice(16, 17),
+      { text: '  "index": ["logs-okta*"],', type: 'added' },
+      { text: '  "index": ["auditbeat-*", "filebeat-*"],', type: 'removed' },
+      ...BASE_JSON.slice(18),
+    ],
+    // Index 4 — Enabled (no content diff)
+    [
+      ...BASE_JSON.slice(0, 20),
+      { text: '  "enabled": true,', type: 'added' },
+      { text: '  "enabled": false,', type: 'removed' },
+      ...BASE_JSON.slice(21),
+    ],
+    // Index 5 — Disabled (no content diff)
+    [
+      ...BASE_JSON.slice(0, 20),
+      { text: '  "enabled": false,', type: 'added' },
+      { text: '  "enabled": true,', type: 'removed' },
+      ...BASE_JSON.slice(21),
+    ],
+    // Index 6 — major refactor: interval + from + false_positives
+    [
+      ...BASE_JSON.slice(0, 18),
+      { text: '  "interval": "5m",', type: 'added' },
+      { text: '  "interval": "10m",', type: 'removed' },
+      { text: '  "from": "now-30m",', type: 'added' },
+      { text: '  "from": "now-60m",', type: 'removed' },
+      ...BASE_JSON.slice(20, 44),
+      { text: '    "Legitimate users who fail multiple logins then successfully authenticate', type: 'added' },
+      { text: '      and perform admin actions. Tune thresholds based on baseline behavior."', type: 'added' },
+      { text: '    "None identified."', type: 'removed' },
+      ...BASE_JSON.slice(46),
+    ],
+    // Index 7 — added MITRE threat block + references
+    [
+      ...BASE_JSON.slice(0, 33),
+      { text: '    { "framework": "MITRE ATT&CK",', type: 'added' },
+      { text: '      "tactic": { "id": "TA0006", "name": "Credential Access" },', type: 'added' },
+      { text: '      "technique": [{ "id": "T1110", "name": "Brute Force" }]', type: 'added' },
+      { text: '    }', type: 'added' },
+      { text: '  "threat": [],', type: 'removed' },
+      ...BASE_JSON.slice(44, 48),
+      { text: '    "https://attack.mitre.org/techniques/T1110/004/",', type: 'added' },
+      { text: '    "https://developer.okta.com/docs/reference/api/system-log/"', type: 'added' },
+      { text: '  // no references previously', type: 'removed' },
+      ...BASE_JSON.slice(50),
+    ],
+    // Index 8 — rule renamed + rule_id updated
+    [
+      ...BASE_JSON.slice(0, 1),
+      { text: '  "name": "Okta Credential Stuffing with Successful Account Takeover",', type: 'added' },
+      { text: '  "name": "Okta Token Alert",', type: 'removed' },
+      ...BASE_JSON.slice(2, 22),
+      { text: '  "rule_id": "okta-credstuff-takeover-001",', type: 'added' },
+      { text: '  "rule_id": "okta_token_alert",', type: 'removed' },
+      ...BASE_JSON.slice(24),
+    ],
+    // Index 9 — initial creation (all lines added)
+    BASE_JSON.map(l => ({ ...l, type: 'added' as const })),
+  ];
+
+  const RULE_YAML_LINES = VERSION_DIFFS[selectedHistoryIdx] ?? VERSION_DIFFS[0];
+  const diffChanges = RULE_YAML_LINES.filter(l => l.type !== 'normal');
+
+  // Inline diff segments per version for the UI view
+  type InlineSeg = { text: string; type: 'normal' | 'added' | 'removed' };
+  type TagDiff  = { label: string; type: 'normal' | 'added' | 'removed' };
+  const INLINE_DIFFS: Record<number, { description?: InlineSeg[]; query?: InlineSeg[]; tags?: TagDiff[]; riskScore?: string; riskScoreOld?: string; severity?: string; severityOld?: string }> = {
+    0: {
+      description: [
+        { text: "Detects attempts to create an Okta API token. An adversary may create an Okta API token to maintain access to an organization's network while they work to achieve their objectives. An attacker may abuse an ", type: 'normal' },
+        { text: 'API token', type: 'added' },
+        { text: 'Okta token', type: 'removed' },
+        { text: ' to execute techniques such as creating user accounts or disabling security rules or policies.', type: 'normal' },
+      ],
+      tags: [
+        { label: 'Domain: Endpoint', type: 'normal' },
+        { label: 'OS: Windows', type: 'normal' },
+        { label: 'Use Case: Threat Detection', type: 'normal' },
+        { label: 'Tactic: Lateral Movement', type: 'normal' },
+        { label: 'Resources: Investigation Guide', type: 'added' },
+        { label: 'Data Source: Elastic Defend', type: 'normal' },
+      ],
+      riskScore: '73', riskScoreOld: '47', severity: 'high', severityOld: 'medium',
+    },
+    1: {
+      description: [
+        { text: "Detects attempts to create an Okta API token. An adversary may create an Okta API token to maintain access to an organization's network while they work to achieve their objectives. An attacker may abuse an API token to execute techniques such as creating user accounts or ", type: 'normal' },
+        { text: 'disabling security rules or policies.', type: 'added' },
+        { text: 'disabling security rules or policies via token abuse.', type: 'removed' },
+      ],
+      tags: [
+        { label: 'Domain: Endpoint', type: 'normal' },
+        { label: 'OS: Windows', type: 'normal' },
+        { label: 'Use Case: Threat Detection', type: 'normal' },
+        { label: 'Tactic: Lateral Movement', type: 'normal' },
+        { label: 'Data Source: Elastic Defend', type: 'normal' },
+        { label: 'Okta tokens', type: 'removed' },
+      ],
+    },
+    2: {
+      description: [
+        { text: 'Monitors for suspicious Okta token activity across the environment. ', type: 'removed' },
+        { text: "Detects attempts to create an Okta API token. An adversary may create an Okta API token to maintain access to an organization's network.", type: 'added' },
+      ],
+      riskScore: '47', riskScoreOld: '21', severity: 'medium', severityOld: 'low',
+    },
+    3: {
+      query: [
+        { text: 'event.kind: alert and event.module: okta and event.type: creation', type: 'added' },
+        { text: 'event.dataset: okta.system and event.action: user.token.create', type: 'removed' },
+      ],
+      tags: [
+        { label: 'Domain: Endpoint', type: 'normal' },
+        { label: 'Tactic: Lateral Movement', type: 'normal' },
+        { label: 'Data Source: Elastic Defend', type: 'normal' },
+        { label: 'EQL', type: 'added' },
+        { label: 'Okta tokens', type: 'normal' },
+      ],
+    },
+    6: {
+      description: [
+        { text: 'Detects a full credential stuffing attack chain in Okta where the same user and source IP exhibit multiple failed logins, at least one MFA failure, a successful authentication, followed by ', type: 'normal' },
+        { text: 'post-compromise activity such as privilege grants or policy modifications.', type: 'added' },
+        { text: 'anomalous post-authentication events.', type: 'removed' },
+        { text: ' This sequence indicates a likely successful account takeover.', type: 'normal' },
+      ],
+      query: [
+        { text: 'FROM logs-okta* | WHERE event.dataset == "okta.system"\n  | STATS failed_logins = COUNT(*), successful_logins = COUNT(*) BY user.name', type: 'added' },
+        { text: 'event.dataset: okta.system AND event.action: user.session.start AND event.outcome: failure', type: 'removed' },
+      ],
+      tags: [
+        { label: 'Domain: Endpoint', type: 'normal' },
+        { label: 'Tactic: Lateral Movement', type: 'normal' },
+        { label: 'Use Case: Threat Detection', type: 'removed' },
+        { label: 'Use Case: Identity and Access Audit', type: 'added' },
+        { label: 'Data Source: Elastic Defend', type: 'normal' },
+      ],
+    },
+    7: {
+      description: [
+        { text: 'Monitors for suspicious Okta token activity across the environment.', type: 'removed' },
+        { text: 'Detects a full credential stuffing attack chain in Okta where the same user and source IP exhibit multiple failed logins, at least one MFA failure, and a successful authentication.', type: 'added' },
+      ],
+    },
+    8: {
+      description: [
+        { text: 'Alert on Okta token events.', type: 'removed' },
+        { text: 'Monitors for suspicious Okta token activity across the environment.', type: 'added' },
+      ],
+      query: [
+        { text: 'event.dataset: okta.system', type: 'added' },
+        { text: 'event.action: user.token.create', type: 'removed' },
+      ],
+      tags: [
+        { label: 'Domain: Endpoint', type: 'added' },
+        { label: 'OS: Windows', type: 'added' },
+      ],
+    },
+  };
+
+  const activeDiff = isHistoryPaneOpen ? INLINE_DIFFS[selectedHistoryIdx] : undefined;
+
+  const renderInlineText = (segs?: InlineSeg[]) => {
+    if (!segs) return null;
+    return (
+      <span>
+        {segs.map((seg, i) => {
+          if (seg.type === 'normal') return <span key={i}>{seg.text}</span>;
+          const bg = seg.type === 'added' ? 'rgba(0,191,179,0.18)' : 'rgba(189,39,30,0.12)';
+          const decoration = seg.type === 'removed' ? 'line-through' : 'none';
+          const color = seg.type === 'added' ? '#017D73' : '#BD271E';
+          return (
+            <span key={i} style={{ background: bg, color, textDecoration: decoration, borderRadius: 2, padding: '0 2px' }}>
+              {seg.text}
+            </span>
+          );
+        })}
+      </span>
+    );
+  };
+
 
   const versionHistory = [
     { timestamp: 'On May 12 2026 @14.23', author: 'Alex Nightingale', detail: '4 changes',  ruleVersion: 'R77', version: 'V4', isCurrent: true,  note: null },
@@ -245,7 +542,8 @@ const RuleDetailsPage: React.FC = () => {
               style={{ 
                 borderRadius: 8, 
                 overflow: 'hidden',
-                minHeight: 'calc(100vh - 64px)'
+                minHeight: 'calc(100vh - 64px)',
+                position: 'relative',
               }}
             >
               <div style={{ padding: '24px' }}>
@@ -405,8 +703,8 @@ const RuleDetailsPage: React.FC = () => {
 
                 <EuiSpacer size="m" />
 
-                {/* Tabs — hidden when history pane is open */}
-                {!isHistoryPaneOpen && (
+                {/* Tabs — hidden in JSON mode or when history pane is open */}
+                {viewMode === 'ui' && !isHistoryPaneOpen && (
                   <EuiTabs size="l">
                     {visibleTabs.map((tab) => (
                       <EuiTab
@@ -422,8 +720,43 @@ const RuleDetailsPage: React.FC = () => {
 
                 <EuiSpacer size="m" />
 
-                {/* Warning Callout */}
-                {showWarning && (
+                {/* ── JSON diff view ── */}
+                {viewMode === 'json' && (
+                  <div style={{ position: 'relative' }}>
+                    <div style={{
+                      background: '#fff',
+                      borderRadius: 6,
+                      overflow: 'auto',
+                      fontFamily: "'Roboto Mono', 'Fira Code', monospace",
+                      fontSize: 12,
+                      lineHeight: '22px',
+                      border: '1px solid #D3DAE6',
+                    }}>
+                      {RULE_YAML_LINES.map((line, i) => {
+                        const lineNum = i + 1;
+                        const bg = line.type === 'added' ? '#E6F9F0' : line.type === 'removed' ? '#FDF0EF' : 'transparent';
+                        const color = line.type === 'added' ? '#017D73' : line.type === 'removed' ? '#BD271E' : '#343741';
+                        return (
+                          <div key={i} style={{ display: 'flex', background: bg, minHeight: 22 }}>
+                            <span style={{
+                              minWidth: 44, textAlign: 'right', padding: '0 12px 0 8px',
+                              color: '#98A2B3', userSelect: 'none', flexShrink: 0,
+                              borderRight: '1px solid #EEF0F3',
+                            }}>
+                              {lineNum}
+                            </span>
+                            <span style={{ padding: '0 16px', color, whiteSpace: 'pre', flex: 1 }}>
+                              {line.text || '\u00A0'}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Warning Callout + tabs content — only in UI mode */}
+                {viewMode === 'ui' && showWarning && (
                   <>
                     <EuiCallOut
                       title="Warning at Mar 18, 2026 @ 21:14:17.686"
@@ -443,8 +776,8 @@ const RuleDetailsPage: React.FC = () => {
                   </>
                 )}
 
-                {/* Main Content: About and Definition */}
-                {selectedTab === 'overview' && (
+                {/* Main Content: About and Definition — UI mode only */}
+                {viewMode === 'ui' && selectedTab === 'overview' && (
                   <EuiFlexGroup gutterSize="l" alignItems="stretch">
                     {/* Left Column: About (60% width) */}
                     <EuiFlexItem grow={6}>
@@ -477,7 +810,14 @@ const RuleDetailsPage: React.FC = () => {
                           listItems={[
                             {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>Description</EuiText>,
-                              description: <EuiText size="s">{rule.description || 'No description available.'}</EuiText>,
+                              description: (
+                                <EuiText size="s">
+                                  {activeDiff?.description
+                                    ? renderInlineText(activeDiff.description)
+                                    : (rule.description || 'No description available.')
+                                  }
+                                </EuiText>
+                              ),
                             },
                             {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Version</EuiText>,
@@ -501,7 +841,17 @@ const RuleDetailsPage: React.FC = () => {
                             },
                             {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Risk score</EuiText>,
-                              description: <EuiText size="s">{rule.riskScore}</EuiText>,
+                              description: (
+                                <EuiText size="s">
+                                  {activeDiff?.riskScore ? (
+                                    <span>
+                                      <span style={{ background: 'rgba(0,191,179,0.18)', color: '#017D73', borderRadius: 2, padding: '0 3px' }}>{activeDiff.riskScore}</span>
+                                      {' '}
+                                      <span style={{ background: 'rgba(189,39,30,0.12)', color: '#BD271E', textDecoration: 'line-through', borderRadius: 2, padding: '0 3px' }}>{activeDiff.riskScoreOld}</span>
+                                    </span>
+                                  ) : rule.riskScore}
+                                </EuiText>
+                              ),
                             },
                             {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Reference URLs</EuiText>,
@@ -565,6 +915,17 @@ const RuleDetailsPage: React.FC = () => {
                               title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>Tags</EuiText>,
                                 description: (
                                   <EuiFlexGroup gutterSize="s" wrap>
+                                    {activeDiff?.tags ? activeDiff.tags.map((t, i) => (
+                                      <EuiFlexItem key={i} grow={false}>
+                                        <EuiBadge
+                                          color={t.type === 'added' ? 'success' : t.type === 'removed' ? 'danger' : 'hollow'}
+                                          style={t.type === 'added' ? { background: 'rgba(0,191,179,0.15)', border: '1px solid #00BFB3', color: '#017D73' } : t.type === 'removed' ? { background: 'rgba(189,39,30,0.1)', border: '1px solid #BD271E', color: '#BD271E', textDecoration: 'line-through' } : undefined}
+                                        >
+                                          {t.label}
+                                        </EuiBadge>
+                                      </EuiFlexItem>
+                                    )) : (
+                                      <>
                                     <EuiFlexItem grow={false}>
                                       <EuiBadge color="hollow">Domain: Endpoint</EuiBadge>
                                     </EuiFlexItem>
@@ -595,6 +956,8 @@ const RuleDetailsPage: React.FC = () => {
                                     <EuiFlexItem grow={false}>
                                       <EuiBadge color="hollow">Data Source: Crowdstrike</EuiBadge>
                                     </EuiFlexItem>
+                                    </>
+                                    )}
                                   </EuiFlexGroup>
                                 ),
                               },
@@ -636,13 +999,13 @@ const RuleDetailsPage: React.FC = () => {
                                   title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>EQL query</EuiText>,
                                   description: (
                                     <EuiText size="s" style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-{`process where host.os.type == "windows" and event.type == "start"
+                                      {activeDiff?.query ? renderInlineText(activeDiff.query) :
+`process where host.os.type == "windows" and event.type == "start"
   and process.parent.name : "dns.exe" and
   not process.executable :
       ("?:\\Windows\\System32\\werfault.exe",
        "?:\\Windows\\System32\\conhost.exe",
        "?:\\Program Files\\BeyondTrust\\One2OneHost.exe*") and
-  /* Consisterthis specific exclusion as it uses NT Object paths */
   (process.name : ("cmd.exe", "powershell.exe",
                    "?:\\DeviceHarddiskVolume?\\Windows\\System32\\conhost.exe")
    and
@@ -736,7 +1099,7 @@ const RuleDetailsPage: React.FC = () => {
                   </EuiFlexGroup>
                 )}
 
-                {selectedTab === 'execution' && (
+                {viewMode === 'ui' && selectedTab === 'execution' && (
                   <>
                     {/* Execution log */}
                     <EuiPanel hasBorder={true} hasShadow={false} paddingSize="m" style={{ borderRadius: '6px' }}>
@@ -1117,6 +1480,90 @@ const RuleDetailsPage: React.FC = () => {
                   </EuiText>
                 )}
               </div>
+
+              {/* ── Floating view-toggle widget — only when history pane open ── */}
+              {isHistoryPaneOpen && (
+              <div style={{
+                position: 'fixed',
+                bottom: 24,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+                zIndex: 1000,
+              }}>
+                <div style={{
+                  background: 'white',
+                  borderRadius: 10,
+                  boxShadow: '0 1px 1px rgba(43,57,79,0.16), 0 5px 8px rgba(43,57,79,0.14), 0 10px 10px rgba(43,57,79,0.08)',
+                  padding: '7px 8px',
+                  pointerEvents: 'auto',
+                }}>
+                  <div style={{
+                    background: '#F6F9FC',
+                    border: '1px solid #E3E8F2',
+                    borderRadius: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: 3,
+                  }}>
+                    {/* Change navigation — only in JSON mode */}
+                    {viewMode === 'json' && (
+                      <>
+                        <button type="button" onClick={() => setDiffChangeIdx(Math.max(0, diffChangeIdx - 1))}
+                          style={{ background: 'none', border: 'none', cursor: diffChangeIdx > 0 ? 'pointer' : 'default', color: diffChangeIdx > 0 ? '#0077CC' : '#D3DAE6', fontSize: 18, lineHeight: '32px', width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ‹
+                        </button>
+                        <span style={{ fontSize: 12, color: '#343741', fontWeight: 500, whiteSpace: 'nowrap', padding: '0 4px' }}>
+                          {diffChangeIdx + 1} of {diffChanges.length} changes
+                        </span>
+                        <button type="button" onClick={() => setDiffChangeIdx(Math.min(diffChanges.length - 1, diffChangeIdx + 1))}
+                          style={{ background: 'none', border: 'none', cursor: diffChangeIdx < diffChanges.length - 1 ? 'pointer' : 'default', color: diffChangeIdx < diffChanges.length - 1 ? '#0077CC' : '#D3DAE6', fontSize: 18, lineHeight: '32px', width: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ›
+                        </button>
+                        <div style={{ width: 1, height: 20, background: '#D3DAE6', margin: '0 2px' }} />
+                      </>
+                    )}
+                    {/* UI / table view */}
+                    <button
+                      type="button"
+                      aria-label="UI view"
+                      onClick={() => setViewMode('ui')}
+                      style={{
+                        width: 32, height: 32,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: 3, border: 'none', cursor: 'pointer',
+                        background: viewMode === 'ui' ? 'white' : 'transparent',
+                        boxShadow: viewMode === 'ui'
+                          ? '0 0 1px rgba(43,57,79,0.16), 0 1px 2px rgba(43,57,79,0.06), 0 2px 4px rgba(43,57,79,0.05)'
+                          : 'none',
+                      }}
+                    >
+                      <EuiIcon type="table" size="m" color={viewMode === 'ui' ? 'primary' : 'subdued'} />
+                    </button>
+                    {/* JSON / code view */}
+                    <button
+                      type="button"
+                      aria-label="JSON view"
+                      onClick={() => setViewMode('json')}
+                      style={{
+                        width: 32, height: 32,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        borderRadius: 3, border: 'none', cursor: 'pointer',
+                        background: viewMode === 'json' ? 'white' : 'transparent',
+                        boxShadow: viewMode === 'json'
+                          ? '0 0 1px rgba(43,57,79,0.16), 0 1px 2px rgba(43,57,79,0.06), 0 2px 4px rgba(43,57,79,0.05)'
+                          : 'none',
+                      }}
+                    >
+                      <EuiIcon type="editorCodeBlock" size="m" color={viewMode === 'json' ? 'primary' : 'subdued'} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              )}
             </EuiPanel>
           </EuiFlexItem>
 
@@ -1146,7 +1593,72 @@ const RuleDetailsPage: React.FC = () => {
                   <EuiText style={{ fontWeight: 700, fontSize: 16 }}>Version history</EuiText>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <EuiButtonIcon iconType="calendar" aria-label="Calendar" color="text" size="s" />
-                    <EuiButtonIcon iconType="sortable" aria-label="Filter" color="text" size="s" />
+                    <EuiPopover
+                      isOpen={filterPopoverOpen}
+                      closePopover={() => setFilterPopoverOpen(false)}
+                      anchorPosition="downRight"
+                      panelPaddingSize="none"
+                      button={
+                        <EuiButtonIcon
+                          iconType="filter"
+                          aria-label="Filter"
+                          color="text"
+                          size="s"
+                          onClick={() => setFilterPopoverOpen((v) => !v)}
+                        />
+                      }
+                    >
+                      <div style={{ width: 260, borderRadius: 6, overflow: 'hidden' }}>
+                        {/* Search */}
+                        <div style={{ padding: 8 }}>
+                          <EuiFieldSearch
+                            placeholder="Type text"
+                            value={filterSearch}
+                            onChange={(e) => setFilterSearch(e.target.value)}
+                            compressed
+                            fullWidth
+                          />
+                        </div>
+
+                        {/* Field changed group */}
+                        <div style={{ padding: '4px 0 0' }}>
+                          <div style={{ padding: '4px 12px 6px', fontWeight: 700, fontSize: 13, color: '#1d2a3e', borderBottom: '1px solid #EEF0F3' }}>
+                            Field changed
+                          </div>
+                          <EuiListGroup flush gutterSize="none" style={{ paddingBottom: 8 }}>
+                            {['Description', 'Query', 'Tags', 'Risk score', 'Reference URLs', 'MITRE ATT&CK™', 'Index patterns', 'Related integrations']
+                              .filter(i => !filterSearch || i.toLowerCase().includes(filterSearch.toLowerCase()))
+                              .map((item) => (
+                                <EuiListGroupItem
+                                  key={item}
+                                  label={item}
+                                  size="s"
+                                  onClick={() => setFilterPopoverOpen(false)}
+                                />
+                              ))}
+                          </EuiListGroup>
+                        </div>
+
+                        {/* Author group */}
+                        <div style={{ borderTop: '1px solid #EEF0F3' }}>
+                          <div style={{ padding: '8px 12px 6px', fontWeight: 700, fontSize: 13, color: '#1d2a3e', borderBottom: '1px solid #EEF0F3' }}>
+                            Author
+                          </div>
+                          <EuiListGroup flush gutterSize="none" style={{ paddingBottom: 8 }}>
+                            {['Pavel M', 'Alex Nightingale', 'John Doe', 'Tinsae E']
+                              .filter(i => !filterSearch || i.toLowerCase().includes(filterSearch.toLowerCase()))
+                              .map((item) => (
+                                <EuiListGroupItem
+                                  key={item}
+                                  label={item}
+                                  size="s"
+                                  onClick={() => setFilterPopoverOpen(false)}
+                                />
+                              ))}
+                          </EuiListGroup>
+                        </div>
+                      </div>
+                    </EuiPopover>
                     <div style={{ width: 1, height: 16, background: '#D3DAE6', margin: '0 4px' }} />
                     <EuiButtonIcon
                       iconType="cross"
@@ -1160,31 +1672,36 @@ const RuleDetailsPage: React.FC = () => {
 
                 {/* Version list */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-                  {versionHistory.map((entry, idx) => (
+                  {versionHistory.map((entry, idx) => {
+                    const isSelected = selectedHistoryIdx === idx;
+                    const isStatusChange = entry.detail === 'Enabled the rule' || entry.detail === 'Disabled the rule';
+                    return (
                     <div
                       key={idx}
                       style={{
                         margin: '12px 8px',
                         borderRadius: 6,
-                        border: '1px solid #D3DAE6',
-                        background: entry.isCurrent ? '#EEF2FF' : '#fff',
+                        border: isSelected ? '2px solid #4B52C4' : '1px solid #D3DAE6',
+                        background: isSelected ? '#EEF2FF' : isStatusChange ? '#F5F7FA' : '#fff',
                         overflow: 'hidden',
+                        cursor: isStatusChange ? 'default' : 'pointer',
+                      }}
+                      onClick={() => {
+                        if (isStatusChange) return;
+                        setSelectedHistoryIdx(idx); 
+                        setDiffChangeIdx(0);
+                        if (entry.note) {
+                          setExpandedHistoryVersion(expandedHistoryVersion === idx ? null : idx);
+                        }
                       }}
                     >
                       <div
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          padding: '10px 12px',
+                          padding: isSelected ? '9px 11px' : '10px 12px',
                           gap: 8,
-                          cursor: entry.note ? 'pointer' : 'default',
                         }}
-                        onClick={() =>
-                          entry.note &&
-                          setExpandedHistoryVersion(
-                            expandedHistoryVersion === idx ? null : idx
-                          )
-                        }
                       >
                         {/* Left: timestamp + author */}
                         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1208,54 +1725,63 @@ const RuleDetailsPage: React.FC = () => {
                               Current version
                             </span>
                           )}
-                          <span style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: '#343741',
-                            border: '1px solid #D3DAE6',
-                            borderRadius: 12,
-                            padding: '2px 8px',
-                          }}>
-                            {entry.ruleVersion}
-                          </span>
-                          <span style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            color: '#343741',
-                            border: '1px solid #D3DAE6',
-                            borderRadius: 12,
-                            padding: '2px 8px',
-                          }}>
-                            {entry.version}
-                          </span>
+                          {!isStatusChange && (
+                            <>
+                              <span style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: '#343741',
+                                border: '1px solid #D3DAE6',
+                                borderRadius: 12,
+                                padding: '2px 8px',
+                              }}>
+                                {entry.ruleVersion}
+                              </span>
+                              <span style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: '#343741',
+                                border: '1px solid #D3DAE6',
+                                borderRadius: 12,
+                                padding: '2px 8px',
+                              }}>
+                                {entry.version}
+                              </span>
+                            </>
+                          )}
                         </div>
 
-                        <EuiButtonIcon
+                        {!isStatusChange && <EuiButtonIcon
                           iconType="boxesHorizontal"
                           aria-label="Version actions"
                           color="text"
                           size="xs"
                           style={{ flexShrink: 0 }}
                           onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        />
+                        />}
                       </div>
 
-                      {/* Expanded note */}
-                      {entry.note && expandedHistoryVersion === idx && (
+                      {/* Expanded note — always visible */}
+                      {entry.note && (
                         <div style={{
                           margin: '0 12px 10px',
                           padding: '6px 10px',
                           background: '#F0F4FA',
                           borderRadius: 4,
                           border: '1px solid #D3DAE6',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 6,
                         }}>
-                          <EuiText size="xs" style={{ fontFamily: 'monospace', color: '#343741' }}>
+                          <EuiIcon type="editorComment" size="s" color="subdued" style={{ flexShrink: 0, marginTop: 2 }} />
+                          <EuiText size="xs" style={{ color: '#343741' }}>
                             {entry.note}
                           </EuiText>
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
 
                 {/* Footer */}
