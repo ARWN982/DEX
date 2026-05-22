@@ -13,6 +13,7 @@ import React, {
   useMemo,
   useReducer,
 } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { invariant } from '../shims/common_utils';
 import {
   BulkActionTypeEnum,
@@ -25,8 +26,10 @@ import {
   SET_RULE_ACTIVITY_FILTER,
   SET_RULE_SOURCE_FILTER,
   SET_RULE_SEARCH_FILTER,
+  SET_MITRE_VERSION,
   createCoverageOverviewDashboardReducer,
 } from './coverage_overview_dashboard_reducer';
+import { DEFAULT_MITRE_VERSION_ID } from '../data/versions/registry';
 import { useFetchCoverageOverviewQuery } from '../shims/hooks';
 import { useExecuteBulkAction } from '../shims/hooks';
 
@@ -36,6 +39,7 @@ export interface CoverageOverviewDashboardActions {
   setRuleActivityFilter: (value: CoverageOverviewRuleActivity[]) => void;
   setRuleSourceFilter: (value: CoverageOverviewRuleSource[]) => void;
   setRuleSearchFilter: (value: string) => void;
+  setMitreVersion: (versionId: string) => void;
   enableAllDisabled: (ruleIds: string[]) => Promise<void>;
 }
 
@@ -59,12 +63,25 @@ export const initialState: CoverageOverviewDashboardState = {
   },
   data: undefined,
   isLoading: false,
+  selectedMitreVersionId: DEFAULT_MITRE_VERSION_ID,
 };
 
 export const CoverageOverviewDashboardContextProvider = ({
   children,
 }: CoverageOverviewDashboardContextProviderProps) => {
-  const [state, dispatch] = useReducer(createCoverageOverviewDashboardReducer(), initialState);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read initial version from URL ?mitreVersion=vX.Y
+  const urlVersion = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('mitreVersion') ?? DEFAULT_MITRE_VERSION_ID;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [state, dispatch] = useReducer(
+    createCoverageOverviewDashboardReducer(),
+    { ...initialState, selectedMitreVersionId: urlVersion }
+  );
   const { data, isLoading, refetch } = useFetchCoverageOverviewQuery(state.filter);
   const { executeBulkAction } = useExecuteBulkAction();
 
@@ -112,6 +129,17 @@ export const CoverageOverviewDashboardContextProvider = ({
     [dispatch]
   );
 
+  const setMitreVersion = useCallback(
+    (versionId: string) => {
+      dispatch({ type: SET_MITRE_VERSION, value: versionId });
+      // Persist to URL so refresh keeps the selection
+      const params = new URLSearchParams(location.search);
+      params.set('mitreVersion', versionId);
+      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    },
+    [dispatch, navigate, location]
+  );
+
   const enableAllDisabled = useCallback(
     async (ruleIds: string[]) => {
       await executeBulkAction({ type: BulkActionTypeEnum.enable, ids: ruleIds });
@@ -126,6 +154,7 @@ export const CoverageOverviewDashboardContextProvider = ({
       setRuleActivityFilter,
       setRuleSourceFilter,
       setRuleSearchFilter,
+      setMitreVersion,
       enableAllDisabled,
     }),
     [
@@ -134,6 +163,7 @@ export const CoverageOverviewDashboardContextProvider = ({
       setRuleSearchFilter,
       setRuleSourceFilter,
       setShowExpandedCells,
+      setMitreVersion,
       enableAllDisabled,
     ]
   );

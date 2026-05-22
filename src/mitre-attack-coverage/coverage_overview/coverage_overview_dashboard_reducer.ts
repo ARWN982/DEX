@@ -11,12 +11,14 @@ import type {
   CoverageOverviewRuleSource,
 } from '../shims/api_types';
 import type { CoverageOverviewDashboard } from '../model/coverage_overview/dashboard';
+import { DEFAULT_MITRE_VERSION_ID } from '../data/versions/registry';
 
 export interface CoverageOverviewDashboardState {
   showExpandedCells: boolean;
   filter: CoverageOverviewFilter;
   isLoading: boolean;
   data: CoverageOverviewDashboard | undefined;
+  selectedMitreVersionId: string;
 }
 
 // Action type names
@@ -24,24 +26,14 @@ export const SET_SHOW_EXPANDED_CELLS = 'setShowExpandedCells' as const;
 export const SET_RULE_ACTIVITY_FILTER = 'setRuleActivityFilter' as const;
 export const SET_RULE_SOURCE_FILTER = 'setRuleSourceFilter' as const;
 export const SET_RULE_SEARCH_FILTER = 'setRuleSearchFilter' as const;
+export const SET_MITRE_VERSION = 'setMitreVersion' as const;
 
 export type Action =
-  | {
-      type: typeof SET_SHOW_EXPANDED_CELLS;
-      value: boolean;
-    }
-  | {
-      type: typeof SET_RULE_ACTIVITY_FILTER;
-      value: CoverageOverviewRuleActivity[];
-    }
-  | {
-      type: typeof SET_RULE_SOURCE_FILTER;
-      value: CoverageOverviewRuleSource[];
-    }
-  | {
-      type: typeof SET_RULE_SEARCH_FILTER;
-      value: string;
-    };
+  | { type: typeof SET_SHOW_EXPANDED_CELLS; value: boolean }
+  | { type: typeof SET_RULE_ACTIVITY_FILTER; value: CoverageOverviewRuleActivity[] }
+  | { type: typeof SET_RULE_SOURCE_FILTER; value: CoverageOverviewRuleSource[] }
+  | { type: typeof SET_RULE_SEARCH_FILTER; value: string }
+  | { type: typeof SET_MITRE_VERSION; value: string };
 
 export const createCoverageOverviewDashboardReducer =
   () =>
@@ -68,6 +60,9 @@ export const createCoverageOverviewDashboardReducer =
           search_term: value.length !== 0 ? value : undefined,
         };
         return { ...state, filter: updatedFilter };
+      }
+      case SET_MITRE_VERSION: {
+        return { ...state, selectedMitreVersionId: action.value };
       }
       default:
         return state;
