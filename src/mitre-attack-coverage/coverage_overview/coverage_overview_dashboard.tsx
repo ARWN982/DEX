@@ -28,11 +28,11 @@ import { useCoverageOverviewDashboardContext } from './coverage_overview_dashboa
 
 // ─── Available ATT&CK versions ────────────────────────────────────────────────
 const MITRE_VERSIONS = [
-  { id: 'v14.1', label: 'ATT&CK v14.1', isLatest: true },
-  { id: 'v14.0', label: 'ATT&CK v14.0', isLatest: false },
-  { id: 'v13.1', label: 'ATT&CK v13.1', isLatest: false },
-  { id: 'v13.0', label: 'ATT&CK v13.0', isLatest: false },
-  { id: 'v12.1', label: 'ATT&CK v12.1', isLatest: false },
+  { id: 'v18.1', label: 'ATT&CK v18.1', isLatest: true },
+  { id: 'v17.0', label: 'ATT&CK v17.0', isLatest: false },
+  { id: 'v16.1', label: 'ATT&CK v16.1', isLatest: false },
+  { id: 'v15.1', label: 'ATT&CK v15.1', isLatest: false },
+  { id: 'v14.1', label: 'ATT&CK v14.1', isLatest: false },
 ];
 
 // ─── Version badge ─────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ const CoverageOverviewDashboardComponent = () => {
     state: { data },
   } = useCoverageOverviewDashboardContext();
 
-  const [selectedVersion, setSelectedVersion] = useState('v14.1');
+  const [selectedVersion, setSelectedVersion] = useState('v18.1');
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
