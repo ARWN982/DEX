@@ -8,7 +8,6 @@ import React from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText } from '@elastic/eui';
 import { CoverageOverviewLink, HeaderPage } from '../shims/page_components';
 
-
 import * as i18n from './translations';
 import { CoverageOverviewTacticPanel } from './tactic_panel';
 import { CoverageOverviewMitreTechniquePanelPopover } from './technique_panel_popover';
@@ -20,7 +19,8 @@ const CoverageOverviewHeaderComponent = () => (
     title={i18n.COVERAGE_OVERVIEW_DASHBOARD_TITLE}
     subtitle={
       <EuiText color="subdued" size="s">
-        <span>{i18n.CoverageOverviewDashboardInformation}</span> <CoverageOverviewLink />
+        <span>{i18n.CoverageOverviewDashboardInformation}</span>{' '}
+        <CoverageOverviewLink>Learn more</CoverageOverviewLink>
       </EuiText>
     }
   />
@@ -34,31 +34,67 @@ const CoverageOverviewDashboardComponent = () => {
   } = useCoverageOverviewDashboardContext();
 
   return (
-    <>
-      <CoverageOverviewHeader />
-      <CoverageOverviewFiltersPanel />
-      <EuiSpacer />
-      <EuiFlexGroup gutterSize="m" className="eui-xScroll" tabIndex={0}>
-        {data?.mitreTactics.map((tactic) => (
-          <EuiFlexGroup
-            data-test-subj={`coverageOverviewTacticGroup-${tactic.id}`}
-            direction="column"
-            key={tactic.id}
-            gutterSize="s"
-          >
-            <EuiFlexItem grow={false}>
-              <CoverageOverviewTacticPanel tactic={tactic} />
-            </EuiFlexItem>
+    /*
+     * Outer wrapper: column flex that fills the parent's height.
+     * The parent (from index.tsx) is `overflowY: auto`, so the sticky
+     * header sticks within that scroll container.
+     */
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
 
-            {tactic.techniques.map((technique, techniqueKey) => (
-              <EuiFlexItem grow={false} key={`${technique.id}-${techniqueKey}`}>
-                <CoverageOverviewMitreTechniquePanelPopover technique={technique} />
+      {/* ── Sticky header: title + filter bar ── */}
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          background: 'white',
+          paddingBottom: 8,
+        }}
+      >
+        <CoverageOverviewHeader />
+        <CoverageOverviewFiltersPanel />
+        <EuiSpacer size="m" />
+      </div>
+
+      {/* ── Horizontally scrollable tactics grid ── */}
+      <div
+        style={{
+          overflowX: 'auto',
+          overflowY: 'visible',
+          paddingBottom: 24,
+          /* Give the scrollbar some breathing room */
+          paddingRight: 4,
+        }}
+      >
+        <EuiFlexGroup
+          gutterSize="m"
+          wrap={false}
+          responsive={false}
+          style={{ width: 'max-content', minWidth: '100%' }}
+        >
+          {data?.mitreTactics.map((tactic) => (
+            <EuiFlexGroup
+              data-test-subj={`coverageOverviewTacticGroup-${tactic.id}`}
+              direction="column"
+              key={tactic.id}
+              gutterSize="s"
+              style={{ flexShrink: 0 }}
+            >
+              <EuiFlexItem grow={false}>
+                <CoverageOverviewTacticPanel tactic={tactic} />
               </EuiFlexItem>
-            ))}
-          </EuiFlexGroup>
-        ))}
-      </EuiFlexGroup>
-    </>
+
+              {tactic.techniques.map((technique, techniqueKey) => (
+                <EuiFlexItem grow={false} key={`${technique.id}-${techniqueKey}`}>
+                  <CoverageOverviewMitreTechniquePanelPopover technique={technique} />
+                </EuiFlexItem>
+              ))}
+            </EuiFlexGroup>
+          ))}
+        </EuiFlexGroup>
+      </div>
+
+    </div>
   );
 };
 

@@ -42,9 +42,9 @@ export const CoverageOverviewPage = () => (
           <EuiPanel
             paddingSize="none"
             hasShadow
-            style={{ borderRadius: 8, height: '100%', overflowY: 'auto', background: 'white' }}
+            style={{ borderRadius: 8, height: '100%', overflowY: 'auto', overflowX: 'hidden', background: 'white' }}
           >
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '24px', minHeight: '100%' }}>
               <CoverageOverviewDashboardContextProvider>
                 <CoverageOverviewDashboard />
               </CoverageOverviewDashboardContextProvider>
