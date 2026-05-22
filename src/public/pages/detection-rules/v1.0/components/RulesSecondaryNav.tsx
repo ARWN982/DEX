@@ -96,11 +96,12 @@ const RulesSecondaryNav: React.FC = () => {
         <EuiListGroup flush gutterSize="none">
           <EuiListGroupItem
             label={
-              <span style={{ color: '#1d2a3e' }}>
+              <span style={{ color: isActive('/mitre-coverage') ? '#1750BA' : '#1d2a3e' }}>
                 MITRE ATT&amp;CK® Coverage
               </span>
             }
-            onClick={() => {}}
+            onClick={() => navigate('/mitre-coverage')}
+            isActive={isActive('/mitre-coverage')}
             style={{ height: 32, padding: '6px 4px', borderRadius: 4, fontSize: 13, fontWeight: 400 }}
           />
         </EuiListGroup>

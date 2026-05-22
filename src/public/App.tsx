@@ -21,6 +21,7 @@ import InboxPage from "./pages/detection-rules/v1.0/inbox";
 import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
 import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
 import AgentsPage from "./pages/agents/AgentsPage";
+import { CoverageOverviewPage } from "../mitre-attack-coverage/coverage_overview/index";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -93,6 +94,9 @@ const App: React.FC = () => {
 
             {/* AutoDEX */}
             <Route path="/autodex" element={<AutoDexPage />} />
+
+            {/* MITRE ATT&CK Coverage */}
+            <Route path="/mitre-coverage" element={<CoverageOverviewPage />} />
 
             {/* SIEM Readiness */}
             <Route path="/siem-readiness" element={<SiemReadinessPage />} />
