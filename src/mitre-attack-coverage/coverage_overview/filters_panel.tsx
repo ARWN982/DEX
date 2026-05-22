@@ -61,7 +61,7 @@ const CoverageOverviewFiltersPanelComponent = () => {
               />
             </EuiFlexItem>
           </EuiFlexGroup>
-          <EuiFlexGroup alignItems="center">
+          <EuiFlexGroup alignItems="center" style={{ marginTop: 12 }}>
             <EuiFlexItem>
               <EuiFieldSearch
                 fullWidth
