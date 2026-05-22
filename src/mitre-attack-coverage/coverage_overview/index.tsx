@@ -52,10 +52,11 @@ export const CoverageOverviewPage = () => (
             style={{
               borderRadius: 8,
               height: '100%',
-              overflow: 'hidden',
+              overflow: 'hidden',   /* keeps border-radius clip on content edges */
               background: 'white',
               display: 'flex',
               flexDirection: 'column',
+              boxSizing: 'border-box',
             }}
           >
             {/* Inner padding wrapper — passes flex height down */}

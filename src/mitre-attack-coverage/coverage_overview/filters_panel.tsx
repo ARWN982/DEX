@@ -42,7 +42,7 @@ const CoverageOverviewFiltersPanelComponent = () => {
   );
 
   return (
-    <EuiPanel style={{ overflow: 'hidden' }}>
+    <EuiPanel>
       <EuiFlexGroup justifyContent="spaceBetween" wrap={false} responsive={false} style={{ minWidth: 0 }}>
         <EuiFlexItem>
           <EuiFlexGroup>

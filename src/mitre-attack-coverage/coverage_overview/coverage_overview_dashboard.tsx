@@ -48,8 +48,8 @@ const CoverageOverviewDashboardComponent = () => {
      */
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── SECTION A: Header — always visible, never overflows ── */}
-      <div style={{ flexShrink: 0, overflow: 'hidden', minWidth: 0 }}>
+      {/* ── SECTION A: Header — always visible ── */}
+      <div style={{ flexShrink: 0, minWidth: 0 }}>
         <CoverageOverviewHeader />
         <CoverageOverviewFiltersPanel />
         <EuiSpacer size="m" />
