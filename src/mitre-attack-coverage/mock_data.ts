@@ -3,7 +3,7 @@
  * Replace with a real API call to GET /api/detection_engine/coverage_overview
  * when integrating with Kibana.
  */
-import { techniques, tactics } from './shims/mitre_data';
+import { uniqueTechniques as techniques, tactics } from './shims/mitre_data';
 import type { CoverageOverviewDashboard } from './model/coverage_overview/dashboard';
 import type { CoverageOverviewMitreTactic } from './model/coverage_overview/mitre_tactic';
 import type { CoverageOverviewMitreTechnique } from './model/coverage_overview/mitre_technique';
