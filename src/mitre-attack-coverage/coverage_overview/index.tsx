@@ -5,7 +5,7 @@
  * 2.0.
  */
 import React from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiPanel } from '@elastic/eui';
+import { EuiPanel } from '@elastic/eui';
 import SecurityHeader from '../../public/pages/detection-rules/v1.0/components/SecurityHeader';
 import SecuritySideNav from '../../public/pages/detection-rules/v1.0/components/SecuritySideNav';
 import RulesSecondaryNav from '../../public/pages/detection-rules/v1.0/components/RulesSecondaryNav';
@@ -17,42 +17,65 @@ export const CoverageOverviewPage = () => (
     <SecurityHeader onMenuClick={() => {}} />
     <SecuritySideNav />
 
+    {/* Gray outer wrapper — explicit height, no overflow */}
     <div
       style={{
         backgroundColor: '#F6F9FC',
-        height: 'calc(100vh - 56px)',
-        marginTop: 48,
-        marginLeft: 80,
+        position: 'absolute',
+        top: 48,
+        left: 80,
+        right: 0,
+        bottom: 0,
         padding: 8,
-        display: 'flex',
         overflow: 'hidden',
       }}
     >
-      <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart" style={{ flex: 1, minHeight: 0 }}>
+      {/* Row: secondary nav + main panel */}
+      <div style={{ display: 'flex', height: '100%', gap: 8 }}>
 
-        {/* Secondary navigation */}
-        <EuiFlexItem grow={false} style={{ height: '100%' }}>
-          <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'hidden', height: '100%' }}>
-            <RulesSecondaryNav />
-          </EuiPanel>
-        </EuiFlexItem>
-
-        {/* Main content */}
-        <EuiFlexItem style={{ height: '100%', minWidth: 0, overflow: 'hidden' }}>
+        {/* Secondary nav */}
+        <div style={{ flexShrink: 0, height: '100%' }}>
           <EuiPanel
             paddingSize="none"
             hasShadow
-            style={{ borderRadius: 8, height: '100%', overflow: 'hidden', background: 'white', display: 'flex', flexDirection: 'column' }}
+            style={{ borderRadius: 8, overflow: 'hidden', height: '100%' }}
           >
-            <div style={{ padding: '24px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <RulesSecondaryNav />
+          </EuiPanel>
+        </div>
+
+        {/* Main content — fills remaining width */}
+        <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
+          <EuiPanel
+            paddingSize="none"
+            hasShadow
+            style={{
+              borderRadius: 8,
+              height: '100%',
+              overflow: 'hidden',
+              background: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Inner padding wrapper — passes flex height down */}
+            <div
+              style={{
+                padding: '24px',
+                flex: 1,
+                minHeight: 0,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
               <CoverageOverviewDashboardContextProvider>
                 <CoverageOverviewDashboard />
               </CoverageOverviewDashboardContextProvider>
             </div>
           </EuiPanel>
-        </EuiFlexItem>
+        </div>
 
-      </EuiFlexGroup>
+      </div>
     </div>
   </div>
 );

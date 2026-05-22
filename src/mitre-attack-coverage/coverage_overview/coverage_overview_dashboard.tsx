@@ -34,34 +34,44 @@ const CoverageOverviewDashboardComponent = () => {
   } = useCoverageOverviewDashboardContext();
 
   return (
-    /*
-     * Column flex that fills the parent (which is also a flex column).
-     * Header section: shrinks to content, never scrolls, always visible.
-     * Grid section:   fills remaining height, scrolls independently in both axes.
+    /**
+     * Two-section column layout that fills the parent's explicit height.
+     *
+     * SECTION A — Header (flex-shrink:0)
+     *   Always visible. Constrained to panel width (overflow:hidden).
+     *   Contains: title, subtitle, filter bar, legend.
+     *
+     * SECTION B — Grid (flex:1, min-height:0)
+     *   Fills remaining height. Scrolls independently:
+     *     - overflow:auto  →  scrollbar appears when content exceeds bounds
+     *     - width:max-content on the inner EuiFlexGroup  →  horizontal scroll
      */
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Fixed header: title + filters — always visible, constrained to panel width ── */}
-      <div style={{ flexShrink: 0, overflow: 'hidden' }}>
+      {/* ── SECTION A: Header — always visible, never overflows ── */}
+      <div style={{ flexShrink: 0, overflow: 'hidden', minWidth: 0 }}>
         <CoverageOverviewHeader />
         <CoverageOverviewFiltersPanel />
         <EuiSpacer size="m" />
       </div>
 
-      {/* ── Independently scrollable tactics grid ── */}
+      {/* ── SECTION B: Grid — scrolls in both axes ── */}
       <div
         style={{
           flex: 1,
-          minHeight: 0,
-          overflow: 'auto',          /* scrolls in BOTH directions */
-          paddingBottom: 16,
+          minHeight: 0,       /* without this, flex children ignore overflow */
+          overflow: 'auto',   /* scrollbar on BOTH axes when content overflows */
         }}
       >
         <EuiFlexGroup
           gutterSize="m"
           wrap={false}
           responsive={false}
-          style={{ width: 'max-content', alignItems: 'flex-start' }}
+          style={{
+            width: 'max-content',     /* forces H-scroll when > parent width */
+            alignItems: 'flex-start',
+            paddingBottom: 16,
+          }}
         >
           {data?.mitreTactics.map((tactic) => (
             <EuiFlexGroup
@@ -75,8 +85,8 @@ const CoverageOverviewDashboardComponent = () => {
                 <CoverageOverviewTacticPanel tactic={tactic} />
               </EuiFlexItem>
 
-              {tactic.techniques.map((technique, techniqueKey) => (
-                <EuiFlexItem grow={false} key={`${technique.id}-${techniqueKey}`}>
+              {tactic.techniques.map((technique, idx) => (
+                <EuiFlexItem grow={false} key={`${technique.id}-${idx}`}>
                   <CoverageOverviewMitreTechniquePanelPopover technique={technique} />
                 </EuiFlexItem>
               ))}
