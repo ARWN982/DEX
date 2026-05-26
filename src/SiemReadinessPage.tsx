@@ -64,7 +64,7 @@ import SecuritySideNav from './components/SecuritySideNav';
 // ─── Types (mirroring @kbn/siem-readiness) ───────────────────────────────────
 
 type VisibilityStatus = 'healthy' | 'actionsRequired' | 'noData';
-type VisibilityTabId = 'coverage' | 'quality' | 'continuity' | 'retention';
+type VisibilityTabId = 'coverage' | 'quality' | 'detections' | 'continuity' | 'retention';
 
 interface SiemReadinessPackageInfo {
   id: string; name: string; title: string; version: string; status: string;
@@ -134,6 +134,14 @@ interface RuleFieldIssue {
   id: string; ruleName: string; field: string;
   issueType: 'missing' | 'type_mismatch' | 'sparse'; indexPattern: string;
 }
+
+interface ExecutionHealthRow { id: string; rule: string; indexPattern: string; lastRun: string; status: string; execTime: string; alertTrend: string }
+
+const EXECUTION_HEALTH_ROWS: ExecutionHealthRow[] = [
+  { id: '2', rule: 'AWS CloudTrail Unauthorized API Call',      indexPattern: 'logs-aws.cloudtrail-*',          lastRun: '18 min ago', status: 'Gap detected', execTime: '2.4s',  alertTrend: 'Silent — data issue'      },
+  { id: '3', rule: 'Okta User Locked Out',                     indexPattern: 'logs-okta.system-*',             lastRun: '5 min ago',  status: 'Timed out',    execTime: '34.8s', alertTrend: 'Silent — no alerts in 7d' },
+  { id: '4', rule: 'Endpoint Defense Evasion via Timestomping', indexPattern: 'logs-endpoint.events.process-*', lastRun: '3 min ago',  status: 'Failed',       execTime: '0.8s',  alertTrend: 'Silent — no alerts in 7d' },
+];
 
 interface SiemReadinessData {
   loading: boolean;
@@ -301,6 +309,7 @@ interface ReadinessSummary {
   pillars: {
     coverage: PillarStatus;
     quality: PillarStatus;
+    detections: PillarStatus;
     continuity: PillarStatus;
     retention: PillarStatus;
   };
@@ -331,7 +340,7 @@ function getOverallStatusMessage(pillars: Record<string, ReadinessStatus>): { co
   const critical = Object.entries(pillars).filter(([, s]) => s === 'critical').map(([n]) => n.charAt(0).toUpperCase() + n.slice(1));
   const warning  = Object.entries(pillars).filter(([, s]) => s === 'warning').map(([n]) => n.charAt(0).toUpperCase() + n.slice(1));
   if (critical.length === 0 && warning.length === 0) {
-    return { color: 'success', iconType: 'checkInCircleFilled', title: 'Everything seems healthy and stable.', body: 'No issues detected across Coverage, Quality, Continuity, or Retention.' };
+    return { color: 'success', iconType: 'checkInCircleFilled', title: 'Everything seems healthy and stable.', body: 'No issues detected across Coverage, Quality, Detections, Continuity, or Retention.' };
   }
   if (critical.length > 0) {
     const warningText = warning.length > 0 ? ` ${warning.join(' and ')} ${warning.length === 1 ? 'has' : 'have'} a warning.` : '';
@@ -403,6 +412,7 @@ const StatusHero: React.FC<{ summary: ReadinessSummary }> = ({ summary }) => {
   const msg = getOverallStatusMessage({
     coverage:   summary.pillars.coverage.status,
     quality:    summary.pillars.quality.status,
+    detections: summary.pillars.detections.status,
     continuity: summary.pillars.continuity.status,
     retention:  summary.pillars.retention.status,
   });
@@ -442,6 +452,7 @@ const StatusHero: React.FC<{ summary: ReadinessSummary }> = ({ summary }) => {
 const PILLAR_SUBLABELS: Record<VisibilityTabId, { label: string; colorKey: 'danger' | 'warning' }> = {
   coverage:   { label: 'Rules with supporting data',    colorKey: 'danger'  },
   quality:    { label: 'Indices with field issues',      colorKey: 'danger'  },
+  detections: { label: 'Rules with detection issues',  colorKey: 'danger'  },
   continuity: { label: 'Volume drops (>50%)',            colorKey: 'danger'  },
   retention:  { label: 'Data streams below benchmark',   colorKey: 'warning' },
 };
@@ -460,6 +471,7 @@ const OverallStatusCard: React.FC<{ summary: ReadinessSummary }> = ({ summary })
   const pillars: Array<{ id: VisibilityTabId; label: string }> = [
     { id: 'coverage',   label: 'Coverage'   },
     { id: 'quality',    label: 'Quality'    },
+    { id: 'detections', label: 'Detections' },
     { id: 'continuity', label: 'Continuity' },
     { id: 'retention',  label: 'Retention'  },
   ];
@@ -583,6 +595,11 @@ const PILLAR_DESCRIPTIONS: Record<VisibilityTabId, Record<'healthy' | 'warning' 
     warning: 'ECS incompatibility detected.',
     critical: 'Critical field incompatibilities found.',
   },
+  detections: {
+    healthy: 'All detection rules are executing correctly.',
+    warning: 'Some rules have execution warnings.',
+    critical: 'Critical rule field or execution issues found.',
+  },
   continuity: {
     healthy: 'Ingest pipeline is healthy.',
     warning: 'Ingest pipeline failures occurred.',
@@ -599,6 +616,7 @@ const PillarCards: React.FC<PillarCardsProps> = ({ summary }) => {
   const pillars: Array<{ id: VisibilityTabId; title: string; pillar: PillarStatus }> = [
     { id: 'coverage',   title: 'Coverage',   pillar: summary.pillars.coverage },
     { id: 'quality',    title: 'Quality',    pillar: summary.pillars.quality },
+    { id: 'detections', title: 'Detections', pillar: summary.pillars.detections },
     { id: 'continuity', title: 'Continuity', pillar: summary.pillars.continuity },
     { id: 'retention',  title: 'Retention',  pillar: summary.pillars.retention },
   ];
@@ -709,11 +727,11 @@ function deriveActionItems(
     });
   });
 
-  // Quality: all marked Critical (pillar is Critical) — pick most impactful issue types
+  // Detections: rule field issues and execution health failures
   const qualityIssueLabels = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
   ruleFieldIssues.forEach((issue) => {
     items.push({
-      id: `quality-${issue.id}`, severity: 'critical' as const, pillar: 'quality',
+      id: `detections-${issue.id}`, severity: 'critical' as const, pillar: 'detections',
       title: `${qualityIssueLabels[issue.issueType] ?? issue.issueType}: ${issue.field}`,
       description: `Rule "${issue.ruleName}" references ${issue.field} in ${issue.indexPattern}, but this field is ${issue.issueType === 'missing' ? 'absent' : issue.issueType === 'type_mismatch' ? 'incorrectly typed' : 'present in fewer than 10% of documents'}.`,
       fixRecommendation: issue.issueType === 'missing'
@@ -726,6 +744,19 @@ function deriveActionItems(
       platforms: [issue.indexPattern.split('.').slice(0, 2).join('.')],
       fixLink: `Security → Rules → "${issue.ruleName}"`,
       casesCount: issue.id === '4' ? 1 : undefined,
+    });
+  });
+
+  EXECUTION_HEALTH_ROWS.filter((r) => r.status !== 'Succeeded').forEach((row) => {
+    items.push({
+      id: `detections-exec-${row.id}`, severity: 'warning' as const, pillar: 'detections',
+      title: `Execution issue: ${row.rule}`,
+      description: `Rule last ran ${row.lastRun} with status "${row.status}". ${row.alertTrend}.`,
+      fixRecommendation: `Open the rule in Security → Rules and review its query, schedule, and index patterns. Check for data gaps or timeout settings.`,
+      rulesAffected: 1,
+      mitreTactics: [],
+      platforms: [],
+      fixLink: `Security → Rules → "${row.rule}"`,
     });
   });
 
@@ -761,20 +792,20 @@ function deriveActionItems(
       title: `Data streams below benchmark: ${nonCompliantRetention.length}`,
       description: `${nonCompliantRetention.length} data streams do not meet the required retention benchmark. Update your ILM or data lifecycle policies to ensure compliance.`,
       fixRecommendation: `Open Stack Management → Index Lifecycle Management. For each affected data stream, update the policy to extend the retention period to meet the required benchmark (90–180 days depending on category).`,
-      rulesAffected: nonCompliantRetention.length,
+      rulesAffected: nonCompliantRetention.length * 50,
       mitreTactics: [],
       platforms: [...new Set(nonCompliantRetention.map((r) => r.indexName.split('.').slice(0, 2).join('.')))].slice(0, 3),
       fixLink: 'Stack Management → Index Lifecycle Management → Data Streams',
     });
   }
 
-  // Structured selection: 2 Coverage (Critical) + 2 Quality (Critical) + 1 Continuity (Warning) + 1 Retention (Warning)
+  // Structured selection: 2 Coverage (Critical) + 2 Detections (Critical) + 1 Continuity (Warning) + 1 Retention (Warning)
   const byPillar = (pillar: VisibilityTabId) =>
     items.filter((i) => i.pillar === pillar).sort((a, b) => b.rulesAffected - a.rulesAffected);
 
   const structured = [
     ...byPillar('coverage').slice(0, 2),
-    ...byPillar('quality').slice(0, 4),
+    ...byPillar('detections').slice(0, 4),
     ...byPillar('continuity').slice(0, 1),
     ...byPillar('retention').slice(0, 1),
   ];
@@ -792,9 +823,9 @@ interface ActionsPanelProps {
   initialFilter?: VisibilityTabId;
 }
 
-const ALL_CATEGORIES: VisibilityTabId[] = ['coverage', 'quality', 'continuity', 'retention'];
+const ALL_CATEGORIES: VisibilityTabId[] = ['coverage', 'quality', 'detections', 'continuity', 'retention'];
 const ALL_SEVERITIES: Array<'critical' | 'warning'> = ['critical', 'warning'];
-const CATEGORY_LABELS: Record<VisibilityTabId, string> = { coverage: 'Coverage', quality: 'Quality', continuity: 'Continuity', retention: 'Retention' };
+const CATEGORY_LABELS: Record<VisibilityTabId, string> = { coverage: 'Coverage', quality: 'Quality', detections: 'Detections', continuity: 'Continuity', retention: 'Retention' };
 
 const ActionsPanel: React.FC<ActionsPanelProps> = ({ initialFilter, ...props }) => {
   const allActions = useMemo(
@@ -1004,7 +1035,7 @@ const ActionsPanel: React.FC<ActionsPanelProps> = ({ initialFilter, ...props }) 
       ) : (
         <EuiFlexGroup direction="column" gutterSize="s" responsive={false} data-test-subj="siemReadiness-actionsList">
           {pagedActions.map((action) => {
-            const pillarLabel = { coverage: 'Coverage', quality: 'Quality', continuity: 'Continuity', retention: 'Retention' }[action.pillar].toUpperCase();
+            const pillarLabel = { coverage: 'Coverage', quality: 'Quality', detections: 'Detections', continuity: 'Continuity', retention: 'Retention' }[action.pillar].toUpperCase();
             const borderColor = action.severity === 'critical' ? '#ffc9c2' : '#FEECB3';
             const now = new Date();
             const timestamp = `${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} @ ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
@@ -1247,6 +1278,114 @@ const RuleCoverageBar: React.FC<RuleCoverageBarProps> = ({ covered, uncovered })
   );
 };
 
+// ─── MITRE ATT&CK tactics coverage graphic ────────────────────────────────────
+
+type MitreTacticStatus = 'warning' | 'inactive' | 'healthy';
+
+interface MitreTacticCoverage {
+  name: string;
+  status: MitreTacticStatus;
+  missingIntegrations?: number;
+  rulesMissingData?: number;
+  totalRules?: number;
+}
+
+const MITRE_MAPPED_RULES_COUNT = 76;
+const MITRE_TOTAL_ENABLED_RULES = 79;
+
+const MITRE_COVERAGE_COLORS: Record<MitreTacticStatus, string> = {
+  warning:  '#FAD4D4',
+  inactive: '#E8EDF3',
+  healthy:  '#C5EBEA',
+};
+
+const MITRE_LEGEND_COLORS = {
+  healthy:  '#54B399',
+  warning:  '#F5A3A3',
+  inactive: '#D3DAE6',
+};
+
+const MITRE_TACTIC_COVERAGE: MitreTacticCoverage[] = [
+  { name: 'Initial Access',        status: 'warning',  missingIntegrations: 4, rulesMissingData: 4,  totalRules: 5  },
+  { name: 'Defense Evasion',       status: 'warning',  missingIntegrations: 7, rulesMissingData: 19, totalRules: 24 },
+  { name: 'Privilege Escalation',  status: 'warning',  missingIntegrations: 2, rulesMissingData: 3,  totalRules: 4  },
+  { name: 'Persistence',           status: 'warning',  missingIntegrations: 9, rulesMissingData: 13, totalRules: 17 },
+  { name: 'Lateral Movement',      status: 'warning',  missingIntegrations: 2, rulesMissingData: 3,  totalRules: 3  },
+  { name: 'Execution',             status: 'warning',  missingIntegrations: 4, rulesMissingData: 10, totalRules: 18 },
+  { name: 'Discovery',             status: 'warning',  missingIntegrations: 3, rulesMissingData: 2,  totalRules: 3  },
+  { name: 'Collection',            status: 'warning',  missingIntegrations: 2, rulesMissingData: 2,  totalRules: 2  },
+  { name: 'Exfiltration',          status: 'warning',  missingIntegrations: 2, rulesMissingData: 2,  totalRules: 3  },
+  { name: 'Impact',                status: 'warning',  missingIntegrations: 2, rulesMissingData: 4,  totalRules: 5  },
+  { name: 'Resource Development',  status: 'warning',  missingIntegrations: 1, rulesMissingData: 1,  totalRules: 1  },
+  { name: 'Credential Access',     status: 'warning',  missingIntegrations: 3, rulesMissingData: 8,  totalRules: 9  },
+  { name: 'Command and Control',   status: 'warning',  missingIntegrations: 3, rulesMissingData: 1,  totalRules: 5  },
+  { name: 'Reconnaissance',        status: 'inactive', totalRules: 0 },
+];
+
+const MitreCoverageLegendItem: React.FC<{ color: string; label: string }> = ({ color, label }) => (
+  <EuiHealth color={color}>
+    <EuiText size="xs">{label}</EuiText>
+  </EuiHealth>
+);
+
+const MitreAttackCoveragePanel: React.FC = () => (
+  <div data-test-subj="siemReadiness-mitreAttackCoverage">
+    <EuiText size="s" color="subdued" style={{ marginBottom: 12 }}>
+      This diagram shows which MITRE ATT&CK tactics have enabled rules mapped to them and whether any of those rules have missing or disabled integrations
+    </EuiText>
+    <EuiText size="s" style={{ marginBottom: 16 }}>
+      <strong>{MITRE_MAPPED_RULES_COUNT}</strong> out of <strong>{MITRE_TOTAL_ENABLED_RULES}</strong> enabled rules are mapped to a MITRE ATT&CK tactic.
+    </EuiText>
+
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gap: 4,
+        height: 300,
+      }}
+    >
+      {MITRE_TACTIC_COVERAGE.map((tactic) => (
+        <div
+          key={tactic.name}
+          data-test-subj={`siemReadiness-mitreTactic-${tactic.name.replace(/\s+/g, '-')}`}
+          style={{
+            backgroundColor: MITRE_COVERAGE_COLORS[tactic.status],
+            padding: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: 0,
+          }}
+        >
+          <EuiText size="xs"><strong>{tactic.name}</strong></EuiText>
+          <div style={{ fontSize: 14, lineHeight: 1.4 }}>
+            {tactic.status === 'inactive' || tactic.totalRules === 0 ? (
+              <div><strong>0</strong> rule</div>
+            ) : (
+              <>
+                {(tactic.missingIntegrations ?? 0) > 0 && (
+                  <div><strong>{tactic.missingIntegrations}</strong> missing or disabled integrations</div>
+                )}
+                <div>
+                  <strong>{tactic.rulesMissingData} / {tactic.totalRules}</strong> rules missing data
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <EuiSpacer size="m" />
+    <EuiFlexGroup direction="column" gutterSize="xs">
+      <MitreCoverageLegendItem color={MITRE_LEGEND_COLORS.healthy} label="Healthy: All rules have integrations & data" />
+      <MitreCoverageLegendItem color={MITRE_LEGEND_COLORS.warning} label="Warning: Missing or disabled integrations, or rule data" />
+      <MitreCoverageLegendItem color={MITRE_LEGEND_COLORS.inactive} label="No enabled rules for this tactic" />
+    </EuiFlexGroup>
+  </div>
+);
+
 // ─── Shared blast-radius utilities ───────────────────────────────────────────
 
 const INDEX_PREFIX_TO_INTEGRATION: Record<string, string> = {
@@ -1264,16 +1403,31 @@ const INDEX_PREFIX_TO_PLATFORM: Record<string, string> = {
   'logs-endpoint':                   'Endpoint',
   'logs-okta':                       'Identity',
   'logs-aws':                        'Cloud',
-  'logs-aws.cloudtrail':             'Cloud',
-  'logs-aws.s3access':               'Cloud',
   'logs-network':                    'Network',
   'logs-google':                     'Application/SaaS',
-  'logs-google_workspace.admin':     'Application/SaaS',
-  'logs-google_workspace.login':     'Application/SaaS',
+  'logs-google_workspace':           'Application/SaaS',
   'logs-salesforce':                 'Application/SaaS',
 };
 
+const INTEGRATION_TO_PLATFORM: Record<string, string> = {
+  endpoint:         'Endpoint',
+  elastic_agent:    'Endpoint',
+  windows:          'Endpoint',
+  okta:             'Identity',
+  azure_ad:         'Identity',
+  aws:              'Cloud',
+  azure:            'Cloud',
+  gcp:              'Cloud',
+  network_traffic:  'Network',
+  zeek:             'Network',
+  google_workspace: 'Application/SaaS',
+  salesforce:       'Application/SaaS',
+};
+
 function getIndexPrefix(indexName: string): string {
+  const parts = indexName.split(/[.-]/);
+  if (parts[0] === 'logs' && parts[1]) return `logs-${parts[1]}`;
+  if (parts[0] === 'ds' && parts[1]) return `ds-${parts[1]}`;
   return indexName.split('-').slice(0, 2).join('-');
 }
 function getTacticsFromIndex(indexName: string): string[] {
@@ -1281,8 +1435,22 @@ function getTacticsFromIndex(indexName: string): string[] {
   return integration ? (INTEGRATION_MITRE[integration] ?? []) : [];
 }
 function getPlatformFromIndex(indexName: string): string {
-  return INDEX_PREFIX_TO_PLATFORM[getIndexPrefix(indexName)] ?? '';
+  const prefix = getIndexPrefix(indexName);
+  if (INDEX_PREFIX_TO_PLATFORM[prefix]) return INDEX_PREFIX_TO_PLATFORM[prefix];
+
+  const name = indexName.toLowerCase();
+  if (name.includes('endpoint')) return 'Endpoint';
+  if (name.includes('okta') || name.includes('azure')) return 'Identity';
+  if (name.includes('aws') || name.includes('cloudtrail') || name.includes('s3access') || name.includes('gcp')) return 'Cloud';
+  if (name.includes('auditbeat') || name.includes('network') || name.includes('zeek')) return 'Network';
+  if (name.includes('google') || name.includes('salesforce') || name.includes('workspace')) return 'Application/SaaS';
+
+  return 'Unknown';
 }
+
+const PlatformBadge: React.FC<{ platform: string }> = ({ platform }) => (
+  <EuiBadge color="hollow">{platform}</EuiBadge>
+);
 
 const CATEGORY_TO_INTEGRATION: Record<string, string> = {
   'Network':          'zeek',
@@ -1397,28 +1565,53 @@ interface PlatformSubRow {
   action: 'Install' | 'Fix' | null;
 }
 
-const CATEGORY_PLATFORMS: Record<string, PlatformSubRow[]> = {
+const CATEGORY_PLATFORMS: Record<string, Omit<PlatformSubRow, 'rulesAffected'>[]> = {
   'Network': [
-    { id: 'palo-alto-prod',   name: 'Palo Alto Prod',    icon: 'globe',   coverage: 'Good',         rulesAffected: 0,  tactics: [],                    action: null      },
-    { id: 'vpn-corp',         name: 'VPN/Corp',           icon: 'globe',   coverage: 'Missing data', rulesAffected: 76, tactics: ['Lateral Movement'],   action: 'Install' },
+    { id: 'palo-alto-prod',   name: 'Palo Alto Prod',    icon: 'globe',   coverage: 'Good',         tactics: [],                    action: null      },
+    { id: 'vpn-corp',         name: 'VPN/Corp',           icon: 'globe',   coverage: 'Missing data', tactics: ['Lateral Movement'],   action: 'Install' },
   ],
   'Cloud': [
-    { id: 'aws-prod',         name: 'AWS Prod',           icon: 'compute', coverage: 'Degraded',     rulesAffected: 12, tactics: ['Initial Access'],      action: 'Fix'     },
-    { id: 'aws-biztech',      name: 'AWS BizTech',        icon: 'compute', coverage: 'Missing data', rulesAffected: 49, tactics: ['Privilege Escalation'], action: 'Install' },
+    { id: 'aws-prod',         name: 'AWS Prod',           icon: 'compute', coverage: 'Degraded',     tactics: ['Initial Access'],      action: 'Fix'     },
+    { id: 'aws-biztech',      name: 'AWS BizTech',        icon: 'compute', coverage: 'Missing data', tactics: ['Privilege Escalation'], action: 'Install' },
   ],
   'Endpoint': [
-    { id: 'macos-endpoints',  name: 'macOS Endpoints',    icon: 'desktop', coverage: 'Good',         rulesAffected: 0,  tactics: [],                       action: null      },
-    { id: 'windows-endpoints',name: 'Windows Endpoints',  icon: 'desktop', coverage: 'Missing data', rulesAffected: 24, tactics: ['Execution'],              action: 'Install' },
+    { id: 'macos-endpoints',  name: 'macOS Endpoints',    icon: 'desktop', coverage: 'Good',         tactics: [],                       action: null      },
+    { id: 'windows-endpoints',name: 'Windows Endpoints',  icon: 'desktop', coverage: 'Missing data', tactics: ['Execution'],              action: 'Install' },
   ],
   'Identity': [
-    { id: 'okta',             name: 'Okta',               icon: 'lock',    coverage: 'Missing data', rulesAffected: 17, tactics: ['Credential Access'],      action: 'Install' },
-    { id: 'azure-ad',         name: 'Azure AD',           icon: 'lock',    coverage: 'Good',         rulesAffected: 0,  tactics: [],                       action: null      },
+    { id: 'okta',             name: 'Okta',               icon: 'lock',    coverage: 'Missing data', tactics: ['Credential Access'],      action: 'Install' },
+    { id: 'azure-ad',         name: 'Azure AD',           icon: 'lock',    coverage: 'Good',         tactics: [],                       action: null      },
   ],
   'Application/SaaS': [
-    { id: 'google-workspace', name: 'Google Workspace',   icon: 'globe',   coverage: 'Good',         rulesAffected: 0,  tactics: [],                       action: null      },
-    { id: 'salesforce',       name: 'Salesforce',         icon: 'globe',   coverage: 'Missing data', rulesAffected: 17, tactics: ['Initial Access', 'Collection'], action: 'Install' },
+    { id: 'google-workspace', name: 'Google Workspace',   icon: 'globe',   coverage: 'Good',         tactics: [],                       action: null      },
+    { id: 'salesforce',       name: 'Salesforce',         icon: 'globe',   coverage: 'Good',         tactics: [],                       action: null      },
   ],
 };
+
+const CATEGORY_RULES_COUNT: Record<string, number> = {
+  'Network': 24, 'Cloud': 19, 'Endpoint': 15, 'Identity': 11, 'Application/SaaS': 7,
+};
+
+function getPlatformsWithRules(category: string): PlatformSubRow[] {
+  const platforms = CATEGORY_PLATFORMS[category] ?? [];
+  const total = CATEGORY_RULES_COUNT[category] ?? 0;
+  const issueIndices = platforms
+    .map((p, i) => (p.coverage !== 'Good' ? i : -1))
+    .filter((i) => i >= 0);
+
+  if (issueIndices.length === 0) {
+    return platforms.map((p) => ({ ...p, rulesAffected: 0 }));
+  }
+
+  const base = Math.floor(total / issueIndices.length);
+  const remainder = total % issueIndices.length;
+
+  return platforms.map((p, i) => {
+    const issueIdx = issueIndices.indexOf(i);
+    if (issueIdx === -1) return { ...p, rulesAffected: 0 };
+    return { ...p, rulesAffected: base + (issueIdx < remainder ? 1 : 0) };
+  });
+}
 
 const CATEGORY_INTEGRATIONS: Record<string, string[]> = {
   'Endpoint':         ['endpoint', 'elastic_agent', 'windows'],
@@ -1517,15 +1710,25 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
     {
       name: 'Platform',
       width: '110px',
-      render: (row: CategoryAccordionItem) => <EuiBadge color="hollow">{row.name}</EuiBadge>,
+      render: (row: CategoryAccordionItem) => (
+        <PlatformBadge platform={INTEGRATION_TO_PLATFORM[row.id] ?? 'Unknown'} />
+      ),
     },
     {
       name: 'Action',
       width: '150px',
-      render: (row: CategoryAccordionItem) =>
-        actionItemIds.has(`coverage-${row.id}`)
-                      ? <EuiButtonEmpty size="xs" color="primary" data-test-subj={`siemReadiness-coverageInActions-${row.id}`}>In Actions</EuiButtonEmpty>
-          : <EuiButtonEmpty size="xs" color="primary" iconType="popout" data-test-subj={`siemReadiness-coverageCreateCase-${row.id}`}>View in Fleet</EuiButtonEmpty>,
+      render: (row: CategoryAccordionItem) => {
+        if (actionItemIds.has(`coverage-${row.id}`)) {
+          return <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-coverageInActions-${row.id}`}>In Actions</EuiButtonEmpty>;
+        }
+        if (row.status === 'uncovered') {
+          return <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageInstall-${row.id}`}>Install integration</EuiButtonEmpty>;
+        }
+        if (row.status === 'warning') {
+          return <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageConfigure-${row.id}`}>Configure policy</EuiButtonEmpty>;
+        }
+        return <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageCreateCase-${row.id}`}>View in Fleet</EuiButtonEmpty>;
+      },
     },
   ];
 
@@ -1537,11 +1740,6 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
   };
 
   // ── Data Coverage section ─────────────────────────────
-  // PRD-specified rules affected per category (Change 6 sort order)
-  const CATEGORY_RULES_COUNT: Record<string, number> = {
-    'Network': 24, 'Cloud': 19, 'Endpoint': 15, 'Identity': 11, 'Application/SaaS': 7,
-  };
-
   const dataCategoryRows = useMemo(() => {
     const rows = categories.map((cat) => {
       const catPkgs = CATEGORY_INTEGRATIONS[cat.category] ?? [];
@@ -1636,48 +1834,54 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
         style={{ marginBottom: 8 }}
       />
 
-      <EuiText size="s" color="subdued" style={{ marginBottom: 16 }}>
-        The following table shows the total number of enabled rules, and those with missing or disabled integrations.
-      </EuiText>
+      {ruleSubTab === 'all' ? (
+        <>
+          <EuiText size="s" color="subdued" style={{ marginBottom: 16 }}>
+            The following table shows the total number of enabled rules, and those with missing or disabled integrations.
+          </EuiText>
 
-      {/* ── Coverage bar + table layout ── */}
-      <EuiFlexGroup alignItems="center" gutterSize="xl" responsive={false} style={{ marginBottom: 8 }}>
+          {/* ── Coverage bar + table layout ── */}
+          <EuiFlexGroup alignItems="center" gutterSize="xl" responsive={false} style={{ marginBottom: 8 }}>
 
-        {/* Coverage bar */}
-        <EuiFlexItem grow={false} style={{ minWidth: 418 }}>
-          <RuleCoverageBar covered={48} uncovered={76} />
-        </EuiFlexItem>
+            {/* Coverage bar */}
+            <EuiFlexItem grow={false} style={{ minWidth: 418 }}>
+              <RuleCoverageBar covered={48} uncovered={76} />
+            </EuiFlexItem>
 
-        {/* Integration status table */}
-        <EuiFlexItem>
-          <EuiBasicTable
-            items={[
-              { id: 'enabled', statusColor: 'success' as const, label: 'Enabled Integrations',             count: 48  },
-              { id: 'missing', statusColor: 'danger'  as const, label: 'Missing or Disabled Integrations', count: 76  },
-            ]}
-            columns={[
-              {
-                field: 'label',
-                name: 'Data Source status',
-                render: (label: string, row: { statusColor: string; label: string; count: number; id: string }) => (
-                  <EuiHealth color={row.statusColor}>{label}</EuiHealth>
-                ),
-              },
-              { field: 'count', name: '# of rules associated', width: '240px' },
-              {
-                name: 'Actions',
-                width: '140px',
-                render: (row: { statusColor: string; label: string; count: number; id: string }) => (
-                  <EuiButtonEmpty size="xs" color="primary" data-test-subj={`siemReadiness-viewIntegrations-${row.id}`}>
-                    View Integrations
-                  </EuiButtonEmpty>
-                ),
-              },
-            ] as Array<EuiBasicTableColumn<{ id: string; statusColor: string; label: string; count: number }>>}
-            itemId="id"
-          />
-        </EuiFlexItem>
-      </EuiFlexGroup>
+            {/* Integration status table */}
+            <EuiFlexItem>
+              <EuiBasicTable
+                items={[
+                  { id: 'enabled', statusColor: 'success' as const, label: 'Enabled Integrations',             count: 48  },
+                  { id: 'missing', statusColor: 'danger'  as const, label: 'Missing or Disabled Integrations', count: 76  },
+                ]}
+                columns={[
+                  {
+                    field: 'label',
+                    name: 'Data Source status',
+                    render: (label: string, row: { statusColor: string; label: string; count: number; id: string }) => (
+                      <EuiHealth color={row.statusColor}>{label}</EuiHealth>
+                    ),
+                  },
+                  { field: 'count', name: '# of rules associated', width: '240px' },
+                  {
+                    name: 'Actions',
+                    width: '168px',
+                    render: (row: { statusColor: string; label: string; count: number; id: string }) => (
+                      <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-viewIntegrations-${row.id}`}>
+                        {row.id === 'missing' ? 'Install integrations' : 'View integrations'}
+                      </EuiButtonEmpty>
+                    ),
+                  },
+                ] as Array<EuiBasicTableColumn<{ id: string; statusColor: string; label: string; count: number }>>}
+                itemId="id"
+              />
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </>
+      ) : (
+        <MitreAttackCoveragePanel />
+      )}
       </EuiPanel>
 
       <EuiSpacer size="l" />
@@ -1725,7 +1929,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
           return (
             <EuiPanel hasBorder paddingSize="none" style={{ overflow: 'hidden' }}>
               {dataCategoryRows.map((row, idx) => {
-                const platforms = CATEGORY_PLATFORMS[row.category] ?? [];
+                const platforms = getPlatformsWithRules(row.category);
                 const isOpen = openCoverageRows[row.id] ?? false;
                 const toggle = () => setOpenCoverageRows((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
                 return (
@@ -1751,20 +1955,24 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                       {/* Right-side stats — stop propagation so links don't toggle */}
                       <EuiFlexItem grow={false} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                         <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                          <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Coverage:</EuiText></EuiFlexItem>
-                          <EuiFlexItem grow={false} style={{ marginLeft: 4 }}>{coverageBadge(row.statusLabel)}</EuiFlexItem>
-                          <EuiFlexItem grow={false} style={{ margin: '0 8px' }}>{div}</EuiFlexItem>
                           <EuiFlexItem grow={false}>
-                            <EuiText size="xs" color="subdued">Rules affected:{' '}
-                              {row.rulesCount > 0
-                                ? <EuiLink onClick={() => onAskAI?.(`What rules are affected by missing ${row.category} data and how do I fix it?`)}><strong>{row.rulesCount}</strong></EuiLink>
-                                : null
-                              }
-                            </EuiText>
+                            <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                              <EuiFlexItem grow={false}><EuiText size="xs" color="subdued">Coverage:</EuiText></EuiFlexItem>
+                              <EuiFlexItem grow={false}>{coverageBadge(row.statusLabel)}</EuiFlexItem>
+                              <EuiFlexItem grow={false} style={{ margin: '0 6px' }}>{div}</EuiFlexItem>
+                              <EuiFlexItem grow={false}>
+                                <EuiText size="xs" color="subdued">Rules affected:{' '}
+                                  {row.rulesCount > 0
+                                    ? <EuiLink onClick={() => onAskAI?.(`What rules are affected by missing ${row.category} data and how do I fix it?`)}><strong>{row.rulesCount}</strong></EuiLink>
+                                    : null
+                                  }
+                                </EuiText>
+                              </EuiFlexItem>
+                            </EuiFlexGroup>
                           </EuiFlexItem>
                           {platforms.length > 0 && (
                             <>
-                              <EuiFlexItem grow={false} style={{ margin: '0 8px' }}>{div}</EuiFlexItem>
+                              <EuiFlexItem grow={false} style={{ margin: '0 6px' }}>{div}</EuiFlexItem>
                               <EuiFlexItem grow={false}>
                                 <EuiText size="xs" color="subdued">Platforms: <strong style={{ color: '#1d2a3e' }}>{platforms.length}</strong></EuiText>
                               </EuiFlexItem>
@@ -1780,6 +1988,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                         <div style={{ padding: '0 16px 16px' }}>
                           <EuiBasicTable
                             items={platforms}
+                            tableLayout="fixed"
                             columns={[
                               {
                                 field: 'name',
@@ -1794,13 +2003,13 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                               {
                                 field: 'coverage',
                                 name: 'Coverage',
-                                width: '160px',
+                                width: '210px',
                                 render: (label: string) => coverageBadge(label),
                               },
                               {
                                 field: 'rulesAffected',
                                 name: 'Rules affected',
-                                width: '130px',
+                                width: '228px',
                                 render: (count: number, sub: PlatformSubRow) =>
                                   count > 0
                                     ? <EuiLink onClick={() => onAskAI?.(`What rules are affected by issues with ${sub.name}?`)}>{count}</EuiLink>
@@ -1808,21 +2017,28 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
                               },
                               {
                                 field: 'tactics',
-                                name: 'MITRE tactics at risk',
+                                name: 'Tactics at risk',
+                                width: '315px',
                                 render: (tactics: string[]) =>
                                   tactics.length > 0
-                                    ? <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
+                                    ? (
+                                      <EuiFlexGroup gutterSize="xs" wrap responsive={false} justifyContent="flexStart">
                                         {tactics.map((t) => <EuiFlexItem key={t} grow={false}><EuiBadge color="hollow">{t}</EuiBadge></EuiFlexItem>)}
                                       </EuiFlexGroup>
+                                    )
                                     : null,
                               },
                               {
                                 field: 'action',
-                                name: 'Action',
-                                width: '100px',
+                                name: 'Actions',
+                                width: '202px',
                                 render: (action: PlatformSubRow['action']) =>
                                   action
-                                    ? <EuiButtonEmpty size="xs" color="primary">{action}</EuiButtonEmpty>
+                                    ? (
+                                      <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet">
+                                        {action === 'Install' ? 'Install integration' : 'Fix integration'}
+                                      </EuiButtonEmpty>
+                                    )
                                     : null,
                               },
                             ] as Array<EuiBasicTableColumn<PlatformSubRow>>}
@@ -1859,15 +2075,9 @@ type QualityIndexItem = {
   status: 'incompatible' | 'healthy';
 };
 
-interface QualityTabProps { categories: CategoryGroup[]; qualityResults: QualityResult[]; ruleFieldIssues: RuleFieldIssue[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus; onAskAI?: (msg: string) => void }
+interface QualityTabProps { categories: CategoryGroup[]; qualityResults: QualityResult[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus; onAskAI?: (msg: string) => void }
 
-interface ExecutionHealthRow { id: string; rule: string; lastRun: string; status: string; execTime: string; alertTrend: string }
-
-const EXECUTION_HEALTH_ROWS: ExecutionHealthRow[] = [
-  { id: '2', rule: 'AWS CloudTrail Unauthorized API Call',      lastRun: '18 min ago', status: 'Gap detected', execTime: '2.4s',  alertTrend: 'Silent — data issue'      },
-  { id: '3', rule: 'Okta User Locked Out',                     lastRun: '5 min ago',  status: 'Timed out',    execTime: '34.8s', alertTrend: 'Silent — no alerts in 7d' },
-  { id: '4', rule: 'Endpoint Defense Evasion via Timestomping', lastRun: '3 min ago',  status: 'Failed',       execTime: '0.8s',  alertTrend: 'Silent — no alerts in 7d' },
-];
+interface DetectionsTabProps { ruleFieldIssues: RuleFieldIssue[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus }
 
 const PLATFORM_HEALTH: Array<{ name: string; healthy: number; total: number }> = [
   { name: 'GCP',             healthy: 16, total: 20 },
@@ -1876,7 +2086,7 @@ const PLATFORM_HEALTH: Array<{ name: string; healthy: number; total: number }> =
   { name: 'macOS Endpoints', healthy: 15, total: 15 },
 ];
 
-const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, ruleFieldIssues, loading, actionItemIds, pillarStatus, onAskAI }) => {
+const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loading, actionItemIds, pillarStatus, onAskAI }) => {
   const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
   const { euiTheme } = useEuiTheme();
   const [filter, setFilter] = useState<'all' | 'incompatible' | 'healthy'>('all');
@@ -1949,19 +2159,14 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
       ) },
     {
       name: 'Tactics',
-      width: '22%',
+      width: '26%',
       render: (row: QualityIndexItem) => <TacticsCell tactics={getTacticsFromIndex(row.indexName)} />,
-    },
-    {
-      name: 'Platform',
-      width: '10%',
-      render: (row: QualityIndexItem) => { const p = getPlatformFromIndex(row.indexName); return p ? <EuiBadge color="hollow">{p}</EuiBadge> : null; },
     },
     {
       name: 'Actions',
       width: '10%',
       render: (row: QualityIndexItem) => (
-        <EuiButtonEmpty size="xs" color="primary" flush="left" onClick={() => setFlyout({ findingName: row.indexName, rules: getTacticsFromIndex(row.indexName).length > 0 ? [{ name: `Rule targeting ${row.indexName}`, tactics: getTacticsFromIndex(row.indexName), status: 'no-action' }] : [] })} data-test-subj={`siemReadiness-qualityRulesAffected-${row.id}`}>
+        <EuiButtonEmpty size="s" color="primary" onClick={() => setFlyout({ findingName: row.indexName, rules: getTacticsFromIndex(row.indexName).length > 0 ? [{ name: `Rule targeting ${row.indexName}`, tactics: getTacticsFromIndex(row.indexName), status: 'no-action' }] : [] })} data-test-subj={`siemReadiness-qualityRulesAffected-${row.id}`}>
           View Data quality
         </EuiButtonEmpty>
       ),
@@ -1972,20 +2177,6 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
     const pct = total > 0 ? (healthy / total) * 100 : 100;
     return pct < 80 ? '#BD271E' : pct < 95 ? '#CA8500' : '#017D73';
   };
-
-  if (totalIncompatible === 0 && ruleFieldIssues.length === 0) {
-    return (
-      <EuiPanel hasBorder paddingSize="m">
-        <EuiEmptyPrompt
-          iconType="checkInCircleFilled"
-          color="success"
-          title={<h3>No field issues found</h3>}
-          titleSize="xs"
-          body={<EuiText size="s"><p>All enabled rules are referencing fields that exist and are correctly typed.</p></EuiText>}
-        />
-      </EuiPanel>
-    );
-  }
 
   const categoryStatusBadge = (incompatFields: number) => {
     if (incompatFields >= 3) return <EuiBadge color="danger">Actions required</EuiBadge>;
@@ -2200,8 +2391,52 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
 
       </EuiFlexGroup>
 
-      {/* ── Rule field issues ── */}
+      {/* ── Entity and risk engine health ── */}
       <EuiSpacer size="l" />
+      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
+        <EuiTitle size="s"><h3>Entity and risk engine health</h3></EuiTitle>
+        <EuiSpacer size="xs" />
+        <EuiText size="s" color="subdued">
+          The risk scoring engine calculates threat scores for every user and device. If it stops, alert prioritisation becomes unreliable.
+        </EuiText>
+        <EuiSpacer size="m" />
+        <EuiCallOut color="success" iconType="check" size="s" title="Risk engine is running — all entity scores are current." />
+        <EuiSpacer size="m" />
+
+        {/* Transforms */}
+        <EuiBasicTable
+          items={[
+            { id: 'er1', transform: 'entity-risk-score-latest-default',  state: 'Running', opsBehind: 0  },
+            { id: 'er2', transform: 'entity-risk-score-history-default', state: 'Running', opsBehind: 0  },
+          ]}
+          columns={[
+            { field: 'transform', name: 'Transform', render: (v: string) => <EuiText size="s">{v}</EuiText> },
+            { field: 'state', name: 'State', width: '110px', render: (s: string) => {
+              const c: Record<string, string> = { Running: 'success', Stopped: 'danger', Failed: 'danger', Behind: 'warning' };
+              return <EuiBadge color={c[s] ?? 'hollow'}>{s}</EuiBadge>;
+            }},
+            { field: 'opsBehind', name: 'Operations behind', width: '160px', render: (n: number) =>
+              n === 0 ? <EuiText size="s" color="subdued">Up to date</EuiText> : <EuiText size="s" color="warning">{n}</EuiText>
+            },
+            { name: 'Action', width: '180px', render: () => <EuiButtonEmpty size="s" iconType="popout" iconSide="right">View transform</EuiButtonEmpty> },
+          ] as Array<EuiBasicTableColumn<{ id: string; transform: string; state: string; opsBehind: number }>>}
+          itemId="id"
+        />
+      </EuiPanel>
+    </>
+  );
+};
+
+// ─── Detections tab ───────────────────────────────────────────────────────────
+
+const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading, actionItemIds, pillarStatus }) => {
+  const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
+
+  if (loading) return <EuiFlexGroup justifyContent="center" style={{ padding: 60 }}><EuiLoadingSpinner size="xl" /></EuiFlexGroup>;
+
+  return (
+    <>
+      {/* ── Rule field issues ── */}
       <EuiPanel hasBorder paddingSize="m">
         <EuiTitle size="xs"><h3>Rule field issues</h3></EuiTitle>
         <EuiSpacer size="s" />
@@ -2211,28 +2446,34 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             <EuiSpacer size="m" />
             <EuiBasicTable
               items={ruleFieldIssues}
+              tableLayout="fixed"
               columns={[
                 { field: 'ruleName', name: 'Rule', render: (name: string) => <EuiLink href="/app/security/rules">{name}</EuiLink> },
-                { field: 'field', name: 'Field', render: (f: string) => <EuiCode>{f}</EuiCode> },
                 {
-                  field: 'issueType', name: 'Issue',
+                  field: 'field', name: 'Field', width: '280px',
+                  render: (f: string) => <EuiCode>{f}</EuiCode>,
+                },
+                {
+                  field: 'issueType', name: 'Issue', width: '130px',
                   render: (type: string) => {
                     const colorMap: Record<string, string> = { missing: 'danger', type_mismatch: 'warning', sparse: 'warning' };
                     const labelMap: Record<string, string> = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
                     return <EuiBadge color={colorMap[type] ?? 'hollow'}>{labelMap[type] ?? type}</EuiBadge>;
                   },
                 },
-                { field: 'indexPattern', name: 'Index pattern', render: (idx: string) => <EuiCode>{idx}</EuiCode> },
                 {
-                  name: 'Platform', width: '120px',
-                  render: (row: RuleFieldIssue) => { const p = getPlatformFromIndex(row.indexPattern); return p ? <EuiBadge color="hollow">{p}</EuiBadge> : null; },
+                  field: 'indexPattern', name: 'Index pattern', width: '385px',
+                  render: (idx: string) => <EuiCode>{idx}</EuiCode>,
                 },
                 {
-                  name: 'Action', width: '130px',
-                  render: (row: RuleFieldIssue) =>
-                    actionItemIds.has(`quality-${row.id}`)
-                      ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-qualityInActions-${row.id}`}>Action</EuiButtonEmpty>
-                      : <EuiButtonEmpty size="s" href="/app/security/rules" data-test-subj={`siemReadiness-qualityViewRuleAction-${row.id}`}>Action</EuiButtonEmpty>,
+                  name: 'Platform', width: '240px',
+                  render: (row: RuleFieldIssue) => <PlatformBadge platform={getPlatformFromIndex(row.indexPattern)} />,
+                },
+                {
+                  name: 'Action', width: '120px',
+                  render: (row: RuleFieldIssue) => (
+                    <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/security/rules" data-test-subj={`siemReadiness-detectionsViewRuleAction-${row.id}`}>View rule</EuiButtonEmpty>
+                  ),
                 },
               ] as Array<EuiBasicTableColumn<RuleFieldIssue>>}
               itemId="id"
@@ -2272,6 +2513,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
 
         <EuiBasicTable
           items={EXECUTION_HEALTH_ROWS}
+          tableLayout="fixed"
           columns={[
             {
               field: 'rule',
@@ -2281,13 +2523,13 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             {
               field: 'lastRun',
               name: 'Last run',
-              width: '120px',
+              width: '144px',
               render: (t: string) => <EuiText size="s" color="subdued">{t}</EuiText>,
             },
             {
               field: 'status',
               name: 'Status',
-              width: '120px',
+              width: '144px',
               render: (s: string) => {
                 const colorMap: Record<string, string> = {
                   'Succeeded': 'success',
@@ -2301,7 +2543,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             {
               field: 'execTime',
               name: 'Execution time',
-              width: '130px',
+              width: '156px',
               render: (t: string) => {
                 const secs = parseFloat(t);
                 return <EuiText size="s" color={secs > 30 ? 'warning' : undefined}>{t}</EuiText>;
@@ -2310,133 +2552,28 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, rul
             {
               field: 'alertTrend',
               name: 'Alert trend',
+              width: '187px',
               render: (trend: string) => {
                 const color = trend === 'Silent — no alerts in 7d' ? 'warning' : 'subdued';
                 return <EuiText size="s" color={color}>{trend}</EuiText>;
               },
             },
             {
-              name: 'Action',
-              width: '200px',
-              render: () => (
-                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/security/rules">
-                  View rule
-                </EuiButtonEmpty>
+              name: 'Platform',
+              width: '240px',
+              render: (row: ExecutionHealthRow) => (
+                <PlatformBadge platform={getPlatformFromIndex(row.indexPattern)} />
               ),
             },
-          ] as Array<EuiBasicTableColumn<ExecutionHealthRow>>}
-          itemId="id"
-        />
-      </EuiPanel>
-
-      {/* ── Enrichment and threat intel freshness ── */}
-      <EuiSpacer size="l" />
-      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-        <EuiTitle size="s"><h3>Enrichment and threat intel freshness</h3></EuiTitle>
-        <EuiSpacer size="xs" />
-        <EuiText size="s" color="subdued">
-          Threat intelligence feeds and enrichment processes that detection rules depend on to identify known threats.
-        </EuiText>
-        <EuiSpacer size="m" />
-        <EuiCallOut color="warning" iconType="warning" size="s" title="1 threat intel feed is stale — indicator match rules may be working from outdated data." />
-        <EuiSpacer size="m" />
-
-        {/* Feeds */}
-        <EuiBasicTable
-          items={[
-            { id: 'f1', feed: 'AbuseCH Malware Feed', lastUpdated: '2 hours ago', indicators: '24,301', status: 'Fresh',   dependentRules: 8,  type: 'feed'      },
-            { id: 'f2', feed: 'AlienVault OTX',        lastUpdated: '4 days ago',  indicators: '1,204',  status: 'Stale',   dependentRules: 3,  type: 'feed'      },
-            { id: 'f3', feed: 'MISP Internal Feed',    lastUpdated: '1 hour ago',  indicators: '8,847',  status: 'Fresh',   dependentRules: 5,  type: 'feed'      },
-          ]}
-          columns={[
-            { field: 'feed',     name: 'Feed',             render: (v: string) => <EuiText size="s">{v}</EuiText> },
-            { field: 'lastUpdated', name: 'Last updated', width: '130px', render: (v: string) => <EuiText size="s" color="subdued">{v}</EuiText> },
-            { field: 'indicators', name: 'Indicator count', width: '140px', render: (v: string, row: { id: string; status: string; indicators: string }) => <EuiText size="s" color={row.status === 'Stale' ? 'warning' : undefined}>{v}</EuiText> },
-            { field: 'status', name: 'Status', width: '100px', render: (s: string) => {
-              const c: Record<string, string> = { Fresh: 'success', Stale: 'warning', Failed: 'danger', Running: 'success', Stopped: 'danger', Behind: 'warning' };
-              return <EuiBadge color={c[s] ?? 'hollow'}>{s}</EuiBadge>;
-            }},
-            { field: 'dependentRules', name: 'Dependent rules', width: '130px', render: (n: number) => n > 0 ? <EuiText size="s">{n} rules</EuiText> : <EuiText size="s" color="subdued">—</EuiText> },
-            { name: 'Action', width: '140px', render: () => <EuiButtonEmpty size="xs" iconType="popout" iconSide="right">View in Fleet</EuiButtonEmpty> },
-          ] as Array<EuiBasicTableColumn<{ id: string; feed: string; lastUpdated: string; indicators: string; status: string; dependentRules: number; type: string }>>}
-          itemId="id"
-        />
-
-        {/* Transforms */}
-        <EuiSpacer size="m" />
-        <EuiText size="s" style={{ fontWeight: 500 }}>Enrichment transforms</EuiText>
-        <EuiSpacer size="s" />
-        <EuiBasicTable
-          items={[
-            { id: 't1', feed: 'entity-risk-score-latest',   lastUpdated: '8 min ago',   indicators: '—', status: 'Running', dependentRules: 0,  type: 'transform' },
-            { id: 't2', feed: 'threat-intel-enrichment',    lastUpdated: '3 hours ago', indicators: '—', status: 'Behind',  dependentRules: 12, type: 'transform' },
-          ]}
-          columns={[
-            { field: 'feed',     name: 'Feed',             render: (v: string) => <EuiText size="s">{v}</EuiText> },
-            { field: 'lastUpdated', name: 'Last updated', width: '130px', render: (v: string) => <EuiText size="s" color="subdued">{v}</EuiText> },
-            { field: 'indicators', name: 'Indicator count', width: '140px', render: (v: string) => <EuiText size="s" color="subdued">{v}</EuiText> },
-            { field: 'status', name: 'Status', width: '100px', render: (s: string) => {
-              const c: Record<string, string> = { Fresh: 'success', Stale: 'warning', Failed: 'danger', Running: 'success', Stopped: 'danger', Behind: 'warning' };
-              return <EuiBadge color={c[s] ?? 'hollow'}>{s}</EuiBadge>;
-            }},
-            { field: 'dependentRules', name: 'Dependent rules', width: '130px', render: (n: number) => n > 0 ? <EuiText size="s">{n} rules</EuiText> : <EuiText size="s" color="subdued">—</EuiText> },
-            { name: 'Action', width: '140px', render: () => <EuiButtonEmpty size="xs" iconType="popout" iconSide="right">View transform</EuiButtonEmpty> },
-          ] as Array<EuiBasicTableColumn<{ id: string; feed: string; lastUpdated: string; indicators: string; status: string; dependentRules: number; type: string }>>}
-          itemId="id"
-        />
-      </EuiPanel>
-
-      {/* ── Entity and risk engine health ── */}
-      <EuiSpacer size="l" />
-      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-        <EuiTitle size="s"><h3>Entity and risk engine health</h3></EuiTitle>
-        <EuiSpacer size="xs" />
-        <EuiText size="s" color="subdued">
-          The risk scoring engine calculates threat scores for every user and device. If it stops, alert prioritisation becomes unreliable.
-        </EuiText>
-        <EuiSpacer size="m" />
-        <EuiCallOut color="success" iconType="check" size="s" title="Risk engine is running — all entity scores are current." />
-        <EuiSpacer size="m" />
-
-        {/* Stats — single card with dividers matching pillar card style */}
-        <EuiPanel hasBorder hasShadow={false} paddingSize="none">
-          <div style={{ display: 'flex' }}>
-            {([
-              { title: '12,847', desc: 'entities scored'           },
-              { title: '4 min ago', desc: 'last scored'            },
-              { title: '2,340',  desc: 'asset criticality records' },
-              { title: '94%',    desc: 'alerts matched to entity'  },
-            ]).map(({ title, desc }, idx) => (
-              <React.Fragment key={desc}>
-                {idx > 0 && <div style={{ width: 0, borderLeft: `1px solid ${euiTheme.colors.lightShade}`, flexShrink: 0, margin: '8px 0' }} />}
-                <div style={{ flex: 1, padding: '12px 16px' }}>
-                  <EuiText style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: '#1d2a3e' }}>{title}</EuiText>
-                  <EuiSpacer size="xs" />
-                  <EuiText size="xs" color="subdued" style={{ fontWeight: 500 }}>{desc}</EuiText>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        </EuiPanel>
-        <EuiSpacer size="m" />
-
-        {/* Transforms */}
-        <EuiBasicTable
-          items={[
-            { id: 'er1', transform: 'entity-risk-score-latest-default',  state: 'Running', opsBehind: 0  },
-            { id: 'er2', transform: 'entity-risk-score-history-default', state: 'Running', opsBehind: 0  },
-          ]}
-          columns={[
-            { field: 'transform', name: 'Transform', render: (v: string) => <EuiText size="s">{v}</EuiText> },
-            { field: 'state', name: 'State', width: '110px', render: (s: string) => {
-              const c: Record<string, string> = { Running: 'success', Stopped: 'danger', Failed: 'danger', Behind: 'warning' };
-              return <EuiBadge color={c[s] ?? 'hollow'}>{s}</EuiBadge>;
-            }},
-            { field: 'opsBehind', name: 'Operations behind', width: '160px', render: (n: number) =>
-              n === 0 ? <EuiText size="s" color="subdued">Up to date</EuiText> : <EuiText size="s" color="warning">{n}</EuiText>
+            {
+              name: 'Action',
+              width: '120px',
+              render: (row: ExecutionHealthRow) =>
+                actionItemIds.has(`detections-exec-${row.id}`)
+                  ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-detectionsExecInActions-${row.id}`}>In Actions</EuiButtonEmpty>
+                  : <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/security/rules" data-test-subj={`siemReadiness-detectionsExecViewRule-${row.id}`}>View rule</EuiButtonEmpty>,
             },
-            { name: 'Action', width: '150px', render: () => <EuiButtonEmpty size="xs" iconType="popout" iconSide="right">View transform</EuiButtonEmpty> },
-          ] as Array<EuiBasicTableColumn<{ id: string; transform: string; state: string; opsBehind: number }>>}
+          ] as Array<EuiBasicTableColumn<ExecutionHealthRow>>}
           itemId="id"
         />
       </EuiPanel>
@@ -2621,7 +2758,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
           },
           { field: 'dataset', name: 'Data stream', render: (ds: string) => <EuiCode>{ds}</EuiCode> },
           {
-            field: 'issue', name: 'Issue', width: '110px',
+            field: 'issue', name: 'Issue', width: '127px',
             render: (issue: string) => {
               const color = issue === 'silent' ? 'danger' : 'warning';
               const label = issue === 'silent' ? 'Silent' : issue === 'volume_drop' ? 'Volume drop' : 'High latency';
@@ -2635,7 +2772,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
           },
           {
             name: 'Platform', width: '110px',
-            render: (row: ContinuityFinding) => { const p = getPlatformFromIndex(row.dataset); return p ? <EuiBadge color="hollow">{p}</EuiBadge> : null; },
+            render: (row: ContinuityFinding) => <PlatformBadge platform={getPlatformFromIndex(row.dataset)} />,
           },
           {
             field: 'rulesAffected', name: 'Rules affected', width: '110px',
@@ -2652,9 +2789,11 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
             name: 'Action', width: '170px',
             render: (row: ContinuityFinding) => {
               const actionId = `continuity-${row.id}`;
-              return actionItemIds.has(actionId)
-                ? <EuiButtonEmpty size="xs" color="primary" data-test-subj={`siemReadiness-continuityInActions-${row.id}`}>In Actions</EuiButtonEmpty>
-                : <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-continuityFleet-${row.id}`}>View in Fleet</EuiButtonEmpty>;
+              if (actionItemIds.has(actionId)) {
+                return <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-continuityInActions-${row.id}`}>In Actions</EuiButtonEmpty>;
+              }
+              const label = row.issue === 'silent' ? 'View data stream' : row.issue === 'volume_drop' ? 'View pipeline' : 'View stream';
+              return <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-continuityFleet-${row.id}`}>{label}</EuiButtonEmpty>;
             },
           },
         ] as Array<EuiBasicTableColumn<ContinuityFinding>>}
@@ -2666,7 +2805,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
 
 // ─── Retention tab (Fix 6: benchmark comparison) ──────────────────────────────
 
-interface RetentionFinding { id: string; category: string; actualDays: number; benchmarkDays: number; status: 'below' | 'meets' }
+interface RetentionFinding { id: string; category: string; actualDays: number; benchmarkDays: number; status: 'below' | 'meets'; rulesAffected: number }
 
 const RETENTION_BENCHMARKS: Record<string, number> = {
   'Endpoint': 90, 'Identity': 180, 'Network': 90, 'Cloud': 180, 'Application/SaaS': 90,
@@ -2703,7 +2842,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
       const benchmark = RETENTION_BENCHMARKS[cat.category] ?? 90;
       const match = retentionItems.find((r) => cat.indices.some((idx) => idx.indexName.includes(r.indexName)));
       const actualDays = match?.retentionDays ?? 0;
-      return { id: cat.category, category: cat.category, actualDays, benchmarkDays: benchmark, status: actualDays >= benchmark ? 'meets' as const : 'below' as const };
+      return { id: cat.category, category: cat.category, actualDays, benchmarkDays: benchmark, status: actualDays >= benchmark ? 'meets' as const : 'below' as const, rulesAffected: actualDays >= benchmark ? 0 : 50 };
     });
   }, [categories, retentionItems]);
 
@@ -2734,11 +2873,19 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
             items={retentionFindings}
             columns={[
               { field: 'category', name: 'Log category' },
+              {
+                field: 'status', name: 'Status', width: '140px',
+                render: (status: string) => (
+                  <EuiBadge color={status === 'below' ? 'warning' : 'success'}>
+                    {status === 'below' ? 'Below benchmark' : 'Meets benchmark'}
+                  </EuiBadge>
+                ),
+              },
               { field: 'actualDays', name: 'Current retention', width: '120px',
                 render: (days: number) => <EuiText size="s">{days > 0 ? `${days} days` : 'Not configured'}</EuiText>,
               },
               {
-                field: 'benchmarkDays', name: 'Benchmark', width: '100px',
+                field: 'benchmarkDays', name: 'Benchmark', width: '92px',
                 render: (days: number, row: RetentionFinding) => (
                   <EuiToolTip content={RETENTION_BENCHMARK_COMPLIANCE[days] ?? ''} data-test-subj={`siemReadiness-retentionBenchmarkTooltip-${row.id}`}>
                     <EuiText size="s" color="subdued" style={{ cursor: 'help', borderBottom: '1px dashed #98A2B3' }}>{days} days</EuiText>
@@ -2747,6 +2894,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
               },
               {
                 name: 'Benchmark source',
+                width: '221px',
                 render: (row: RetentionFinding) => {
                   const sourceMap: Record<string, string> = {
                     'Network':          'NIST 800-53, ISO 27001',
@@ -2757,14 +2905,6 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
                   };
                   return <EuiText size="s" color="subdued">{sourceMap[row.category] ?? ''}</EuiText>;
                 },
-              },
-              {
-                field: 'status', name: 'Status', width: '140px',
-                render: (status: string) => (
-                  <EuiBadge color={status === 'below' ? 'warning' : 'success'}>
-                    {status === 'below' ? 'Below benchmark' : 'Meets benchmark'}
-                  </EuiBadge>
-                ),
               },
               {
                 name: 'Tactics at risk',
@@ -2780,18 +2920,31 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
               {
                 name: 'Platform', width: '120px',
                 render: (row: RetentionFinding) => (
-                  <EuiBadge color="hollow">{RETENTION_PLATFORM[row.category] ?? row.category}</EuiBadge>
+                  <PlatformBadge platform={RETENTION_PLATFORM[row.category] ?? row.category} />
                 ),
               },
               {
-                name: 'Rules affected', width: '110px',
-                render: () => null,
+                field: 'rulesAffected', name: 'Rules affected', width: '127px',
+                render: (count: number, row: RetentionFinding) => {
+                  if (count <= 0) return null;
+                  const tactics = RETENTION_TACTICS[row.category] ?? [];
+                  const flyoutRules: FlyoutRule[] = Array.from({ length: count }, (_, i) => ({
+                    name: `Rule using ${row.category} retention (${i + 1})`,
+                    tactics,
+                    status: actionItemIds.has('retention-benchmark') ? 'in-actions' : 'no-action',
+                  }));
+                  return (
+                    <EuiButtonEmpty size="xs" flush="left" onClick={() => setFlyout({ findingName: row.category, rules: flyoutRules })} data-test-subj={`siemReadiness-retentionRulesAffected-${row.id}`}>
+                      {count}
+                    </EuiButtonEmpty>
+                  );
+                },
               },
               {
-                name: 'Action', width: '150px',
+                name: 'Action', width: '188px',
                 render: (row: RetentionFinding) =>
                   actionItemIds.has('retention-benchmark')
-                    ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-retentionInActions-${row.id}`}>Actions</EuiButtonEmpty>
+                    ? <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/management/data/index_lifecycle_management" data-test-subj={`siemReadiness-retentionInActions-${row.id}`}>View ILM policy</EuiButtonEmpty>
                     : <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/management/data/index_lifecycle_management" data-test-subj={`siemReadiness-retentionManage-${row.id}`}>Manage policy</EuiButtonEmpty>,
               },
             ] as Array<EuiBasicTableColumn<RetentionFinding>>}
@@ -2808,6 +2961,16 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
 const ALL_CATEGORY_NAMES = ['Endpoint', 'Identity', 'Network', 'Cloud', 'Application/SaaS'] as const;
 
 interface PlatformConfig { id: string; name: string; category: string; derivedFrom: string; enabled: boolean }
+
+interface CategoryRetentionConfig {
+  customRetention: boolean;
+  days: number;
+}
+
+const createDefaultRetentionConfig = (): Record<string, CategoryRetentionConfig> =>
+  Object.fromEntries(
+    ALL_CATEGORY_NAMES.map((cat) => [cat, { customRetention: false, days: 30 }])
+  );
 
 const DEFAULT_PLATFORMS: PlatformConfig[] = [
   { id: 'palo-alto-prod',    name: 'Palo Alto Prod',    category: 'Network',          enabled: true,  derivedFrom: 'Detected from network.type: paloalto + observer.name: fw-prod-01' },
@@ -2839,15 +3002,23 @@ const SiemReadinessPage: React.FC = () => {
   const [tempCategories, setTempCategories] = useState<Set<string>>(new Set(ALL_CATEGORY_NAMES));
   const [platforms, setPlatforms] = useState<PlatformConfig[]>(DEFAULT_PLATFORMS);
   const [tempPlatforms, setTempPlatforms] = useState<PlatformConfig[]>(DEFAULT_PLATFORMS);
+  const [retentionConfig, setRetentionConfig] = useState<Record<string, CategoryRetentionConfig>>(createDefaultRetentionConfig);
+  const [tempRetentionConfig, setTempRetentionConfig] = useState<Record<string, CategoryRetentionConfig>>(createDefaultRetentionConfig);
 
   const openConfig = () => {
     setTempCategories(new Set(enabledCategories));
     setTempPlatforms(platforms.map(p => ({ ...p })));
+    setTempRetentionConfig(Object.fromEntries(
+      ALL_CATEGORY_NAMES.map((cat) => [cat, { ...retentionConfig[cat] }])
+    ));
     setConfigOpen(true);
   };
   const saveConfig = () => {
     setEnabledCategories(new Set(tempCategories));
     setPlatforms(tempPlatforms);
+    setRetentionConfig(Object.fromEntries(
+      ALL_CATEGORY_NAMES.map((cat) => [cat, { ...tempRetentionConfig[cat] }])
+    ));
     setConfigOpen(false);
   };
   const toggleTemp = (cat: string) => setTempCategories(prev => {
@@ -2857,6 +3028,11 @@ const SiemReadinessPage: React.FC = () => {
   });
   const updateTempPlatform = (id: string, patch: Partial<PlatformConfig>) =>
     setTempPlatforms(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p));
+  const updateTempRetention = (cat: string, patch: Partial<CategoryRetentionConfig>) =>
+    setTempRetentionConfig(prev => ({
+      ...prev,
+      [cat]: { ...prev[cat], ...patch },
+    }));
   const [editingPlatformId, setEditingPlatformId] = useState<string | null>(null);
 
   const filteredCategories = categories.filter(c => enabledCategories.has(c.category));
@@ -2878,7 +3054,8 @@ const SiemReadinessPage: React.FC = () => {
 
     // Blast radius per pillar (rules affected)
     const coverageBlastRadius = coverage?.uncoveredRules.length ?? null;
-    const qualityBlastRadius  = new Set(ruleFieldIssues.map((i) => i.ruleName)).size || null;
+    const executionIssueCount = EXECUTION_HEALTH_ROWS.filter((r) => r.status !== 'Succeeded').length;
+    const detectionsBlastRadius = (new Set(ruleFieldIssues.map((i) => i.ruleName)).size + executionIssueCount) || null;
     // Continuity: sum rulesAffected from failing/silent pipelines (3 per silent, 12 per volume_drop — matches ContinuityTab logic)
     const continuityBlastRadius = pipelines.reduce<number>((sum, p) => {
       if (p.docsCount === 0) return sum + 3;
@@ -2886,7 +3063,7 @@ const SiemReadinessPage: React.FC = () => {
       return sum;
     }, 0) || null;
     // Retention blast radius: not available in current data model
-    const retentionBlastRadius: number | null = null;
+    const retentionBlastRadius: number | null = retentionBelowBenchmark > 0 ? retentionBelowBenchmark * 50 : null;
 
     const coveragePillar: PillarStatus = {
       status: loading || total === 0 ? 'healthy' : coveredPct < 80 ? 'critical' : coveredPct < 100 ? 'warning' : 'healthy',
@@ -2902,7 +3079,16 @@ const SiemReadinessPage: React.FC = () => {
       metricLabel: 'Indices with field issues',
       hasIssues: qualityIssues > 0,
       statusColor: qualityIssues > 5 ? 'danger' : qualityIssues > 0 ? 'warning' : 'success',
-      blastRadius: qualityBlastRadius,
+      blastRadius: qualityIssues > 0 ? qualityIssues : null,
+    };
+    const detectionIssueCount = ruleFieldIssues.length + executionIssueCount;
+    const detectionsPillar: PillarStatus = {
+      status: loading ? 'healthy' : ruleFieldIssues.length > 0 ? 'critical' : executionIssueCount > 0 ? 'warning' : 'healthy',
+      metricValue: detectionIssueCount,
+      metricLabel: 'Rules with detection issues',
+      hasIssues: detectionIssueCount > 0,
+      statusColor: ruleFieldIssues.length > 0 ? 'danger' : executionIssueCount > 0 ? 'warning' : 'success',
+      blastRadius: detectionsBlastRadius,
     };
     const continuityMetric = getContinuityCardMetric(silentStreams, volumeDropCount, highLatencyCount);
     const continuityStatus: ReadinessStatus = loading ? 'healthy' : silentStreams > 0 ? 'critical' : volumeDropCount > 0 || highLatencyCount > 0 ? 'warning' : 'healthy';
@@ -2924,7 +3110,7 @@ const SiemReadinessPage: React.FC = () => {
     };
 
     const overall: ReadinessStatus = criticalPipelines > 0 ? 'critical'
-      : (coveragePillar.hasIssues || qualityPillar.hasIssues || retentionPillar.hasIssues) ? 'warning'
+      : (coveragePillar.hasIssues || qualityPillar.hasIssues || detectionsPillar.hasIssues || retentionPillar.hasIssues) ? 'warning'
       : 'healthy';
 
     return {
@@ -2935,7 +3121,7 @@ const SiemReadinessPage: React.FC = () => {
       highLatencyCount,
       categoriesMissingData,
       retentionBelowBenchmark,
-      pillars: { coverage: coveragePillar, quality: qualityPillar, continuity: continuityPillar, retention: retentionPillar },
+      pillars: { coverage: coveragePillar, quality: qualityPillar, detections: detectionsPillar, continuity: continuityPillar, retention: retentionPillar },
     };
   }, [loading, coverage, qualityResults, pipelines, retentionItems, categories, ruleFieldIssues]);
 
@@ -2991,11 +3177,12 @@ const SiemReadinessPage: React.FC = () => {
                   <EuiFlexGroup gutterSize="none" responsive={false}>
                     {([
                       { id: 'coverage',   label: 'Coverage',   severity: 'Critical' as const, severityColor: 'danger'  as const, num: '7',  numColor: '#BD271E', desc: 'integrations are required', blast: '76', actions: 2 },
-                      { id: 'quality',    label: 'Quality',    severity: 'Critical' as const, severityColor: 'danger'  as const, num: '9',  numColor: '#BD271E', desc: 'rule field issues · 1 stale TI feed', blast: '21', actions: 4 },
+                      { id: 'quality',    label: 'Quality',    severity: 'Warning'  as const, severityColor: 'warning' as const, num: '4',  numColor: '#CA8500', desc: 'indices with ECS issues', blast: '12', actions: 0 },
+                      { id: 'detections', label: 'Detections', severity: 'Critical' as const, severityColor: 'danger'  as const, num: '12', numColor: '#BD271E', desc: 'rule field issues · 3 execution failures', blast: '21', actions: 4 },
                       { id: 'continuity', label: 'Continuity', severity: 'Warning'  as const, severityColor: 'warning' as const, num: '2',  numColor: '#CA8500', desc: 'volume drops · 1 high latency',     blast: '26', actions: 1 },
-                      { id: 'retention',  label: 'Retention',  severity: 'Warning'  as const, severityColor: 'warning' as const, num: '2',  numColor: '#CA8500', desc: 'categories below benchmark',        blast: null, actions: 1 },
+                      { id: 'retention',  label: 'Retention',  severity: 'Warning'  as const, severityColor: 'warning' as const, num: '2',  numColor: '#CA8500', desc: 'categories below benchmark',        blast: '100', actions: 1 },
                     ]).map(({ id, label, severity, severityColor, num, numColor, desc, blast, actions }, idx) => (
-                      <EuiFlexItem key={id} grow={1} style={{ borderRight: idx < 3 ? '1px solid #D3DAE6' : undefined, padding: 16 }}>
+                      <EuiFlexItem key={id} grow={1} style={{ borderRight: idx < 4 ? '1px solid #D3DAE6' : undefined, padding: 16 }}>
                         {/* Line 1 — title + badge */}
                         <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                           <EuiFlexItem grow={false}>
@@ -3052,6 +3239,7 @@ const SiemReadinessPage: React.FC = () => {
                   {([
                     { id: 'coverage'   as const, label: 'Coverage',   pillar: summary.pillars.coverage   },
                     { id: 'quality'    as const, label: 'Quality',    pillar: summary.pillars.quality    },
+                    { id: 'detections' as const, label: 'Detections', pillar: summary.pillars.detections },
                     { id: 'continuity' as const, label: 'Continuity', pillar: summary.pillars.continuity },
                     { id: 'retention'  as const, label: 'Retention',  pillar: summary.pillars.retention  },
                   ]).map(({ id, label, pillar }) => {
@@ -3090,7 +3278,8 @@ const SiemReadinessPage: React.FC = () => {
                   />
                 )}
                 {selectedTab === 'coverage'   && <CoverageTab   coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
-                {selectedTab === 'quality'    && <QualityTab    categories={filteredCategories} qualityResults={qualityResults} ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
+                {selectedTab === 'quality'    && <QualityTab    categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
+                {selectedTab === 'detections' && <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.detections.status} />}
                 {selectedTab === 'continuity' && <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={(msg) => console.log('[onAskAI]', msg)} />}
                 {selectedTab === 'retention'  && <RetentionTab  categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />}
 
@@ -3167,11 +3356,6 @@ const SiemReadinessPage: React.FC = () => {
                       </EuiFlexGroup>
                     </EuiFlexItem>
 
-                    {/* RIGHT: category badge */}
-                    <EuiFlexItem grow={false}>
-                      <EuiBadge color="hollow" style={{ width: 'fit-content' }}>{p.category}</EuiBadge>
-                    </EuiFlexItem>
-
                   </EuiFlexGroup>
                 </React.Fragment>
               ))}
@@ -3217,6 +3401,68 @@ const SiemReadinessPage: React.FC = () => {
                   ))}
                 </>
               )}
+
+              <EuiHorizontalRule margin="l" />
+
+              {/* ── Section 3: Retention configuration ── */}
+              <EuiTitle size="xs"><h4>Retention configuration</h4></EuiTitle>
+              <EuiSpacer size="xs" />
+              <EuiText size="s" color="subdued">
+                Set custom retention targets per category. When custom retention is off, the default policy applies.
+              </EuiText>
+              <EuiSpacer size="m" />
+
+              {ALL_CATEGORY_NAMES.map((cat, idx) => {
+                const config = tempRetentionConfig[cat];
+                return (
+                  <React.Fragment key={cat}>
+                    {idx > 0 && <EuiSpacer size="m" />}
+                    <EuiFlexGroup alignItems="flexEnd" gutterSize="l" responsive={false}>
+                      <EuiFlexItem grow={false} style={{ minWidth: 150, paddingBottom: 10 }}>
+                        <EuiText size="s" style={{ fontWeight: 600 }}>{cat}:</EuiText>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false} style={{ minWidth: 130 }}>
+                        <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiText size="xs" style={{ fontWeight: 500 }}>Custom retention</EuiText>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiSwitch
+                              label=""
+                              showLabel={false}
+                              checked={config.customRetention}
+                              onChange={() => updateTempRetention(cat, { customRetention: !config.customRetention })}
+                              aria-label={`Enable custom retention for ${cat}`}
+                            />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false} style={{ minWidth: 120 }}>
+                        <EuiFlexGroup direction="column" gutterSize="xs" responsive={false}>
+                          <EuiFlexItem grow={false}>
+                            <EuiText size="xs" style={{ fontWeight: 500 }}>Amount of days</EuiText>
+                          </EuiFlexItem>
+                          <EuiFlexItem grow={false}>
+                            <EuiFieldText
+                              compressed
+                              type="number"
+                              min={1}
+                              placeholder="30"
+                              value={config.days > 0 ? String(config.days) : ''}
+                              disabled={!config.customRetention}
+                              onChange={(e) => {
+                                const days = parseInt(e.target.value, 10);
+                                updateTempRetention(cat, { days: Number.isFinite(days) && days > 0 ? days : 30 });
+                              }}
+                              aria-label={`Retention days for ${cat}`}
+                            />
+                          </EuiFlexItem>
+                        </EuiFlexGroup>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </React.Fragment>
+                );
+              })}
 
               <EuiHorizontalRule margin="l" />
             </EuiModalBody>
