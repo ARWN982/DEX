@@ -10,6 +10,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiBreadcrumbs,
+  EuiIcon,
 } from '@elastic/eui';
 
 const SecurityHeader: React.FC<{ onMenuClick?: () => void }> = () => {
@@ -49,13 +50,34 @@ const SecurityHeader: React.FC<{ onMenuClick?: () => void }> = () => {
               <EuiButtonIcon iconType="discuss" aria-label="Feedback"    color="text" size="s" />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <EuiButton
-                iconType="productAgent"
-                size="s"
-                style={{ backgroundColor: '#d9e8ff', color: '#1750ba', border: 'none', fontWeight: 500 }}
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  height: 32,
+                  minWidth: 96,
+                  padding: '0 8px',
+                  borderRadius: 4,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(124.93deg, rgb(217,232,255) 3.97%, rgb(236,226,254) 65.60%)',
+                }}
               >
-                AI Agent
-              </EuiButton>
+                <EuiIcon type="productAgent" size="s" color="#1750BA" />
+                <span style={{
+                  background: 'linear-gradient(165.73deg, #1750BA 2.98%, #6B3C9F 66.24%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  fontWeight: 500,
+                  fontSize: 14,
+                  lineHeight: '20px',
+                  whiteSpace: 'nowrap',
+                }}>
+                  AI agent
+                </span>
+              </button>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <EuiAvatar name="AN" size="s" color="#0077CC" />
