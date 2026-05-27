@@ -3162,8 +3162,8 @@ const SiemReadinessPage: React.FC = () => {
             <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'hidden', minHeight: 'calc(100vh - 64px)' }}>
 
               {/* Page header */}
-              <div style={{ padding: '12px 24px 4px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <EuiTitle size="m"><h1 style={{ fontSize: '1.35rem' }}>SIEM Readiness</h1></EuiTitle>
+              <div style={{ padding: '18px 24px 4px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <EuiTitle size="m"><h1 style={{ fontSize: '2.025rem' }}>SIEM Readiness</h1></EuiTitle>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <AddToChatButton />
                   <EuiButtonEmpty size="s" iconType="gear" onClick={openConfig}>Configurations</EuiButtonEmpty>

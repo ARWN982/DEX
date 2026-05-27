@@ -13,7 +13,7 @@ import {
   EuiIcon,
 } from '@elastic/eui';
 
-const SecurityHeader: React.FC<{ onMenuClick?: () => void }> = () => {
+const SecurityHeader: React.FC<{ onMenuClick?: () => void; onAgentClick?: () => void }> = ({ onAgentClick }) => {
   const breadcrumbs = [
     { text: 'My Security project', href: '#' },
     { text: 'Launchpad',           href: '#' },
@@ -51,6 +51,8 @@ const SecurityHeader: React.FC<{ onMenuClick?: () => void }> = () => {
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
               <button
+                type="button"
+                onClick={onAgentClick}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
