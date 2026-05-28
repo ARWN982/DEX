@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import {
   EuiBadge,
   EuiButtonEmpty,
-  EuiButtonGroup,
   EuiButtonIcon,
   EuiFieldSearch,
   EuiFilterButton,
@@ -23,6 +22,7 @@ import {
   EuiToolTip,
 } from '@elastic/eui';
 import AutoDexActivityLog from './AutoDexActivityLog';
+import AutoDexApprovalsPanel from './AutoDexApprovalsPanel';
 import { MOCK_AUTODEX_LOGS } from './autoDexMockData';
 
 export interface AutoDexTabViewProps {
@@ -664,7 +664,7 @@ const SUMMARY_DIVIDER = (
 const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) => {
   const [rulesFlyoutOpen, setRulesFlyoutOpen] = useState(false);
   const [gapsFlyoutOpen, setGapsFlyoutOpen] = useState(false);
-  const [activeView, setActiveView] = useState<'needs-me' | 'activity-log'>('needs-me');
+  const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
   const [sharedSearch, setSharedSearch] = useState('');
   const [typeOptions, setTypeOptions] = useState<{ label: string; checked?: 'on' }[]>([
     { label: 'Fixed execution failure' },
@@ -675,11 +675,18 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
   const [typePopoverOpen, setTypePopoverOpen] = useState(false);
   const activeTypeLabels = typeOptions.filter((o) => o.checked === 'on').map((o) => o.label);
 
+  const isPendingItem = (log: (typeof MOCK_AUTODEX_LOGS)[0]) =>
+    (log.needsApproval || log.isSuggestion) && !approvalDecisions[log.id];
+
   const pendingCount = useMemo(
-    () => MOCK_AUTODEX_LOGS.filter((l) => l.needsApproval || l.isSuggestion).length,
-    []
+    () => MOCK_AUTODEX_LOGS.filter(isPendingItem).length,
+    [approvalDecisions]
   );
   const totalCount = MOCK_AUTODEX_LOGS.length;
+
+  const handleDecide = (id: string, decision: 'approved' | 'dismissed') => {
+    setApprovalDecisions((prev) => ({ ...prev, [id]: decision }));
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -703,7 +710,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
             <p style={{ fontSize: 28, fontWeight: 700, color: '#017D73', margin: '0 0 2px', lineHeight: 1.1 }}>
               {totalCount}
             </p>
-            <EuiBadge color="success" iconType="sortUp" style={{ fontSize: 11 }}>+12% this week</EuiBadge>
+            <EuiBadge color="success" iconType="sortUp" style={{ fontSize: 11 }}>+2 from last week</EuiBadge>
           </div>
 
           {SUMMARY_DIVIDER}
@@ -713,7 +720,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
             <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>
               91%
             </p>
-            <EuiText size="xs" color="subdued">accepted of proposed</EuiText>
+            <EuiText size="xs" color="subdued">compared to previous</EuiText>
           </div>
 
           {SUMMARY_DIVIDER}
@@ -729,119 +736,78 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
         </div>
       </EuiPanel>
 
-      {/* ── View toggle + toolbar ── */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <EuiButtonGroup
-          legend="AutoDEX view"
-          options={[
-            {
-              id: 'needs-me',
-              label: (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Action list
-                  {pendingCount > 0 && (
-                    <span                     style={{
-                      background: '#BD271E', color: '#fff', borderRadius: 10,
-                      fontSize: 11, fontWeight: 600, padding: '1px 7px', lineHeight: '16px',
-                    }}>
-                      {pendingCount}
-                    </span>
-                  )}
-                </span>
-              ) as unknown as string,
-            },
-            {
-              id: 'activity-log',
-              label: (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Activity log
-                  <span style={{ background: '#D3DAE6', color: '#516381', borderRadius: 10, fontSize: 11, fontWeight: 600, padding: '1px 7px', lineHeight: '16px' }}>
-                    {totalCount}
-                  </span>
-                </span>
-              ) as unknown as string,
-            },
-          ]}
-          idSelected={activeView}
-          onChange={(id) => setActiveView(id as typeof activeView)}
-          buttonSize="s"
-          color="primary"
-        />
+      {/* ── Approvals required (SIEM Readiness action panel pattern) ── */}
+      <AutoDexApprovalsPanel
+        items={MOCK_AUTODEX_LOGS}
+        approvalDecisions={approvalDecisions}
+        onDecide={handleDecide}
+        onOpenAIAssistant={onOpenAIAssistant}
+      />
 
-        <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-          <EuiFieldSearch
-            placeholder="Search activities"
-            value={sharedSearch}
-            onChange={(e) => setSharedSearch(e.target.value)}
-            isClearable
-            fullWidth
-          />
-          <EuiFilterGroup style={{ flexShrink: 0 }}>
-            <EuiPopover
-              button={
-                <EuiFilterButton
-                  iconType="arrowDown"
-                  onClick={() => setTypePopoverOpen(!typePopoverOpen)}
-                  isSelected={typePopoverOpen}
-                  numFilters={typeOptions.length}
-                  hasActiveFilters={typeOptions.some((o) => o.checked === 'on')}
-                  numActiveFilters={activeTypeLabels.length}
-                  style={{ minWidth: 80, whiteSpace: 'nowrap' }}
-                >
-                  Type
-                </EuiFilterButton>
-              }
-              isOpen={typePopoverOpen}
-              closePopover={() => setTypePopoverOpen(false)}
-              panelPaddingSize="none"
-            >
-              <EuiSelectable
-                searchable
-                searchProps={{ placeholder: 'Filter list', compressed: true }}
-                options={typeOptions}
-                onChange={(opts) => setTypeOptions(opts as { label: string; checked?: 'on' }[])}
+      <EuiSpacer size="l" />
+
+      {/* ── Completed activity log ── */}
+      <EuiTitle size="xs">
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#111C2C', margin: 0 }}>Completed activity log</h2>
+      </EuiTitle>
+
+      <EuiSpacer size="m" />
+
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <EuiFieldSearch
+          placeholder="Search activities"
+          value={sharedSearch}
+          onChange={(e) => setSharedSearch(e.target.value)}
+          isClearable
+          fullWidth
+        />
+        <EuiFilterGroup style={{ flexShrink: 0 }}>
+          <EuiPopover
+            button={
+              <EuiFilterButton
+                iconType="arrowDown"
+                onClick={() => setTypePopoverOpen(!typePopoverOpen)}
+                isSelected={typePopoverOpen}
+                numFilters={typeOptions.length}
+                hasActiveFilters={typeOptions.some((o) => o.checked === 'on')}
+                numActiveFilters={activeTypeLabels.length}
+                style={{ minWidth: 80, whiteSpace: 'nowrap' }}
               >
-                {(list, search) => (
-                  <div style={{ width: 260 }}>
-                    <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
-                    {list}
-                  </div>
-                )}
-              </EuiSelectable>
-            </EuiPopover>
-          </EuiFilterGroup>
-        </div>
+                Type
+              </EuiFilterButton>
+            }
+            isOpen={typePopoverOpen}
+            closePopover={() => setTypePopoverOpen(false)}
+            panelPaddingSize="none"
+          >
+            <EuiSelectable
+              searchable
+              searchProps={{ placeholder: 'Filter list', compressed: true }}
+              options={typeOptions}
+              onChange={(opts) => setTypeOptions(opts as { label: string; checked?: 'on' }[])}
+            >
+              {(list, search) => (
+                <div style={{ width: 260 }}>
+                  <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
+                  {list}
+                </div>
+              )}
+            </EuiSelectable>
+          </EuiPopover>
+        </EuiFilterGroup>
       </div>
 
-      {/* ── Content panel ── */}
-      <EuiPanel hasBorder={false} hasShadow={false} paddingSize="none">
-        {activeView === 'needs-me' ? (
-          <>
-            <AutoDexActivityLog
-              onOpenAIAssistant={onOpenAIAssistant}
-              requiresApproval
-              pendingOnly
-              grouped={false}
-              reasoningBorderColor="#F5A700"
-              hideToolbar
-              searchValue={sharedSearch}
-              activeTypeLabels={activeTypeLabels}
-            />
-          </>
-        ) : (
-          <>
-            <AutoDexActivityLog
-              onOpenAIAssistant={onOpenAIAssistant}
-              requiresApproval={false}
-              grouped={false}
-              reasoningBorderColor="#017D73"
-              hideToolbar
-              searchValue={sharedSearch}
-              activeTypeLabels={activeTypeLabels}
-            />
-          </>
-        )}
-      </EuiPanel>
+      <AutoDexActivityLog
+        onOpenAIAssistant={onOpenAIAssistant}
+        requiresApproval={false}
+        completedOnly
+        activityMode
+        grouped={false}
+        hideToolbar
+        searchValue={sharedSearch}
+        activeTypeLabels={activeTypeLabels}
+        approvalDecisions={approvalDecisions}
+      />
 
       {rulesFlyoutOpen && (
         <RulesFlyout onClose={() => setRulesFlyoutOpen(false)} onOpenAIAssistant={onOpenAIAssistant} />

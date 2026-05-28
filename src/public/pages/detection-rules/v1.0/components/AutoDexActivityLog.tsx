@@ -190,6 +190,12 @@ export interface AutoDexActivityLogProps {
   grouped?: boolean;
   /** When true, only shows items that have needsApproval === true (flat mode only). */
   pendingOnly?: boolean;
+  /** When true, only shows completed / auto-resolved items (excludes pending approvals). */
+  completedOnly?: boolean;
+  /** When true, renders entries as completed activity log cards. */
+  activityMode?: boolean;
+  /** Approval decisions from the approvals panel — approved items appear in completed log. */
+  approvalDecisions?: Record<string, 'approved' | 'dismissed'>;
   /** Colour of the left border on reasoning summary panels. Defaults to grey (#D3DAE6). */
   reasoningBorderColor?: string;
   /** When true, suppresses the internal search + filter toolbar entirely. */
@@ -207,6 +213,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   lockedFilter,
   grouped = false,
   pendingOnly = false,
+  completedOnly = false,
+  activityMode = false,
+  approvalDecisions = {},
   reasoningBorderColor = '#D3DAE6',
   hideToolbar = false,
   activeTypeLabels,
@@ -223,8 +232,6 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
     { label: 'Updated rule' },
   ]);
 
-  const [approvalPopoverOpen, setApprovalPopoverOpen] = useState<Record<string, boolean>>({});
-  const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
   const [fullReasoningLogId, setFullReasoningLogId] = useState<string | null>(null);
 
   const PAGE_SIZE_OPTIONS = [5, 10, 25];
@@ -246,15 +253,10 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   // Reset to page 0 whenever the filtered set or page size changes.
   useEffect(() => {
     setPageIndex(0);
-  }, [logSearch, typeFilterOptions, activeTypeLabels, approvalDecisions, pageSize]);
+  }, [logSearch, typeFilterOptions, activeTypeLabels, approvalDecisions, pageSize, completedOnly, pendingOnly]);
 
-  const toggleApprovalPopover = (id: string) =>
-    setApprovalPopoverOpen((prev) => ({ ...prev, [id]: !prev[id] }));
-
-  const decide = (id: string, decision: 'approved' | 'dismissed') => {
-    setApprovalDecisions((prev) => ({ ...prev, [id]: decision }));
-    setApprovalPopoverOpen((prev) => ({ ...prev, [id]: false }));
-  };
+  const isPendingItem = (log: (typeof MOCK_AUTODEX_LOGS)[0]) =>
+    (log.needsApproval || log.isSuggestion) && !approvalDecisions[log.id];
 
   const actionToTypeLabel = (action: string) => {
     if (action === 'Execution failure') return 'Fixed execution failure';
@@ -332,11 +334,12 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   );
 
   /** Renders one log entry — Figma card style with left border, header row, collapsible reasoning panel. */
-  const renderLog = (log: (typeof filteredLogs)[0], i: number, logsArr: typeof filteredLogs, padded = false, activityMode = false) => {
+  const renderLog = (log: (typeof filteredLogs)[0], i: number, logsArr: typeof filteredLogs, padded = false, forceActivityMode = false) => {
     const decision = approvalDecisions[log.id];
-    const pendingApproval = !activityMode && requiresApproval && log.needsApproval && !decision;
-    const isSuggestion = !activityMode && !!log.isSuggestion && !log.needsApproval;
-    const leftBorderColor = pendingApproval ? '#fcd883' : isSuggestion ? '#ffcda1' : '#00BFB3';
+    const inActivityMode = forceActivityMode || activityMode;
+    const pendingApproval = !inActivityMode && requiresApproval && log.needsApproval && !decision;
+    const isSuggestion = !inActivityMode && !!log.isSuggestion && !log.needsApproval;
+    const leftBorderColor = inActivityMode ? '#D3DAE6' : pendingApproval ? '#fcd883' : isSuggestion ? '#ffcda1' : '#00BFB3';
     const isReasoningOpen = fullReasoningLogId === log.id;
 
     return (
@@ -374,15 +377,19 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   <EuiBadge style={{ background: '#ffcda1', color: '#5a2d0c', borderColor: '#ffcda1' }}>Suggestion</EuiBadge>
                 </EuiFlexItem>
               )}
-              {activityMode && (
+              {inActivityMode && (
                 <EuiFlexItem grow={false}>
-                  {log.needsApproval
+                  {decision === 'approved' || (log.needsApproval && decision)
                     ? <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
-                    : <EuiBadge color="primary">Auto</EuiBadge>
+                    : decision === 'dismissed'
+                      ? <EuiBadge color="default" iconType="minusInCircle">Dismissed</EuiBadge>
+                      : log.needsApproval
+                        ? <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
+                        : <EuiBadge color="primary">Auto</EuiBadge>
                   }
                 </EuiFlexItem>
               )}
-              {!activityMode && decision && (
+              {!inActivityMode && decision && (
                 <EuiFlexItem grow={false}>
                   <EuiBadge
                     color={decision === 'approved' ? 'success' : 'default'}
@@ -587,9 +594,11 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
   // ── Flat render (default) ───────────────────────────────────────────────────
   const displayLogs = pendingOnly
-    ? [...filteredLogs.filter((l) => (l.needsApproval && !approvalDecisions[l.id]) || l.isSuggestion)]
+    ? [...filteredLogs.filter((l) => isPendingItem(l))]
         .sort((a, b) => (a.isSuggestion ? 1 : 0) - (b.isSuggestion ? 1 : 0))
-    : filteredLogs;
+    : completedOnly
+      ? filteredLogs.filter((l) => !isPendingItem(l))
+      : filteredLogs;
 
   const pageCount = Math.max(1, Math.ceil(displayLogs.length / pageSize));
   const pagedLogs = displayLogs.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
@@ -603,7 +612,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         </EuiText>
       ) : (
         <>
-          {pagedLogs.map((log, i) => renderLog(log, i, pagedLogs))}
+          {pagedLogs.map((log, i) => renderLog(log, i, pagedLogs, false, activityMode))}
           <div style={{ marginTop: 12 }}>
             <EuiTablePagination
               activePage={pageIndex}

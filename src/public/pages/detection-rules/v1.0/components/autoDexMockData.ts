@@ -24,6 +24,7 @@ export interface AutoDexMockLog {
   status: 'success';
   needsApproval: boolean;
   isSuggestion?: boolean;
+  rulesAffected?: number;
 }
 
 export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
@@ -57,6 +58,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     },
     status: 'success',
     needsApproval: true,
+    rulesAffected: 5,
   },
   {
     id: '2',
@@ -117,6 +119,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     },
     status: 'success',
     needsApproval: true,
+    rulesAffected: 4,
   },
   {
     id: '4',
@@ -178,6 +181,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     },
     status: 'success',
     needsApproval: true,
+    rulesAffected: 6,
   },
   // ── Suggestion (no approval needed — known error with a fix proposal) ────────
   {
@@ -191,6 +195,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     status: 'success',
     needsApproval: false,
     isSuggestion: true,
+    rulesAffected: 2,
   },
   {
     id: '7',
@@ -202,6 +207,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
       'Version 1.4→1.5: Elastic Security Labs revised the detection query to include additional DLL load patterns. AutoDEX requires approval as the change extends detection coverage.',
     status: 'success',
     needsApproval: true,
+    rulesAffected: 3,
   },
   // ── Additional auto-approved activity log entries ──────────────────────────
   {
