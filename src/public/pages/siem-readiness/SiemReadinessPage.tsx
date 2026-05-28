@@ -78,6 +78,11 @@ const GROUP_PILLARS: Record<HealthGroupId, VisibilityTabId[]> = {
   'detection-health': DETECTION_HEALTH_PILLARS,
 };
 
+function getHealthGroupLabelForPillar(pillar: VisibilityTabId): string {
+  if (DATA_HEALTH_PILLARS.includes(pillar)) return 'Data health';
+  return 'Detection health';
+}
+
 function mapTabParam(tabParam: string | null): SiemTab {
   if (tabParam === 'detection-health') return 'detection-health';
   return 'data-health';
@@ -941,7 +946,7 @@ const ACTION_FILTER_LABELS: Record<VisibilityTabId | HealthGroupId, string> = {
 };
 
 function getActionChatPrompt(action: ActionItem): string {
-  return `Help me resolve this SIEM Readiness ${CATEGORY_LABELS[action.pillar]} issue: "${action.title}". ${action.description} Recommended fix: ${action.fixRecommendation}`;
+  return `Help me resolve this SIEM Readiness ${getHealthGroupLabelForPillar(action.pillar)} issue: "${action.title}". ${action.description} Recommended fix: ${action.fixRecommendation}`;
 }
 
 const ACTION_PANEL_BUTTON_MIN_WIDTH = 176;
@@ -1046,7 +1051,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
         <>
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             {pagedActions.map((action, index) => {
-              const pillarLabel = CATEGORY_LABELS[action.pillar].toUpperCase();
+              const pillarLabel = getHealthGroupLabelForPillar(action.pillar).toUpperCase();
               const isExpanded = expandedIds.has(action.id);
               const isFirstRow = index === 0;
               const isLastRow = index === pagedActions.length - 1;
@@ -1081,7 +1086,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
                             data-test-subj={`siemReadiness-actionExpand-${action.id}`}
                           />
                         </EuiFlexItem>
-                        <EuiFlexItem grow={false} style={{ width: 80 }}>
+                        <EuiFlexItem grow={false} style={{ width: 130 }}>
                           <EuiText size="xs" style={{ fontWeight: 600, color: '#516381', letterSpacing: '0.02em' }}>
                             {pillarLabel}
                           </EuiText>
@@ -1188,7 +1193,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
                   {isExpanded && (
                     <>
                       <EuiSpacer size="s" />
-                      <div style={{ background: '#F6F9FC', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
+                      <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
                         <EuiText size="xs">
                           <p style={{ margin: 0 }}><strong>Issue:</strong> {action.description}</p>
                         </EuiText>
@@ -1698,7 +1703,8 @@ interface PillarSummaryCardProps {
   severity: 'Critical' | 'Warning';
   numColor: string;
   metrics: HealthMetric[];
-  blastCount: number | null;
+  totalRulesAffected: number | null;
+  scoreLabel: string;
   actions: number;
   isFilterActive: boolean;
   onActionsClick: () => void;
@@ -1710,7 +1716,8 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
   severity,
   numColor,
   metrics,
-  blastCount,
+  totalRulesAffected,
+  scoreLabel,
   actions,
   isFilterActive,
   onActionsClick,
@@ -1731,24 +1738,51 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
       data-test-subj={`siemReadiness-healthCard-${id}`}
     >
       <div style={{ padding: '16px 16px 16px 20px', display: 'flex', flexDirection: 'column', gap: 23, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#000000' }}>{label}</EuiText>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              height: 20,
-              padding: '0 8px',
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 500,
-              lineHeight: '16px',
-              background: isCritical ? '#FDDDD8' : '#FFF3D0',
-              color: isCritical ? '#A71627' : '#836500',
-            }}
-          >
-            {severity}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+            <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#000000' }}>{label}</EuiText>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                height: 20,
+                padding: '0 8px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+                lineHeight: '16px',
+                background: isCritical ? '#FDDDD8' : '#FDE9B5',
+                color: isCritical ? '#A71627' : '#825803',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {severity}
+            </span>
+          </div>
+          {totalRulesAffected !== null && totalRulesAffected > 0 && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 2,
+                height: 20,
+                padding: '0 8px',
+                borderRadius: 20,
+                border: '1px solid #CAD3E2',
+                background: '#FFFFFF',
+                fontSize: 12,
+                fontWeight: 500,
+                lineHeight: '16px',
+                color: '#1D2A3E',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+              data-test-subj={`siemReadiness-pillarTotalRules-${id}`}
+            >
+              <EuiIcon type="radar" size="s" />
+              {totalRulesAffected} total rules affected
+            </span>
+          )}
         </div>
 
         <div
@@ -1791,35 +1825,13 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
           justifyContent: 'space-between',
         }}
       >
-        {blastCount !== null && blastCount > 0 ? (
-          <RulesAffectedPopover
-            title={`${blastCount} rules affected`}
-            rules={buildRulesList(blastCount, label)}
-            count={blastCount}
-            variant="plain"
-            linkLabel={`${blastCount} rules affected`}
-            testSubj={`siemReadiness-pillarRules-${id}`}
-          />
-        ) : (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              height: 20,
-              padding: '0 8px',
-              borderRadius: 20,
-              border: '1px solid #CAD3E2',
-              background: '#FFFFFF',
-              fontSize: 12,
-              lineHeight: '16px',
-              color: '#1D2A3E',
-            }}
-          >
-            <EuiIcon type="radar" size="s" />
-            — rules affected
-          </span>
-        )}
+        <EuiBadge
+          color="hollow"
+          iconType="sortDown"
+          data-test-subj={`siemReadiness-pillarScore-${id}`}
+        >
+          {scoreLabel}
+        </EuiBadge>
         <EuiButtonEmpty
           size="s"
           color="primary"
@@ -2607,8 +2619,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
   ];
 
   const categoryStatusBadge = (incompatFields: number) => {
-    if (incompatFields >= 3) return <EuiBadge color="danger">Actions required</EuiBadge>;
-    if (incompatFields > 0)  return <EuiBadge color="warning">Actions required</EuiBadge>;
+    if (incompatFields > 0) return <EuiBadge color="warning">Actions required</EuiBadge>;
     return <EuiBadge color="success">Healthy</EuiBadge>;
   };
 
@@ -2622,7 +2633,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
       <EuiFlexGroup gutterSize="m" alignItems="flexStart" responsive={false}>
         <EuiFlexItem>
           <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-            <EuiTitle size="s"><h3>ECS field compatibility</h3></EuiTitle>
+            <EuiTitle size="s"><h3>Quality</h3></EuiTitle>
             <EuiSpacer size="s" />
 
             {totalIncompatible > 0 && (
@@ -2823,9 +2834,8 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
                 {
                   field: 'issueType', name: 'Issue', width: '130px',
                   render: (type: string) => {
-                    const colorMap: Record<string, string> = { missing: 'danger', type_mismatch: 'warning', sparse: 'warning' };
                     const labelMap: Record<string, string> = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
-                    return <EuiBadge color={colorMap[type] ?? 'hollow'}>{labelMap[type] ?? type}</EuiBadge>;
+                    return <EuiBadge color="hollow">{labelMap[type] ?? type}</EuiBadge>;
                   },
                 },
                 {
@@ -2914,7 +2924,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
   if (findings.length === 0) {
     return (
       <EuiPanel hasBorder paddingSize="m">
-        <EuiTitle size="s"><h3>Data continuity</h3></EuiTitle>
+        <EuiTitle size="s"><h3>Continuity</h3></EuiTitle>
         <EuiSpacer size="s" />
         <EuiText size="s" color="subdued">
           See which data streams have stopped sending data, dropped in volume, or exceeded latency SLAs. Detection rules that depend on these streams may be running but not matching anything.
@@ -2979,7 +2989,7 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
     <>
       {/* ── Findings panel ── */}
       <EuiPanel hasBorder paddingSize="m">
-        <EuiTitle size="s"><h3>Data continuity</h3></EuiTitle>
+        <EuiTitle size="s"><h3>Continuity</h3></EuiTitle>
         <EuiSpacer size="s" />
         <EuiText size="s" color="subdued">
           See which data streams have stopped sending data, dropped in volume, or exceeded latency SLAs. Detection rules that depend on these streams may be running but not matching anything.
@@ -3119,7 +3129,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
 
   return (
     <EuiPanel hasBorder paddingSize="m">
-      <EuiTitle size="s"><h3>Data retention</h3></EuiTitle>
+      <EuiTitle size="s"><h3>Retention</h3></EuiTitle>
       <EuiSpacer size="s" />
       <EuiText size="s" color="subdued">
         Compare log category retention against compliance benchmarks. Categories below benchmark may lack the historical data your rules and investigations need.
@@ -3255,19 +3265,6 @@ const DEFAULT_PLATFORMS: PlatformConfig[] = [
   { id: 'salesforce',        name: 'Salesforce',         category: 'Application/SaaS', enabled: true,  derivedFrom: 'Detected from event.dataset: salesforce.apex' },
 ];
 
-const PILLAR_AGENT_SUMMARIES: Array<{
-  id: VisibilityTabId;
-  label: string;
-  severity: 'Critical' | 'Warning' | 'Healthy';
-  summary: string;
-}> = [
-  { id: 'coverage', label: 'Coverage', severity: 'Critical', summary: '7 integrations are required' },
-  { id: 'quality', label: 'Quality', severity: 'Warning', summary: '4 indices with ECS issues' },
-  { id: 'detections', label: 'Detections', severity: 'Critical', summary: '12 rule field issues · 3 execution failures' },
-  { id: 'continuity', label: 'Continuity', severity: 'Warning', summary: '2 volume drops · 1 high latency' },
-  { id: 'retention', label: 'Retention', severity: 'Warning', summary: '2 categories below benchmark' },
-];
-
 const SiemReadinessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialTab = mapTabParam(searchParams.get('tab'));
@@ -3291,7 +3288,7 @@ const SiemReadinessPage: React.FC = () => {
   };
 
   const SIEM_READINESS_SUMMARY_PROMPT =
-    'Summarize my SIEM Readiness status across Coverage, Quality, Detections, Continuity, and Retention. Highlight critical issues and recommend the top actions I should take.';
+    'Summarize my SIEM Readiness status across Data health and Detection health. Highlight critical issues and recommend the top actions I should take.';
 
   const goToActions = (filter: VisibilityTabId | HealthGroupId) => {
     setActionFilter((current) => (current === filter ? undefined : filter));
@@ -3433,6 +3430,12 @@ const SiemReadinessPage: React.FC = () => {
     [coverage, integrations, ruleFieldIssues, pipelines, retentionItems, categories, qualityResults]
   );
   const handleViewPillarFromAgent = (pillarId: string) => {
+    if (pillarId === 'data-health' || pillarId === 'detection-health') {
+      setSelectedTab(pillarId);
+      if (pillarId === 'detection-health') setRuleSubTab('all');
+      setActionFilter(undefined);
+      return;
+    }
     const pillar = pillarId as VisibilityTabId;
     if (DATA_HEALTH_PILLARS.includes(pillar)) setSelectedTab('data-health');
     else if (DETECTION_HEALTH_PILLARS.includes(pillar)) {
@@ -3489,7 +3492,8 @@ const SiemReadinessPage: React.FC = () => {
           { value: summary.retentionBelowBenchmark, label: 'categories below benchmark' },
           { value: qualityIssues, label: 'ECS issues' },
         ],
-        blastCount: sumBlast(DATA_HEALTH_PILLARS),
+        totalRulesAffected: sumBlast(DATA_HEALTH_PILLARS),
+        scoreLabel: '80% Data trust score',
         actions: countActions(DATA_HEALTH_PILLARS),
       },
       detectionHealth: {
@@ -3503,7 +3507,8 @@ const SiemReadinessPage: React.FC = () => {
           { value: ruleFieldIssues.length, label: 'rule field issues' },
           { value: executionIssueCount, label: 'execution failures' },
         ],
-        blastCount: sumBlast(DETECTION_HEALTH_PILLARS),
+        totalRulesAffected: 76,
+        scoreLabel: '73% Detection confidence score',
         actions: countActions(DETECTION_HEALTH_PILLARS),
       },
     };
@@ -3521,21 +3526,41 @@ const SiemReadinessPage: React.FC = () => {
     const critical = allActionItems.filter((a) => a.severity === 'critical');
     const warning = allActionItems.filter((a) => a.severity === 'warning');
     const sortedActions = [...critical, ...warning];
+    const toAgentSeverity = (status: ReadinessStatus): 'Critical' | 'Warning' | 'Healthy' => {
+      if (status === 'critical') return 'Critical';
+      if (status === 'warning') return 'Warning';
+      return 'Healthy';
+    };
+    const formatMetricsSummary = (metrics: HealthMetric[]) =>
+      metrics.map((metric) => `${metric.value} ${metric.label}`).join(' · ');
 
     return {
       criticalCount: critical.length,
       warningCount: warning.length,
       actions: sortedActions.map((action) => ({
         id: action.id,
-        pillar: CATEGORY_LABELS[action.pillar],
+        pillar: getHealthGroupLabelForPillar(action.pillar),
         severity: action.severity,
         title: action.title,
         rulesAffected: action.rulesAffected,
         timestamp: 'Apr 15 @ 14:22:07',
       })),
-      pillars: PILLAR_AGENT_SUMMARIES,
+      pillars: [
+        {
+          id: 'data-health',
+          label: 'Data health',
+          severity: toAgentSeverity(dataHealthStatus),
+          summary: formatMetricsSummary(healthGroupCards.dataHealth.metrics),
+        },
+        {
+          id: 'detection-health',
+          label: 'Detection health',
+          severity: toAgentSeverity(detectionHealthStatus),
+          summary: formatMetricsSummary(healthGroupCards.detectionHealth.metrics),
+        },
+      ],
     };
-  }, [allActionItems]);
+  }, [allActionItems, dataHealthStatus, detectionHealthStatus, healthGroupCards]);
 
   const actionItemIds = useMemo(() => new Set(allActionItems.map((a) => a.id)), [allActionItems]);
 
@@ -3650,7 +3675,8 @@ const SiemReadinessPage: React.FC = () => {
                         severity={card.severity}
                         numColor={card.numColor}
                         metrics={card.metrics}
-                        blastCount={card.blastCount}
+                        totalRulesAffected={card.totalRulesAffected}
+                        scoreLabel={card.scoreLabel}
                         actions={card.actions}
                         isFilterActive={actionFilter === card.id}
                         onActionsClick={() => goToActions(card.id)}

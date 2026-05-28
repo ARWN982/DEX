@@ -149,7 +149,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
       </div>
 
       <div>
-        <EuiText size="xs" style={{ fontWeight: 600, color: '#1D2A3E', marginBottom: 8 }}>Category status</EuiText>
+        <EuiText size="xs" style={{ fontWeight: 600, color: '#1D2A3E', marginBottom: 8 }}>Health status</EuiText>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pillars.map((pillar) => {
             const pill = severityPill(pillar.severity);
@@ -202,9 +202,9 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
       <div>
         <EuiText size="xs" style={{ fontWeight: 600, color: '#1D2A3E', marginBottom: 6 }}>Next steps you could take:</EuiText>
         <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, lineHeight: '18px', color: '#1D2A3E' }}>
-          <li>Install missing integrations to restore coverage for affected detection rules.</li>
-          <li>Review ECS field mapping issues on indices flagged in Quality.</li>
-          <li>Update ILM policies for data streams below the retention benchmark.</li>
+          <li>Resolve data continuity issues such as silent streams, volume drops, and retention gaps.</li>
+          <li>Install missing integrations and enable detection rules for integrations missing rules.</li>
+          <li>Review ECS field compatibility and rule field issues flagged under Detection health.</li>
         </ul>
         <EuiText size="xs" style={{ marginTop: 10, lineHeight: '18px', color: '#1D2A3E' }}>
           I can help generate a query or dashboard to dig deeper if you&apos;d like.
