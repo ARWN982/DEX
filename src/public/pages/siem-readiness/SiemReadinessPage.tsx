@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   EuiAccordion,
-  EuiAvatar,
   EuiBadge,
   EuiBasicTable,
   EuiBetaBadge,
@@ -80,9 +79,7 @@ const GROUP_PILLARS: Record<HealthGroupId, VisibilityTabId[]> = {
 };
 
 function mapTabParam(tabParam: string | null): SiemTab {
-  if (tabParam === 'data-health' || tabParam === 'detection-health') return tabParam;
-  if (tabParam === 'continuity' || tabParam === 'retention' || tabParam === 'quality' || tabParam === 'actions') return 'data-health';
-  if (tabParam === 'coverage' || tabParam === 'detections') return 'detection-health';
+  if (tabParam === 'detection-health') return 'detection-health';
   return 'data-health';
 }
 
@@ -806,6 +803,24 @@ function deriveActionItems(
   // Detections: rule field issues and execution health failures
   const qualityIssueLabels = { missing: 'Field missing', type_mismatch: 'Type mismatch', sparse: 'Sparsely populated' };
   ruleFieldIssues.forEach((issue) => {
+    if (issue.id === '1') {
+      items.push({
+        id: `detections-${issue.id}`,
+        severity: 'critical' as const,
+        pillar: 'detections',
+        title: '3 rules are failing executions',
+        description: 'Three enabled detection rules failed or timed out during their most recent runs. These rules may be running but not detecting.',
+        fixRecommendation: 'Open the rules in Security → Rules and review their query, schedule, and index patterns. Check for data gaps or timeout settings.',
+        rulesAffected: 3,
+        mitreTactics: [],
+        platforms: [],
+        fixLink: 'Security → Rules',
+        actionLabel: 'View rule',
+        actionIcon: 'popout',
+      });
+      return;
+    }
+
     const actionLabel = issue.issueType === 'missing'
       ? 'View rule'
       : issue.issueType === 'type_mismatch'
@@ -828,21 +843,6 @@ function deriveActionItems(
       actionLabel,
       actionIcon,
       casesCount: issue.id === '4' ? 1 : undefined,
-    });
-  });
-
-  EXECUTION_HEALTH_ROWS.filter((r) => r.status !== 'Succeeded').forEach((row) => {
-    items.push({
-      id: `detections-exec-${row.id}`, severity: 'warning' as const, pillar: 'detections',
-      title: `Execution issue: ${row.rule}`,
-      description: `Rule last ran ${row.lastRun} with status "${row.status}". ${row.alertTrend}.`,
-      fixRecommendation: `Open the rule in Security → Rules and review its query, schedule, and index patterns. Check for data gaps or timeout settings.`,
-      rulesAffected: 1,
-      mitreTactics: [],
-      platforms: [],
-      fixLink: `Security → Rules → "${row.rule}"`,
-      actionLabel: 'View rule',
-      actionIcon: 'popout',
     });
   });
 
@@ -944,6 +944,8 @@ function getActionChatPrompt(action: ActionItem): string {
   return `Help me resolve this SIEM Readiness ${CATEGORY_LABELS[action.pillar]} issue: "${action.title}". ${action.description} Recommended fix: ${action.fixRecommendation}`;
 }
 
+const ACTION_PANEL_BUTTON_MIN_WIDTH = 176;
+
 interface ActionsRequiredPanelProps {
   coverage: RuleIntegrationCoverage | null;
   integrations: SiemReadinessPackageInfo[];
@@ -982,15 +984,6 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
 
   const pagedActions = actions.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
-  const criticalIssueCount = useMemo(
-    () => allActions.filter((a) => a.severity === 'critical').length,
-    [allActions]
-  );
-  const warningIssueCount = useMemo(
-    () => allActions.filter((a) => a.severity === 'warning').length,
-    [allActions]
-  );
-
   const toggleExpanded = (id: string) => setExpandedIds((prev) => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -1006,56 +999,19 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
         background: '#F6F9FC',
         border: '1px solid #E3E8F2',
         borderRadius: 6,
-        padding: '14px 24px 16px',
+        padding: '16px 24px 16px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 8,
+        gap: 16,
       }}
     >
-      {/* Header — Figma node 1863:25820 */}
-      <div style={{ display: 'flex', alignItems: 'center', minHeight: 55, width: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ margin: 0, fontSize: 20, lineHeight: '24px', fontWeight: 600, color: '#111C2C' }}>
-            Status:
-          </h2>
-          {criticalIssueCount > 0 ? (
-            <>
-              <EuiAvatar
-                name="Critical issues"
-                iconType="warning"
-                size="m"
-                color="#FFC9C2"
-              />
-              <EuiText size="s" style={{ fontWeight: 500, color: '#111C2C', fontSize: 16, lineHeight: '24px' }}>
-                Critical issues detected
-              </EuiText>
-            </>
-          ) : warningIssueCount > 0 ? (
-            <>
-              <EuiAvatar
-                name="Warning issues"
-                iconType="warning"
-                size="m"
-                color="#FFF3D0"
-              />
-              <EuiText size="s" style={{ fontWeight: 500, color: '#111C2C', fontSize: 16, lineHeight: '24px' }}>
-                Warning issues detected
-              </EuiText>
-            </>
-          ) : (
-            <>
-              <EuiAvatar
-                name="Healthy"
-                iconType="check"
-                size="m"
-                color="#D3FAE6"
-              />
-              <EuiText size="s" style={{ fontWeight: 500, color: '#111C2C', fontSize: 16, lineHeight: '24px' }}>
-                No issues detected
-              </EuiText>
-            </>
-          )}
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+        <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
+          {actions.length}
+        </EuiNotificationBadge>
+        <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
+          actions required
+        </h2>
       </div>
       {activeFilter && (
         <EuiBadge
@@ -1151,7 +1107,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
                     </EuiFlexItem>
 
                     <EuiFlexItem grow={false}>
-                      <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+                      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} justifyContent="flexEnd">
                         <EuiFlexItem grow={false}>
                           <RulesAffectedPopover
                             title={`${action.rulesAffected} rules affected`}
@@ -1166,16 +1122,25 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
                           <div style={{ width: 1, height: 23, background: '#CAD3E2' }} />
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
-                          <EuiButtonEmpty
-                            size="xs"
-                            iconType={action.actionIcon ?? 'popout'}
-                            iconSide="right"
-                            color="primary"
-                            href={action.fixLink ? '#' : undefined}
-                            data-test-subj={`siemReadiness-actionHere-${action.id}`}
+                          <div
+                            style={{
+                              width: ACTION_PANEL_BUTTON_MIN_WIDTH,
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                            }}
                           >
-                            {action.actionLabel}
-                          </EuiButtonEmpty>
+                            <EuiButtonEmpty
+                              size="s"
+                              iconType={action.actionIcon ?? 'popout'}
+                              iconSide="right"
+                              color="primary"
+                              flush="right"
+                              href={action.fixLink ? '#' : undefined}
+                              data-test-subj={`siemReadiness-actionHere-${action.id}`}
+                            >
+                              {action.actionLabel}
+                            </EuiButtonEmpty>
+                          </div>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
                           <EuiPopover
@@ -1185,7 +1150,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
                             anchorPosition="downRight"
                             button={
                               <EuiButtonIcon
-                                size="xs"
+                                size="s"
                                 iconType="boxesHorizontal"
                                 color="primary"
                                 aria-label="More actions"
@@ -1745,58 +1710,74 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
   const isCritical = severity === 'Critical';
 
   return (
-    <>
-      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} style={{ minHeight: 29 }}>
-        <EuiFlexItem grow={false}>
-          <EuiText style={{ fontSize: 18, fontWeight: 700, lineHeight: '24px', color: '#1D2A3E' }}>{label}</EuiText>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
+    <div
+      style={{
+        border: '1px solid #E3E8F2',
+        borderRadius: 6,
+        overflow: 'hidden',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#FFFFFF',
+      }}
+      data-test-subj={`siemReadiness-healthCard-${id}`}
+    >
+      <div style={{ padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 23, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#000000' }}>{label}</EuiText>
           <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               height: 20,
               padding: '0 8px',
-              borderRadius: 24,
+              borderRadius: 20,
               fontSize: 12,
-              fontWeight: 400,
-              lineHeight: '18px',
+              fontWeight: 500,
+              lineHeight: '16px',
               background: isCritical ? '#FDDDD8' : '#FFF3D0',
               color: isCritical ? '#A71627' : '#836500',
             }}
           >
             {severity}
           </span>
-        </EuiFlexItem>
-      </EuiFlexGroup>
+        </div>
 
-      <div style={{ height: 12 }} />
-
-      <EuiFlexGroup alignItems="center" gutterSize="l" responsive={false} wrap style={{ minHeight: 41 }}>
-        {metrics.map((metric) => (
-          <EuiFlexItem grow={false} key={metric.label}>
-            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <span style={{ fontSize: 30, fontWeight: 600, lineHeight: '28.8px', color: numColor }}>
-                  {metric.value}
-                </span>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiText size="s" style={{ color: '#111C2C' }}>{metric.label}</EuiText>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        ))}
-      </EuiFlexGroup>
-
-      <div style={{ height: 17 }} />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            width: '100%',
+            gap: 8,
+          }}
+        >
+          {metrics.map((metric) => (
+            <div
+              key={metric.label}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
+                {metric.value}
+              </span>
+              <EuiText size="s" style={{ color: '#516381', lineHeight: '24px' }}>
+                {metric.label}
+              </EuiText>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div
         style={{
           background: '#F6F9FC',
-          marginLeft: -16,
-          marginRight: -16,
-          padding: '6px 10px',
+          padding: 6,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -1819,11 +1800,12 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
               gap: 4,
               height: 20,
               padding: '0 8px',
-              borderRadius: 24,
+              borderRadius: 20,
+              border: '1px solid #CAD3E2',
               background: '#FFFFFF',
               fontSize: 12,
-              lineHeight: '18px',
-              color: '#516381',
+              lineHeight: '16px',
+              color: '#1D2A3E',
             }}
           >
             <EuiIcon type="radar" size="s" />
@@ -1831,19 +1813,20 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
           </span>
         )}
         <EuiButtonEmpty
-          size="xs"
+          size="s"
           color="primary"
           onClick={onActionsClick}
           disabled={actions === 0}
           data-test-subj={`siemReadiness-pillarActions-${id}`}
+          style={{ height: 32, padding: '0 8px', fontSize: 14, fontWeight: 500 }}
         >
-          <EuiNotificationBadge size="s" color={isFilterActive ? 'accent' : 'subdued'} style={{ marginRight: 4 }}>
+          <EuiNotificationBadge size="m" color={isFilterActive ? 'accent' : 'subdued'} style={{ marginRight: 4 }}>
             {actions}
           </EuiNotificationBadge>
-          Actions
+          View actions
         </EuiButtonEmpty>
       </div>
-    </>
+    </div>
   );
 };
 
@@ -1856,6 +1839,8 @@ interface CoverageTabProps {
   loading: boolean;
   actionItemIds: Set<string>;
   pillarStatus: ReadinessStatus;
+  ruleSubTab: 'all' | 'mitre';
+  onRuleSubTabChange: (tab: 'all' | 'mitre') => void;
   onAskAI?: (msg: string) => void;
 }
 
@@ -1925,10 +1910,18 @@ const CATEGORY_INTEGRATIONS: Record<string, string[]> = {
   'Application/SaaS': ['google_workspace', 'salesforce'],
 };
 
-const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integrations, loading, actionItemIds, pillarStatus, onAskAI }) => {
+const CoverageTab: React.FC<CoverageTabProps> = ({
+  coverage,
+  categories,
+  integrations,
+  loading,
+  actionItemIds,
+  pillarStatus,
+  ruleSubTab,
+  onRuleSubTabChange,
+  onAskAI,
+}) => {
   const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
-  const [searchParams] = useSearchParams();
-  const [ruleSubTab, setRuleSubTab] = useState<'all' | 'mitre'>(searchParams.get('ruleView') === 'mitre' ? 'mitre' : 'all');
   const [openCoverageRows, setOpenCoverageRows] = useState<Record<string, boolean>>({});
 
   // All hooks must run unconditionally — derive values lazily inside useMemo
@@ -2127,7 +2120,7 @@ const CoverageTab: React.FC<CoverageTabProps> = ({ coverage, categories, integra
           { id: 'mitre', label: 'MITRE ATT&CK enabled rules' },
         ]}
         idSelected={ruleSubTab}
-        onChange={(id) => setRuleSubTab(id as 'all' | 'mitre')}
+        onChange={(id) => onRuleSubTabChange(id as 'all' | 'mitre')}
         buttonSize="s"
         color="primary"
         style={{ marginBottom: 8 }}
@@ -2401,7 +2394,7 @@ type QualityIndexItem = {
 
 interface QualityTabProps { categories: CategoryGroup[]; qualityResults: QualityResult[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus }
 
-interface DetectionsTabProps { ruleFieldIssues: RuleFieldIssue[]; loading: boolean; actionItemIds: Set<string>; pillarStatus: ReadinessStatus }
+interface DetectionsTabProps { ruleFieldIssues: RuleFieldIssue[]; loading: boolean; pillarStatus: ReadinessStatus }
 
 const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loading, actionItemIds, pillarStatus }) => {
   const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
@@ -2674,7 +2667,7 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
 
 // ─── Detections tab ───────────────────────────────────────────────────────────
 
-const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading, actionItemIds, pillarStatus }) => {
+const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading, pillarStatus }) => {
   const calloutColor = pillarStatus === 'critical' ? 'danger' as const : 'warning' as const;
 
   if (loading) return <EuiFlexGroup justifyContent="center" style={{ padding: 60 }}><EuiLoadingSpinner size="xl" /></EuiFlexGroup>;
@@ -2732,95 +2725,6 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
             body={<EuiText size="s"><p>All enabled rules are referencing fields that exist and are correctly typed.</p></EuiText>}
           />
         )}
-      </EuiPanel>
-
-      {/* ── Detection execution health ── */}
-      <EuiSpacer size="l" />
-      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-        <EuiTitle size="s"><h3>Detection execution health</h3></EuiTitle>
-        <EuiSpacer size="xs" />
-        <EuiText size="s" color="subdued">
-          Rules that are failing, running slowly, or have stopped producing alerts against their historical baseline.
-        </EuiText>
-        <EuiSpacer size="m" />
-
-        {EXECUTION_HEALTH_ROWS.some(r => r.status !== 'Succeeded') && (
-          <>
-            <EuiCallOut
-              color="warning"
-              iconType="warning"
-              size="s"
-              title="3 rules have execution issues — they may be running but not detecting."
-            />
-            <EuiSpacer size="m" />
-          </>
-        )}
-
-        <EuiBasicTable
-          items={EXECUTION_HEALTH_ROWS}
-          tableLayout="fixed"
-          columns={[
-            {
-              field: 'rule',
-              name: 'Rule',
-              render: (name: string) => <EuiLink href="/app/security/rules">{name}</EuiLink>,
-            },
-            {
-              field: 'lastRun',
-              name: 'Last run',
-              width: '144px',
-              render: (t: string) => <EuiText size="s" color="subdued">{t}</EuiText>,
-            },
-            {
-              field: 'status',
-              name: 'Status',
-              width: '144px',
-              render: (s: string) => {
-                const colorMap: Record<string, string> = {
-                  'Succeeded': 'success',
-                  'Failed': 'danger',
-                  'Timed out': 'warning',
-                  'Gap detected': 'warning',
-                };
-                return <EuiBadge color={colorMap[s] ?? 'hollow'}>{s}</EuiBadge>;
-              },
-            },
-            {
-              field: 'execTime',
-              name: 'Execution time',
-              width: '156px',
-              render: (t: string) => {
-                const secs = parseFloat(t);
-                return <EuiText size="s" color={secs > 30 ? 'warning' : undefined}>{t}</EuiText>;
-              },
-            },
-            {
-              field: 'alertTrend',
-              name: 'Alert trend',
-              width: '187px',
-              render: (trend: string) => {
-                const color = trend === 'Silent — no alerts in 7d' ? 'warning' : 'subdued';
-                return <EuiText size="s" color={color}>{trend}</EuiText>;
-              },
-            },
-            {
-              name: 'Platform',
-              width: '240px',
-              render: (row: ExecutionHealthRow) => (
-                <PlatformBadge platform={getPlatformFromIndex(row.indexPattern)} />
-              ),
-            },
-            {
-              name: 'Action',
-              width: '120px',
-              render: (row: ExecutionHealthRow) =>
-                actionItemIds.has(`detections-exec-${row.id}`)
-                  ? <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-detectionsExecInActions-${row.id}`}>In Actions</EuiButtonEmpty>
-                  : <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/security/rules" data-test-subj={`siemReadiness-detectionsExecViewRule-${row.id}`}>View rule</EuiButtonEmpty>,
-            },
-          ] as Array<EuiBasicTableColumn<ExecutionHealthRow>>}
-          itemId="id"
-        />
       </EuiPanel>
     </>
   );
@@ -3219,6 +3123,7 @@ const SiemReadinessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialTab = mapTabParam(searchParams.get('tab'));
   const [selectedTab, setSelectedTab] = useState<SiemTab>(initialTab);
+  const [ruleSubTab, setRuleSubTab] = useState<'all' | 'mitre'>('all');
   const [actionFilter, setActionFilter] = useState<ActionFilter>(undefined);
   const actionsPanelRef = useRef<HTMLDivElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -3381,7 +3286,10 @@ const SiemReadinessPage: React.FC = () => {
   const handleViewPillarFromAgent = (pillarId: string) => {
     const pillar = pillarId as VisibilityTabId;
     if (DATA_HEALTH_PILLARS.includes(pillar)) setSelectedTab('data-health');
-    else if (DETECTION_HEALTH_PILLARS.includes(pillar)) setSelectedTab('detection-health');
+    else if (DETECTION_HEALTH_PILLARS.includes(pillar)) {
+      setSelectedTab('detection-health');
+      if (pillar === 'coverage') setRuleSubTab('all');
+    }
     setActionFilter(undefined);
   };
 
@@ -3532,10 +3440,32 @@ const SiemReadinessPage: React.FC = () => {
                   minWidth: 0,
                   boxSizing: 'border-box',
                 }}>
-                  <div style={{ minWidth: 0, margin: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, margin: 0 }}>
                     <EuiTitle size="m">
                       <h1 style={{ fontSize: '2.025rem', margin: 0 }}>SIEM Readiness</h1>
                     </EuiTitle>
+                    {(dataHealthStatus === 'critical' || detectionHealthStatus === 'critical') && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          height: 24,
+                          padding: '0 8px',
+                          borderRadius: 16,
+                          background: '#FFC9C2',
+                          color: '#BD271E',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          lineHeight: '20px',
+                          whiteSpace: 'nowrap',
+                        }}
+                        data-test-subj="siemReadiness-pageStatusBadge"
+                      >
+                        <EuiIcon type="warning" color="danger" size="s" />
+                        Critical issues detected
+                      </span>
+                    )}
                   </div>
                   <div style={{
                     display: 'flex',
@@ -3559,6 +3489,26 @@ const SiemReadinessPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* ── Health stat cards ── */}
+                <EuiFlexGroup gutterSize="s" responsive={false} alignItems="stretch">
+                  {[healthGroupCards.dataHealth, healthGroupCards.detectionHealth].map((card) => (
+                    <EuiFlexItem key={card.id} grow={1} style={{ minWidth: 0 }}>
+                      <PillarSummaryCard
+                        id={card.id}
+                        label={card.label}
+                        severity={card.severity}
+                        numColor={card.numColor}
+                        metrics={card.metrics}
+                        blastCount={card.blastCount}
+                        actions={card.actions}
+                        isFilterActive={actionFilter === card.id}
+                        onActionsClick={() => goToActions(card.id)}
+                      />
+                    </EuiFlexItem>
+                  ))}
+                </EuiFlexGroup>
+                <EuiSpacer size="l" />
+
                 {/* ── Actions required panel ── */}
                 <div ref={actionsPanelRef}>
                   <ActionsRequiredPanel
@@ -3577,32 +3527,6 @@ const SiemReadinessPage: React.FC = () => {
                 </div>
                 <EuiSpacer size="l" />
 
-                {/* ── Pillar summary — single card ── */}
-                <EuiPanel hasBorder hasShadow={false} paddingSize="none">
-                  <EuiFlexGroup gutterSize="none" responsive={false}>
-                    {[healthGroupCards.dataHealth, healthGroupCards.detectionHealth].map((card, idx) => (
-                      <EuiFlexItem
-                        key={card.id}
-                        grow={1}
-                        style={{ borderRight: idx === 0 ? '1px solid #D3DAE6' : undefined, padding: '16px 16px 0' }}
-                      >
-                        <PillarSummaryCard
-                          id={card.id}
-                          label={card.label}
-                          severity={card.severity}
-                          numColor={card.numColor}
-                          metrics={card.metrics}
-                          blastCount={card.blastCount}
-                          actions={card.actions}
-                          isFilterActive={actionFilter === card.id}
-                          onActionsClick={() => goToActions(card.id)}
-                        />
-                      </EuiFlexItem>
-                    ))}
-                  </EuiFlexGroup>
-                </EuiPanel>
-                <EuiSpacer size="l" />
-
                 {/* Health tabs */}
                 <EuiTabs data-test-subj="siemReadiness-tabs">
                   <EuiTab
@@ -3619,7 +3543,10 @@ const SiemReadinessPage: React.FC = () => {
                   </EuiTab>
                   <EuiTab
                     isSelected={selectedTab === 'detection-health'}
-                    onClick={() => setSelectedTab('detection-health')}
+                    onClick={() => {
+                      setSelectedTab('detection-health');
+                      setRuleSubTab('all');
+                    }}
                     data-test-subj="siemReadiness-tab-detection-health"
                   >
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
@@ -3645,9 +3572,9 @@ const SiemReadinessPage: React.FC = () => {
                 )}
                 {selectedTab === 'detection-health' && (
                   <>
-                    <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} onAskAI={handleAddToChat} />
+                    <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
                     <EuiSpacer size="xl" />
-                    <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.detections.status} />
+                    <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
                   </>
                 )}
 
