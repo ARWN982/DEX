@@ -946,6 +946,14 @@ function getActionChatPrompt(action: ActionItem): string {
 
 const ACTION_PANEL_BUTTON_MIN_WIDTH = 176;
 
+function renderRightAlignedTableAction(content: React.ReactNode) {
+  return (
+    <EuiFlexGroup justifyContent="flexEnd" responsive={false} gutterSize="none">
+      <EuiFlexItem grow={false}>{content}</EuiFlexItem>
+    </EuiFlexGroup>
+  );
+}
+
 interface ActionsRequiredPanelProps {
   coverage: RuleIntegrationCoverage | null;
   integrations: SiemReadinessPackageInfo[];
@@ -1722,7 +1730,7 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
       }}
       data-test-subj={`siemReadiness-healthCard-${id}`}
     >
-      <div style={{ padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 23, flex: 1 }}>
+      <div style={{ padding: '16px 16px 16px 20px', display: 'flex', flexDirection: 'column', gap: 23, flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#000000' }}>{label}</EuiText>
           <span
@@ -1777,7 +1785,7 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
       <div
         style={{
           background: '#F6F9FC',
-          padding: 6,
+          padding: '8px 16px 8px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -1910,6 +1918,21 @@ const CATEGORY_INTEGRATIONS: Record<string, string[]> = {
   'Application/SaaS': ['google_workspace', 'salesforce'],
 };
 
+interface IntegrationRulesGapRow {
+  id: string;
+  integration: string;
+  category: string;
+  enabled: number;
+  total: number;
+}
+
+const INTEGRATION_RULES_GAP_ROWS: IntegrationRulesGapRow[] = [
+  { id: 'okta', integration: 'Okta', category: 'Identity', enabled: 0, total: 8 },
+  { id: 'google-workspace', integration: 'Google Workspace', category: 'Application/SaaS', enabled: 3, total: 11 },
+  { id: 'crowdstrike-edr', integration: 'CrowdStrike EDR', category: 'Endpoint', enabled: 0, total: 6 },
+  { id: 'cisco-umbrella', integration: 'Cisco Umbrella', category: 'Network', enabled: 2, total: 9 },
+];
+
 const CoverageTab: React.FC<CoverageTabProps> = ({
   coverage,
   categories,
@@ -1970,6 +1993,75 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
     return map;
   }, [coverage]);
 
+  const integrationRulesGapRows = useMemo(
+    () => INTEGRATION_RULES_GAP_ROWS.filter((row) => row.enabled < row.total),
+    []
+  );
+
+  const integrationRulesMissingCount = useMemo(
+    () => integrationRulesGapRows.reduce((sum, row) => sum + (row.total - row.enabled), 0),
+    [integrationRulesGapRows]
+  );
+
+  const integrationRulesGapColumns: Array<EuiBasicTableColumn<IntegrationRulesGapRow>> = [
+    {
+      field: 'integration',
+      name: 'Integration',
+      render: (name: string) => <EuiText size="s" style={{ fontWeight: 500 }}>{name}</EuiText>,
+    },
+    {
+      field: 'category',
+      name: 'Category',
+      width: '180px',
+      render: (category: string) => <EuiBadge color="hollow">{category}</EuiBadge>,
+    },
+    {
+      name: 'Rules enabled',
+      width: '220px',
+      render: (row: IntegrationRulesGapRow) => (
+        <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+          <EuiFlexItem>
+            <EuiProgress
+              value={(row.enabled / row.total) * 100}
+              max={100}
+              size="xs"
+              color="danger"
+            />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiText size="s">{row.enabled} / {row.total}</EuiText>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      ),
+    },
+    {
+      name: 'Gap',
+      width: '160px',
+      render: (row: IntegrationRulesGapRow) => (
+        <EuiText size="s">
+          {row.total - row.enabled} rules missing
+        </EuiText>
+      ),
+    },
+    {
+      name: 'Action',
+      width: '150px',
+      align: 'right',
+      render: (row: IntegrationRulesGapRow) => renderRightAlignedTableAction(
+        <EuiButtonEmpty
+          size="s"
+          iconType="plusInCircle"
+          color="primary"
+          flush="right"
+          data-test-subj={`siemReadiness-installRules-${row.id}`}
+          onClick={() => onAskAI?.(`Which rules should I install for ${row.integration} and how do I set them up?`)}
+        >
+          Install rules
+        </EuiButtonEmpty>
+      ),
+    },
+  ];
+
   const ruleCoverageColumns: Array<EuiBasicTableColumn<CategoryAccordionItem>> = [
     { field: 'name', name: 'Integration' },
     {
@@ -2012,17 +2104,18 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
     {
       name: 'Action',
       width: '150px',
+      align: 'right',
       render: (row: CategoryAccordionItem) => {
-        if (actionItemIds.has(`coverage-${row.id}`)) {
-          return <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-coverageInActions-${row.id}`}>In Actions</EuiButtonEmpty>;
-        }
-        if (row.status === 'uncovered') {
-          return <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageInstall-${row.id}`}>Install integration</EuiButtonEmpty>;
-        }
-        if (row.status === 'warning') {
-          return <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageConfigure-${row.id}`}>Configure policy</EuiButtonEmpty>;
-        }
-        return <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageCreateCase-${row.id}`}>View in Fleet</EuiButtonEmpty>;
+        const button = actionItemIds.has(`coverage-${row.id}`) ? (
+          <EuiButtonEmpty size="s" color="primary" flush="right" data-test-subj={`siemReadiness-coverageInActions-${row.id}`}>In Actions</EuiButtonEmpty>
+        ) : row.status === 'uncovered' ? (
+          <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" flush="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageInstall-${row.id}`}>Install integration</EuiButtonEmpty>
+        ) : row.status === 'warning' ? (
+          <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" flush="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageConfigure-${row.id}`}>Configure policy</EuiButtonEmpty>
+        ) : (
+          <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" flush="right" href="/app/fleet" data-test-subj={`siemReadiness-coverageCreateCase-${row.id}`}>View in Fleet</EuiButtonEmpty>
+        );
+        return renderRightAlignedTableAction(button);
       },
     },
   ];
@@ -2080,6 +2173,34 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
 
   return (
     <div>
+      <EuiPanel hasBorder paddingSize="m">
+        <EuiTitle size="s"><h3>Integrations missing rules</h3></EuiTitle>
+        <EuiSpacer size="s" />
+        <EuiText size="s" color="subdued">
+          Installed integrations with missing or partial detection rules.
+        </EuiText>
+        {integrationRulesGapRows.length > 0 && (
+          <>
+            <EuiSpacer size="m" />
+            <EuiCallOut
+              color="warning"
+              iconType="warning"
+              size="s"
+              title={`${integrationRulesMissingCount} detection rules are missing from ${integrationRulesGapRows.length} installed integrations.`}
+            />
+          </>
+        )}
+        <EuiSpacer size="m" />
+        <EuiBasicTable
+          items={integrationRulesGapRows}
+          tableLayout="fixed"
+          columns={integrationRulesGapColumns}
+          itemId="id"
+        />
+      </EuiPanel>
+
+      <EuiSpacer size="l" />
+
       {/* ── Rule Coverage panel ── */}
       <EuiPanel hasBorder paddingSize="m">
       <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
@@ -2168,8 +2289,9 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
                   {
                     name: 'Actions',
                     width: '168px',
-                    render: (row: { statusColor: string; label: string; count: number; id: string }) => (
-                      <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-viewIntegrations-${row.id}`}>
+                    align: 'right',
+                    render: (row: { statusColor: string; label: string; count: number; id: string }) => renderRightAlignedTableAction(
+                      <EuiButtonEmpty size="s" color="primary" flush="right" data-test-subj={`siemReadiness-viewIntegrations-${row.id}`}>
                         {row.id === 'missing' ? 'Install integrations' : 'View integrations'}
                       </EuiButtonEmpty>
                     ),
@@ -2349,10 +2471,11 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
                                 field: 'action',
                                 name: 'Actions',
                                 width: '202px',
+                                align: 'right',
                                 render: (action: PlatformSubRow['action']) =>
                                   action
-                                    ? (
-                                      <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" href="/app/fleet">
+                                    ? renderRightAlignedTableAction(
+                                      <EuiButtonEmpty size="s" color="primary" iconType="popout" iconSide="right" flush="right" href="/app/fleet">
                                         {action === 'Install' ? 'Install integration' : 'Fix integration'}
                                       </EuiButtonEmpty>
                                     )
@@ -2474,8 +2597,9 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
     {
       name: 'Actions',
       width: '10%',
-      render: (row: QualityIndexItem) => (
-        <EuiButtonEmpty size="s" color="primary" onClick={() => setFlyout({ findingName: row.indexName, rules: getTacticsFromIndex(row.indexName).length > 0 ? [{ name: `Rule targeting ${row.indexName}`, tactics: getTacticsFromIndex(row.indexName), status: 'no-action' }] : [] })} data-test-subj={`siemReadiness-qualityRulesAffected-${row.id}`}>
+      align: 'right',
+      render: (row: QualityIndexItem) => renderRightAlignedTableAction(
+        <EuiButtonEmpty size="s" color="primary" flush="right" onClick={() => setFlyout({ findingName: row.indexName, rules: getTacticsFromIndex(row.indexName).length > 0 ? [{ name: `Rule targeting ${row.indexName}`, tactics: getTacticsFromIndex(row.indexName), status: 'no-action' }] : [] })} data-test-subj={`siemReadiness-qualityRulesAffected-${row.id}`}>
           View Data quality
         </EuiButtonEmpty>
       ),
@@ -2638,8 +2762,6 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
           The risk scoring engine calculates threat scores for every user and device. If it stops, alert prioritisation becomes unreliable.
         </EuiText>
         <EuiSpacer size="m" />
-        <EuiCallOut color="success" iconType="check" size="s" title="Risk engine is running — all entity scores are current." />
-        <EuiSpacer size="m" />
 
         {/* Transforms */}
         <EuiBasicTable
@@ -2656,7 +2778,14 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
             { field: 'opsBehind', name: 'Operations behind', width: '160px', render: (n: number) =>
               n === 0 ? <EuiText size="s" color="subdued">Up to date</EuiText> : <EuiText size="s" color="warning">{n}</EuiText>
             },
-            { name: 'Action', width: '180px', render: () => <EuiButtonEmpty size="s" iconType="popout" iconSide="right">View transform</EuiButtonEmpty> },
+            {
+              name: 'Action',
+              width: '180px',
+              align: 'right',
+              render: () => renderRightAlignedTableAction(
+                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" flush="right">View transform</EuiButtonEmpty>
+              ),
+            },
           ] as Array<EuiBasicTableColumn<{ id: string; transform: string; state: string; opsBehind: number }>>}
           itemId="id"
         />
@@ -2708,9 +2837,11 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
                   render: (row: RuleFieldIssue) => <PlatformBadge platform={getPlatformFromIndex(row.indexPattern)} />,
                 },
                 {
-                  name: 'Action', width: '120px',
-                  render: (row: RuleFieldIssue) => (
-                    <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/security/rules" data-test-subj={`siemReadiness-detectionsViewRuleAction-${row.id}`}>View rule</EuiButtonEmpty>
+                  name: 'Action',
+                  width: '150px',
+                  align: 'right',
+                  render: (row: RuleFieldIssue) => renderRightAlignedTableAction(
+                    <EuiButtonEmpty size="s" color="primary" flush="right" data-test-subj={`siemReadiness-detectionsViewDataQuality-${row.id}`}>View Data quality</EuiButtonEmpty>
                   ),
                 },
               ] as Array<EuiBasicTableColumn<RuleFieldIssue>>}
@@ -2909,14 +3040,29 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
             ),
           },
           {
-            name: 'Action', width: '170px',
+            name: 'Action',
+            width: '204px',
+            align: 'right',
             render: (row: ContinuityFinding) => {
               const actionId = `continuity-${row.id}`;
-              if (actionItemIds.has(actionId)) {
-                return <EuiButtonEmpty size="s" color="primary" data-test-subj={`siemReadiness-continuityInActions-${row.id}`}>In Actions</EuiButtonEmpty>;
-              }
-              const label = row.issue === 'silent' ? 'View data stream' : row.issue === 'volume_drop' ? 'View pipeline' : 'View stream';
-              return <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/fleet" data-test-subj={`siemReadiness-continuityFleet-${row.id}`}>{label}</EuiButtonEmpty>;
+              const button = actionItemIds.has(actionId) ? (
+                <EuiButtonEmpty size="s" color="primary" flush="right" data-test-subj={`siemReadiness-continuityInActions-${row.id}`}>
+                  In Actions
+                </EuiButtonEmpty>
+              ) : (
+                <EuiButtonEmpty
+                  size="s"
+                  iconType="popout"
+                  iconSide="right"
+                  color="primary"
+                  flush="right"
+                  href="/app/fleet"
+                  data-test-subj={`siemReadiness-continuityFleet-${row.id}`}
+                >
+                  {row.issue === 'silent' ? 'View data stream' : row.issue === 'volume_drop' ? 'View pipeline' : 'View stream'}
+                </EuiButtonEmpty>
+              );
+              return renderRightAlignedTableAction(button);
             },
           },
         ] as Array<EuiBasicTableColumn<ContinuityFinding>>}
@@ -3062,11 +3208,14 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
                 ) : null,
               },
               {
-                name: 'Action', width: '188px',
-                render: (row: RetentionFinding) =>
+                name: 'Action',
+                width: '188px',
+                align: 'right',
+                render: (row: RetentionFinding) => renderRightAlignedTableAction(
                   actionItemIds.has('retention-benchmark')
-                    ? <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/management/data/index_lifecycle_management" data-test-subj={`siemReadiness-retentionInActions-${row.id}`}>View ILM policy</EuiButtonEmpty>
-                    : <EuiButtonEmpty size="s" iconType="popout" iconSide="right" href="/app/management/data/index_lifecycle_management" data-test-subj={`siemReadiness-retentionManage-${row.id}`}>Manage policy</EuiButtonEmpty>,
+                    ? <EuiButtonEmpty size="s" iconType="popout" iconSide="right" flush="right" href="/app/management/data/index_lifecycle_management" data-test-subj={`siemReadiness-retentionInActions-${row.id}`}>View ILM policy</EuiButtonEmpty>
+                    : <EuiButtonEmpty size="s" iconType="popout" iconSide="right" flush="right" href="/app/management/data/index_lifecycle_management" data-test-subj={`siemReadiness-retentionManage-${row.id}`}>Manage policy</EuiButtonEmpty>
+                ),
               },
             ] as Array<EuiBasicTableColumn<RetentionFinding>>}
             itemId="id"
@@ -3326,6 +3475,7 @@ const SiemReadinessPage: React.FC = () => {
     const coverageMissing = coverage?.missingIntegrations.length ?? 0;
     const qualityIssues = qualityResults.filter((r) => r.incompatibleFieldCount > 0).length;
     const executionIssueCount = EXECUTION_HEALTH_ROWS.filter((r) => r.status !== 'Succeeded').length;
+    const integrationsMissingRules = INTEGRATION_RULES_GAP_ROWS.filter((row) => row.enabled < row.total).length;
 
     return {
       dataHealth: {
@@ -3348,6 +3498,7 @@ const SiemReadinessPage: React.FC = () => {
         severity: toSeverity(detectionHealthStatus),
         numColor: toNumColor(detectionHealthStatus),
         metrics: [
+          { value: integrationsMissingRules, label: 'integrations missing rules' },
           { value: coverageMissing, label: 'required integrations' },
           { value: ruleFieldIssues.length, label: 'rule field issues' },
           { value: executionIssueCount, label: 'execution failures' },
