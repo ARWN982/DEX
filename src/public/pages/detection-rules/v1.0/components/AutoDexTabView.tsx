@@ -744,14 +744,10 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
         onOpenAIAssistant={onOpenAIAssistant}
       />
 
-      <EuiSpacer size="l" />
+      <EuiSpacer size="s" />
 
       {/* ── Completed activity log ── */}
-      <EuiTitle size="xs">
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#111C2C', margin: 0 }}>Completed activity log</h2>
-      </EuiTitle>
-
-      <EuiSpacer size="m" />
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: '#111C2C', margin: '8px 0 6px' }}>Completed activity log</h2>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <EuiFieldSearch

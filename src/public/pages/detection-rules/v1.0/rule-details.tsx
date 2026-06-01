@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import moment, { type Moment } from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   EuiPage,
@@ -41,6 +42,9 @@ import {
   EuiFieldSearch,
   EuiListGroup,
   EuiListGroupItem,
+  EuiDatePicker,
+  EuiLoadingElastic,
+  EuiToolTip,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -64,6 +68,157 @@ interface DetectionRule {
   notify: boolean;
   enabled: boolean;
 }
+
+// ─── MitreTechniqueBadge ─────────────────────────────────────────────────────
+
+interface MitreTechniqueBadgeProps {
+  id: string;
+  name: string;
+  status: 'current' | 'outdated' | 'revoked';
+  replacedBy?: Array<{ id: string; name: string; tacticId: string; tacticName: string }>;
+  revocationReason?: string;
+  attackVersion: string;
+  isEnterprise: boolean;
+  onRemapWithAI: () => void;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}
+
+const MitreTechniqueBadge: React.FC<MitreTechniqueBadgeProps> = ({
+  id, name, status, replacedBy, revocationReason, attackVersion,
+  isEnterprise, onRemapWithAI, isOpen, onOpen, onClose,
+}) => {
+  const isActionable = status === 'outdated' || status === 'revoked';
+
+  const badgeColor = status === 'revoked' ? 'danger' : status === 'outdated' ? 'warning' : 'hollow';
+  const badgeIcon = status === 'revoked' ? 'minusInCircle' : status === 'outdated' ? 'clock' : undefined;
+  const tooltipContent = status === 'revoked'
+    ? `This technique was revoked in ATT&CK ${attackVersion}. Click for details.`
+    : status === 'outdated'
+      ? `This technique was updated in ATT&CK ${attackVersion}. A newer revision exists. Click for details.`
+      : undefined;
+
+  const badge = (
+    <span
+      role={isActionable ? 'button' : undefined}
+      tabIndex={isActionable ? 0 : undefined}
+      aria-label={`${id} ${name} — ${status}`}
+      onClick={isActionable ? onOpen : undefined}
+      onKeyDown={isActionable ? (e) => { if (e.key === 'Enter' || e.key === ' ') onOpen(); } : undefined}
+      style={{ cursor: isActionable ? 'pointer' : 'default', display: 'inline-flex' }}
+    >
+      <EuiBadge
+        color={badgeColor}
+        iconType={badgeIcon}
+        iconSide="left"
+        style={status === 'revoked' ? { textDecoration: 'line-through', opacity: 0.85, pointerEvents: 'none' } : { pointerEvents: 'none' }}
+      >
+        {id} · {name}
+      </EuiBadge>
+    </span>
+  );
+
+  if (!isActionable) {
+    return tooltipContent
+      ? <EuiToolTip content={tooltipContent}>{badge}</EuiToolTip>
+      : badge;
+  }
+
+  const remapButton = isEnterprise ? (
+    <EuiButton size="s" iconType="sparkles" fill onClick={() => { onRemapWithAI(); onClose(); }}>
+      Remap with AI
+    </EuiButton>
+  ) : (
+    <EuiToolTip content="Remap with AI requires an Enterprise licence. Upgrade to access this feature.">
+      <EuiButton size="s" iconType="sparkles" fill disabled>
+        Remap with AI
+      </EuiButton>
+    </EuiToolTip>
+  );
+
+  return (
+    <EuiPopover
+      isOpen={isOpen}
+      closePopover={onClose}
+      anchorPosition="downLeft"
+      panelPaddingSize="m"
+      button={tooltipContent && !isOpen
+        ? <EuiToolTip content={tooltipContent}>{badge}</EuiToolTip>
+        : badge
+      }
+    >
+      <div style={{ width: 340 }}>
+        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false} style={{ marginBottom: 8 }}>
+          <EuiFlexItem grow={false}>
+            <EuiIcon
+              type={status === 'revoked' ? 'minusInCircle' : 'clock'}
+              color={status === 'revoked' ? 'danger' : 'warning'}
+              size="m"
+            />
+          </EuiFlexItem>
+          <EuiFlexItem>
+            <EuiText size="s" style={{ fontWeight: 700 }}>
+              {status === 'revoked' ? 'Technique revoked' : 'Technique updated'}
+            </EuiText>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+
+        <EuiHorizontalRule margin="s" />
+
+        <EuiText size="xs" color="subdued" style={{ marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Current mapping</EuiText>
+        <EuiBadge color={badgeColor} iconType={badgeIcon} iconSide="left"
+          style={status === 'revoked' ? { textDecoration: 'line-through', opacity: 0.85 } : undefined}
+          iconOnClick={() => {}} iconOnClickAriaLabel="technique icon"
+        >
+          {id} · {name}
+        </EuiBadge>
+
+        {revocationReason && (
+          <>
+            <EuiSpacer size="s" />
+            <EuiText size="xs" color="subdued" style={{ marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Why it changed</EuiText>
+            <EuiText size="s"><p style={{ margin: 0 }}>{revocationReason}</p></EuiText>
+          </>
+        )}
+
+        {replacedBy && replacedBy.length > 0 && (
+          <>
+            <EuiSpacer size="s" />
+            <EuiText size="xs" color="subdued" style={{ marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Suggested replacement{replacedBy.length > 1 ? 's' : ''}
+            </EuiText>
+            <EuiFlexGroup direction="column" gutterSize="xs">
+              {replacedBy.map((r) => (
+                <EuiFlexItem key={r.id}>
+                  <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                    <EuiFlexItem grow={false}>
+                      <EuiBadge color="hollow">{r.id}</EuiBadge>
+                    </EuiFlexItem>
+                    <EuiFlexItem>
+                      <EuiLink href="#" style={{ fontSize: 13 }}>{r.name}</EuiLink>
+                    </EuiFlexItem>
+                    <EuiFlexItem grow={false}>
+                      <EuiText size="xs" color="subdued">{r.tacticName}</EuiText>
+                    </EuiFlexItem>
+                  </EuiFlexGroup>
+                </EuiFlexItem>
+              ))}
+            </EuiFlexGroup>
+          </>
+        )}
+
+        <EuiSpacer size="m" />
+        <EuiFlexGroup gutterSize="s" responsive={false} justifyContent="flexEnd">
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty size="s" onClick={onClose}>Dismiss</EuiButtonEmpty>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>{remapButton}</EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    </EuiPopover>
+  );
+};
 
 const RuleDetailsPage: React.FC = () => {
   const { ruleId } = useParams<{ ruleId: string }>();
@@ -100,6 +255,85 @@ const RuleDetailsPage: React.FC = () => {
   const [expandedHistoryVersion, setExpandedHistoryVersion] = useState<number | null>(5);
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
   const [filterSearch, setFilterSearch] = useState('');
+  const [calendarPopoverOpen, setCalendarPopoverOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState<Moment | null>(null);
+  const [dateTo, setDateTo] = useState<Moment | null>(null);
+  const [expandedNoteIdx, setExpandedNoteIdx] = useState<number | null>(null);
+
+  // ── MITRE stale-mapping feature ───────────────────────────────────────────
+  const isEnterprise = true; // mock tier — swap for real license check
+
+  const [staleMappingCalloutDismissed, setStaleMappingCalloutDismissed] = useState(false);
+  const [openMitreBadgeId, setOpenMitreBadgeId] = useState<string | null>(null);
+
+  interface MitreTechnique {
+    id: string;
+    name: string;
+    status: 'current' | 'outdated' | 'revoked';
+    replacedBy?: Array<{ id: string; name: string; tacticId: string; tacticName: string }>;
+    revocationReason?: string;
+  }
+  interface MitreTactic {
+    id: string;
+    name: string;
+  }
+  interface MitreMappingEntry {
+    tactic: MitreTactic;
+    technique: MitreTechnique;
+    subTechnique?: MitreTechnique;
+  }
+
+  const mitreMappings: MitreMappingEntry[] = [
+    {
+      tactic: { id: 'TA0008', name: 'Lateral Movement' },
+      technique: {
+        id: 'T1210',
+        name: 'Exploitation of Remote Services',
+        status: 'current',
+      },
+    },
+    {
+      tactic: { id: 'TA0003', name: 'Persistence' },
+      technique: {
+        id: 'T1133',
+        name: 'External Remote Services',
+        status: 'outdated',
+        revocationReason: 'ATT&CK v14 restructured this technique to clarify scope and split cloud-specific variants.',
+        replacedBy: [
+          { id: 'T1133.001', name: 'External Remote Services: VPN', tacticId: 'TA0003', tacticName: 'Persistence' },
+          { id: 'T1133.002', name: 'External Remote Services: RDP', tacticId: 'TA0003', tacticName: 'Persistence' },
+        ],
+      },
+    },
+    {
+      tactic: { id: 'TA0006', name: 'Credential Access' },
+      technique: {
+        id: 'T1078',
+        name: 'Valid Accounts',
+        status: 'current',
+      },
+      subTechnique: {
+        id: 'T1078.001',
+        name: 'Default Accounts',
+        status: 'revoked',
+        revocationReason: 'This sub-technique was merged into T1078 (Valid Accounts) in ATT&CK v15 as the distinction no longer provided analytical value.',
+        replacedBy: [
+          { id: 'T1078', name: 'Valid Accounts', tacticId: 'TA0006', tacticName: 'Credential Access' },
+        ],
+      },
+    },
+  ];
+
+  const staleMappings = mitreMappings.filter(
+    (m) => m.technique.status !== 'current' || m.subTechnique?.status === 'outdated' || m.subTechnique?.status === 'revoked'
+  );
+  const staleCount = staleMappings.length;
+  const attackVersion = 'v19';
+
+  const handleRemapWithAI = () => {
+    // placeholder — wire to AI remap flow
+    console.log('Remap with AI triggered');
+  };
   const [diffChangeIdx, setDiffChangeIdx] = useState(0);
 
   type DiffLine = { text: string; type: 'normal' | 'added' | 'removed' };
@@ -392,16 +626,18 @@ const RuleDetailsPage: React.FC = () => {
 
 
   const versionHistory = [
-    { timestamp: 'On May 12 2026 @14.23', author: 'Alex Nightingale', detail: '4 changes',  ruleVersion: 'R77', version: 'V4', isCurrent: true,  note: null },
-    { timestamp: 'On May 12 2026 @11.23', author: 'Pavel M',          detail: '29 changes', ruleVersion: 'R77', version: 'V4', isCurrent: false, note: "Removed 'Okta tokens' tag" },
-    { timestamp: 'On May 10 2026 @17.18', author: 'Pavel M',          detail: '5 changes',  ruleVersion: 'R76', version: 'V4', isCurrent: false, note: null },
-    { timestamp: 'On May 10 2026 @17.18', author: 'Pavel M',          detail: '5 changes',  ruleVersion: 'R76', version: 'V3', isCurrent: false, note: null },
-    { timestamp: 'On May 09 2026 @17.18', author: 'Pavel M',          detail: 'Enabled the rule',   ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
-    { timestamp: 'On May 09 2026 @10.42', author: 'Pavel M',          detail: 'Disabled the rule',  ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
-    { timestamp: 'On May 03 2026 @10.42', author: 'Alex Nightingale', detail: '23 changes', ruleVersion: 'R75', version: 'V3', isCurrent: false, note: null },
-    { timestamp: 'On May 03 2026 @10.42', author: 'Alex Nightingale', detail: '11 changes', ruleVersion: 'R75', version: 'V2', isCurrent: false, note: null },
-    { timestamp: 'On May 03 2026 @10.34', author: 'Alex Nightingale', detail: '23 changes', ruleVersion: 'R74', version: 'V2', isCurrent: false, note: null },
-    { timestamp: 'On May 03 2026 @10.34', author: 'Alex Nightingale', detail: '7 changes',  ruleVersion: 'R74', version: 'V1', isCurrent: false, note: null },
+    { timestamp: 'May 12 2026 @14.23', author: 'Alex Nightingale', isElastic: false, detail: '4 changes',  ruleVersion: 'R78', version: 'V5', isCurrent: true,  note: null },
+    { timestamp: 'May 12 2026 @14.23', author: 'Alex Nightingale', isElastic: false, detail: '4 changes',  ruleVersion: 'R77', version: 'V5', isCurrent: false, note: "Removed 'Okta tokens' tag If this goes long then once expanded we can view the whole message up to a max character count. Maybe around 200?" },
+    { timestamp: 'May 10 2026 @17.18', author: 'Elastic',          isElastic: true,  detail: '4 changes',  ruleVersion: 'R76', version: 'V5', isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Pavel M',          isElastic: false, detail: '12 changes', ruleVersion: 'R75', version: 'V4', isCurrent: false, note: null },
+    { timestamp: 'May 12 2026 @14.23', author: 'Alex Nightingale', isElastic: false, detail: '6 changes',  ruleVersion: 'R74', version: 'V4', isCurrent: false, note: "Removed 'Okta tokens' tag If this goes long then once expanded we can view the whole message up to a max character count. Maybe around 200?" },
+    { timestamp: 'May 10 2026 @17.18', author: 'Elastic',          isElastic: true,  detail: '4 changes',  ruleVersion: 'R73', version: 'V4', isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Alex Nightingale', isElastic: false, detail: 'Enabled the rule',     ruleVersion: '',    version: '',    isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Alex Nightingale', isElastic: false, detail: 'Disabled the rule',    ruleVersion: '',    version: '',    isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Pavel M',          isElastic: false, detail: '7 changes',  ruleVersion: 'R72', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Pavel M',          isElastic: false, detail: '8 changes',  ruleVersion: 'R71', version: 'V3', isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Alex Nightingale', isElastic: false, detail: 'Enabled notifications',  ruleVersion: '', version: '', isCurrent: false, note: null },
+    { timestamp: 'May 10 2026 @17.18', author: 'Alex Nightingale', isElastic: false, detail: 'Snooze notifications',   ruleVersion: '', version: '', isCurrent: false, note: null },
   ];
   const [selectedExecution, setSelectedExecution] = useState<any>(null);
   const [summaryState, setSummaryState] = useState<'idle' | 'generating' | 'generated'>('idle');
@@ -620,6 +856,7 @@ const RuleDetailsPage: React.FC = () => {
                                     onClick: () => {
                                       setIsMoreActionsOpen(false);
                                       setIsHistoryPaneOpen(true);
+                                      setViewMode('json');
                                       setSelectedTab('overview');
                                     },
                                   },
@@ -702,6 +939,66 @@ const RuleDetailsPage: React.FC = () => {
                 </EuiFlexGroup>
 
                 <EuiSpacer size="m" />
+
+                {/* MITRE stale-mapping banner — above tabs */}
+                {viewMode === 'ui' && staleCount > 0 && !staleMappingCalloutDismissed && !isHistoryPaneOpen && (
+                  <>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                      padding: '12px 16px',
+                      background: '#F6F9FC',
+                      border: '1px solid #E3E8F2',
+                      borderRadius: 4,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{ flexShrink: 0, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <EuiIcon type="securityAnalyticsApp" size="xl" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0 }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: '#111C2C', lineHeight: '20px', whiteSpace: 'nowrap' }}>
+                            MITRE ATT&amp;CK {attackVersion} is out
+                          </span>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: '#111C2C', lineHeight: '20px', width: 10, textAlign: 'center' }}>·</span>
+                          <span style={{ fontSize: 14, color: '#516381', lineHeight: '20px', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            This rule is mapped to techniques that have been revoked or updated.
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 14, color: '#516381', lineHeight: '20px' }}>
+                          Review and remap to keep your detection coverage current.
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <EuiButtonEmpty size="s" iconType="popout" iconSide="right" color="primary" href="#" target="_blank">
+                          Learn more
+                        </EuiButtonEmpty>
+                        {isEnterprise ? (
+                          <EuiButton size="s" iconType="sparkles" iconSide="left" color="primary" onClick={handleRemapWithAI}>
+                            Remap with AI
+                          </EuiButton>
+                        ) : (
+                          <EuiToolTip content="Remap with AI requires an Enterprise licence. Upgrade to access this feature.">
+                            <EuiButton size="s" iconType="sparkles" iconSide="left" color="primary" onClick={handleRemapWithAI}>
+                              Remap with AI
+                            </EuiButton>
+                          </EuiToolTip>
+                        )}
+                      </div>
+                      <EuiButtonIcon
+                        iconType="cross"
+                        aria-label="Dismiss MITRE ATT&CK banner"
+                        color="text"
+                        size="xs"
+                        display="empty"
+                        onClick={() => setStaleMappingCalloutDismissed(true)}
+                        style={{ flexShrink: 0 }}
+                      />
+                    </div>
+                    <EuiSpacer size="m" />
+                  </>
+                )}
 
                 {/* Tabs — hidden in JSON mode or when history pane is open */}
                 {viewMode === 'ui' && !isHistoryPaneOpen && (
@@ -891,7 +1188,7 @@ const RuleDetailsPage: React.FC = () => {
                               description: <EuiText size="s">Elastic License v2</EuiText>,
                             },
                             {
-                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>MITRE ATT&CK™</EuiText>,
+                              title: <EuiText size="s" style={{ fontWeight: 600, marginBottom: 12 }}>MITRE ATT&amp;CK™</EuiText>,
                               description: (
                                 <EuiFlexGroup direction="column" gutterSize="xs">
                                   <EuiFlexItem>
@@ -1481,8 +1778,8 @@ const RuleDetailsPage: React.FC = () => {
                 )}
               </div>
 
-              {/* ── Floating view-toggle widget — only when history pane open ── */}
-              {isHistoryPaneOpen && (
+              {/* Floating view-toggle removed — JSON diff is the only mode */}
+              {false && (
               <div style={{
                 position: 'fixed',
                 bottom: 24,
@@ -1592,7 +1889,54 @@ const RuleDetailsPage: React.FC = () => {
                 }}>
                   <EuiText style={{ fontWeight: 700, fontSize: 16 }}>Version history</EuiText>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <EuiButtonIcon iconType="calendar" aria-label="Calendar" color="text" size="s" />
+                    <EuiPopover
+                      isOpen={calendarPopoverOpen}
+                      closePopover={() => setCalendarPopoverOpen(false)}
+                      anchorPosition="downRight"
+                      panelPaddingSize="m"
+                      button={
+                        <EuiButtonIcon
+                          iconType="calendar"
+                          aria-label="Filter by date"
+                          color={dateFrom || dateTo ? 'primary' : 'text'}
+                          size="s"
+                          onClick={() => setCalendarPopoverOpen((v) => !v)}
+                        />
+                      }
+                    >
+                      <div style={{ width: 280 }}>
+                        <EuiText size="s" style={{ fontWeight: 600, marginBottom: 8 }}>Filter by date range</EuiText>
+                        <EuiText size="xs" color="subdued" style={{ marginBottom: 4 }}>From</EuiText>
+                        <EuiDatePicker
+                          selected={dateFrom}
+                          onChange={(date) => setDateFrom(date)}
+                          maxDate={dateTo ?? undefined}
+                          placeholder="Start date"
+                        />
+                        <div style={{ marginTop: 10 }}>
+                          <EuiText size="xs" color="subdued" style={{ marginBottom: 4 }}>To</EuiText>
+                          <EuiDatePicker
+                            selected={dateTo}
+                            onChange={(date) => setDateTo(date)}
+                            minDate={dateFrom ?? undefined}
+                            placeholder="End date"
+                          />
+                        </div>
+                        {(dateFrom || dateTo) && (
+                          <div style={{ marginTop: 10 }}>
+                            <EuiButtonEmpty
+                              size="xs"
+                              color="danger"
+                              iconType="cross"
+                              flush="left"
+                              onClick={() => { setDateFrom(null); setDateTo(null); }}
+                            >
+                              Clear dates
+                            </EuiButtonEmpty>
+                          </div>
+                        )}
+                      </div>
+                    </EuiPopover>
                     <EuiPopover
                       isOpen={filterPopoverOpen}
                       closePopover={() => setFilterPopoverOpen(false)}
@@ -1665,123 +2009,162 @@ const RuleDetailsPage: React.FC = () => {
                       aria-label="Close history"
                       color="text"
                       size="s"
-                      onClick={() => setIsHistoryPaneOpen(false)}
+                      onClick={() => { setIsHistoryPaneOpen(false); setViewMode('ui'); }}
                     />
                   </div>
                 </div>
 
                 {/* Version list */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-                  {versionHistory.map((entry, idx) => {
+                <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {versionHistory.filter((entry) => {
+                    if (!dateFrom && !dateTo) return true;
+                    const cleaned = entry.timestamp.replace('@', '').trim();
+                    const entryDate = moment(cleaned, 'MMM DD YYYY HH.mm');
+                    if (dateFrom && entryDate.isBefore(dateFrom, 'day')) return false;
+                    if (dateTo && entryDate.isAfter(dateTo, 'day')) return false;
+                    return true;
+                  }).map((entry, idx) => {
                     const isSelected = selectedHistoryIdx === idx;
                     const isStatusChange = entry.detail === 'Enabled the rule' || entry.detail === 'Disabled the rule';
+                    const isNotification = entry.detail === 'Enabled notifications' || entry.detail === 'Snooze notifications';
+                    const isSpecialRow = isStatusChange || isNotification;
+                    const hasNote = !!entry.note;
+                    const isNoteExpanded = expandedNoteIdx === idx;
+
+                    // Current row: teal tint, prominent border
+                    const cardBg = isSelected
+                      ? '#D9E8FF'
+                      : isSpecialRow
+                        ? '#f6f9fc'
+                        : '#fff';
+                    const cardBorder = isSelected
+                      ? '1px solid rgba(23,80,186,0.04)'
+                      : '1px solid #CAD3E2';
+
                     return (
-                    <div
-                      key={idx}
-                      style={{
-                        margin: '12px 8px',
-                        borderRadius: 6,
-                        border: isSelected ? '2px solid #4B52C4' : '1px solid #D3DAE6',
-                        background: isSelected ? '#EEF2FF' : isStatusChange ? '#F5F7FA' : '#fff',
-                        overflow: 'hidden',
-                        cursor: isStatusChange ? 'default' : 'pointer',
-                      }}
-                      onClick={() => {
-                        if (isStatusChange) return;
-                        setSelectedHistoryIdx(idx); 
-                        setDiffChangeIdx(0);
-                        if (entry.note) {
-                          setExpandedHistoryVersion(expandedHistoryVersion === idx ? null : idx);
-                        }
-                      }}
-                    >
                       <div
+                        key={idx}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: isSelected ? '9px 11px' : '10px 12px',
-                          gap: 8,
+                          borderRadius: 6,
+                          border: cardBorder,
+                          background: cardBg,
+                          overflow: 'hidden',
+                          cursor: isSpecialRow ? 'default' : 'pointer',
+                        }}
+                        onClick={() => {
+                          if (isSpecialRow) return;
+                          setSelectedHistoryIdx(idx);
+                          setDiffChangeIdx(0);
                         }}
                       >
-                        {/* Left: timestamp + author */}
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <EuiText size="s" style={{ fontWeight: 600 }}>{entry.timestamp}</EuiText>
-                          <EuiText size="xs" color="subdued">
-                            {entry.author} &bull; {entry.detail}
-                          </EuiText>
-                        </div>
+                        {/* ── Main row ── */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '6px 16px', minHeight: 66 }}>
 
-                        {/* Right: badges */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                          {entry.isCurrent && (
-                            <span style={{
-                              fontSize: 11,
-                              color: '#69707D',
-                              border: '1px solid #D3DAE6',
-                              borderRadius: 4,
-                              padding: '2px 6px',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              Current version
+                          {/* Left: timestamp + author */}
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 11 }}>
+                            <span style={{ fontSize: 12.25, fontWeight: 600, color: '#111c2c', lineHeight: '16px', whiteSpace: 'nowrap' }}>
+                              {entry.timestamp}
                             </span>
-                          )}
-                          {!isStatusChange && (
-                            <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {/* Author icon */}
+                              {entry.isElastic
+                                ? <EuiIcon type="logoElastic" size="s" />
+                                : <EuiIcon type="user" size="s" color="subdued" />
+                              }
+                              <span style={{ fontSize: 12.25, color: '#516381', lineHeight: '16px' }}>{entry.author}</span>
+                              {!isSpecialRow && (
+                                <>
+                                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#516381', display: 'inline-block', flexShrink: 0 }} />
+                                  <span style={{ fontSize: 12.25, color: '#516381', lineHeight: '16px' }}>{entry.detail}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Right: badges */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                            {entry.isCurrent && (
                               <span style={{
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: '#343741',
-                                border: '1px solid #D3DAE6',
-                                borderRadius: 12,
-                                padding: '2px 8px',
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                height: 20, padding: '0 8px',
+                                background: '#fff', border: '1px solid #CAD3E2',
+                                borderRadius: 20, fontSize: 12, fontWeight: 500,
+                                color: '#1d2a3e', whiteSpace: 'nowrap',
                               }}>
+                                Current version
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#1d2a3e', display: 'inline-block', flexShrink: 0 }} />
                                 {entry.ruleVersion}
-                              </span>
-                              <span style={{
-                                fontSize: 11,
-                                fontWeight: 600,
-                                color: '#343741',
-                                border: '1px solid #D3DAE6',
-                                borderRadius: 12,
-                                padding: '2px 8px',
-                              }}>
+                                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#1d2a3e', display: 'inline-block', flexShrink: 0 }} />
                                 {entry.version}
                               </span>
-                            </>
-                          )}
+                            )}
+                            {!entry.isCurrent && !isSpecialRow && (
+                              <>
+                                <EuiBadge color="hollow">{entry.ruleVersion}</EuiBadge>
+                                <EuiBadge color="hollow">{entry.version}</EuiBadge>
+                              </>
+                            )}
+                            {isStatusChange && (
+                              <EuiBadge color="hollow">
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                  <span style={{
+                                    width: 7, height: 7, borderRadius: '50%', flexShrink: 0,
+                                    background: entry.detail === 'Enabled the rule' ? '#017D73' : '#BD271E',
+                                    display: 'inline-block',
+                                  }} />
+                                  {entry.detail}
+                                </span>
+                              </EuiBadge>
+                            )}
+                            {isNotification && (
+                              <EuiBadge color="hollow" iconType={entry.detail === 'Snooze notifications' ? 'bellSlash' : 'bell'} iconSide="left">
+                                {entry.detail}
+                              </EuiBadge>
+                            )}
+                          </div>
+
                         </div>
 
-                        {!isStatusChange && <EuiButtonIcon
-                          iconType="boxesHorizontal"
-                          aria-label="Version actions"
-                          color="text"
-                          size="xs"
-                          style={{ flexShrink: 0 }}
-                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        />}
+                        {/* ── Note strip (collapsed/expanded) ── */}
+                        {hasNote && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedNoteIdx(isNoteExpanded ? null : idx);
+                            }}
+                            style={{
+                              display: 'flex', alignItems: isNoteExpanded ? 'flex-start' : 'center',
+                              gap: 8,
+                              margin: '0 16px 8px',
+                              padding: '4px 8px',
+                              background: '#F6F9FC',
+                              border: 'none', borderRadius: 4,
+                              cursor: 'pointer', textAlign: 'left',
+                            }}
+                          >
+                            <EuiIcon
+                              type={isNoteExpanded ? 'chevronSingleDown' : 'chevronSingleRight'}
+                              size="s" color="subdued"
+                              style={{ flexShrink: 0, marginTop: isNoteExpanded ? 2 : 0 }}
+                            />
+                            <EuiIcon type="editorComment" size="s" color="subdued" style={{ flexShrink: 0, marginTop: isNoteExpanded ? 2 : 0 }} />
+                            <span style={{
+                              fontFamily: 'monospace', fontSize: 12.6, color: '#516381', lineHeight: '20px',
+                              flex: 1, minWidth: 0,
+                              overflow: isNoteExpanded ? 'visible' : 'hidden',
+                              textOverflow: isNoteExpanded ? 'unset' : 'ellipsis',
+                              whiteSpace: isNoteExpanded ? 'normal' : 'nowrap',
+                            }}>
+                              {entry.note}
+                            </span>
+                          </button>
+                        )}
                       </div>
-
-                      {/* Expanded note — always visible */}
-                      {entry.note && (
-                        <div style={{
-                          margin: '0 12px 10px',
-                          padding: '6px 10px',
-                          background: '#F0F4FA',
-                          borderRadius: 4,
-                          border: '1px solid #D3DAE6',
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: 6,
-                        }}>
-                          <EuiIcon type="editorComment" size="s" color="subdued" style={{ flexShrink: 0, marginTop: 2 }} />
-                          <EuiText size="xs" style={{ color: '#343741' }}>
-                            {entry.note}
-                          </EuiText>
-                        </div>
-                      )}
-                    </div>
-                  );
+                    );
                   })}
+                  </div>
                 </div>
 
                 {/* Footer */}
@@ -1793,8 +2176,8 @@ const RuleDetailsPage: React.FC = () => {
                   gap: 8,
                   flexShrink: 0,
                 }}>
-                  <EuiIcon type="clock" size="s" color="subdued" />
-                  <EuiText size="xs" color="subdued">On Jan 1 2026 @ 00:00 History started</EuiText>
+                  <EuiIcon type="hourglass" size="m" color="subdued" />
+                  <EuiText size="xs" color="subdued">On Jan 1 2026 @ 00.00 History started</EuiText>
                 </div>
               </EuiPanel>
             </EuiFlexItem>

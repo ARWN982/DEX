@@ -68,7 +68,7 @@ const AutoDexPage: React.FC = () => {
                           AutoDEX
                         </h1>
                       </EuiText>
-                      <EuiBadge color="success" style={{ fontSize: 13, padding: '4px 10px' }}>
+                      <EuiBadge color="hollow" style={{ fontSize: 13, padding: '4px 10px' }}>
                         Running
                       </EuiBadge>
                     </div>

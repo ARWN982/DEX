@@ -35,6 +35,8 @@ import {
   EuiCheckbox,
   EuiFacetButton,
   EuiButtonGroup,
+  EuiTabs,
+  EuiTab,
 } from '@elastic/eui';
 import SecurityHeader from './components/SecurityHeader';
 import SecuritySideNav from './components/SecuritySideNav';
@@ -476,182 +478,80 @@ const DetectionRulesPage: React.FC = () => {
             >
               {/* Fixed top section - never scrolls */}
               <div style={{ padding: '24px 24px 0 24px', flexShrink: 0 }}>
-        {/* Page Header */}
-        <div style={{ marginLeft: '-24px', marginRight: '-24px', paddingLeft: '24px', paddingRight: '24px' }}>
-          <EuiPageHeader
-            pageTitle="Detection rules"
-            responsive={false}
-            paddingSize="none"
-            rightSideItems={[
-              <EuiFlexGroup gutterSize="m" responsive={false} wrap={false} alignItems="center" key="header-actions">
-                <EuiFlexItem grow={false}>
-                  <EuiBadge color="success" iconType="sparkles">
-                    AutoDEX Running
-                  </EuiBadge>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty iconType="gear" size="s">
-                    Settings
-                  </EuiButtonEmpty>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty iconType="plusInCircle" size="s" onClick={() => navigate('/detection-rules/add')}>
-                    Add Elastic rules
-                    <EuiBadge color="hollow" style={{ marginLeft: 8 }}>
-                      1517
-                    </EuiBadge>
-                  </EuiButtonEmpty>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty iconType="download" size="s">
-                    Manage exceptions
-                  </EuiButtonEmpty>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiPopover
-                    button={
-                      <EuiButton
-                        iconType="arrowDown"
-                        iconSide="right"
-                        fill
-                        size="s"
-                        onClick={() => setIsCreateMenuOpen(!isCreateMenuOpen)}
-                      >
-                        Create new rule
-                      </EuiButton>
-                    }
-                    isOpen={isCreateMenuOpen}
-                    closePopover={() => setIsCreateMenuOpen(false)}
-                    panelPaddingSize="none"
-                    anchorPosition="downRight"
-                  >
-                    <div style={{ minWidth: 200 }}>
-                      {[
-                        { label: 'AI Rule creation', icon: 'sparkles', onClick: () => navigate('/detection-rules/create') },
-                        { label: 'Manual Rule creation', icon: 'pencil', onClick: () => navigate('/detection-rules/create') },
-                        { label: 'Import rules', icon: 'importAction', onClick: () => {} },
-                        { label: 'Migrate rules', icon: 'merge', onClick: () => {} },
-                      ].map(({ label, icon, onClick }) => (
-                        <EuiButtonEmpty
-                          key={label}
-                          iconType={icon}
-                          size="s"
-                          color="text"
-                          flush="both"
-                          style={{ width: '100%', padding: '8px 16px', justifyContent: 'flex-start' }}
-                          onClick={() => { setIsCreateMenuOpen(false); onClick(); }}
-                        >
-                          {label}
+                {/* Page Header */}
+                <EuiPageHeader
+                  pageTitle="Detection rules (SIEM)"
+                  responsive={false}
+                  paddingSize="none"
+                  rightSideItems={[
+                    <EuiFlexGroup gutterSize="s" responsive={false} wrap={false} alignItems="center" key="header-actions">
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="gear" size="s">Settings</EuiButtonEmpty>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="plusInCircle" size="s" onClick={() => navigate('/detection-rules/add')}>
+                          Add Elastic rules
+                          <EuiBadge color="hollow" style={{ marginLeft: 6 }}>438</EuiBadge>
                         </EuiButtonEmpty>
-                      ))}
-                    </div>
-                  </EuiPopover>
-                </EuiFlexItem>
-              </EuiFlexGroup>
-            ]}
-          />
-        </div>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="list" size="s">Manage value lists</EuiButtonEmpty>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiButtonEmpty iconType="importAction" size="s">Import rules</EuiButtonEmpty>
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiPopover
+                          button={
+                            <EuiButton iconType="arrowDown" iconSide="right" fill size="s" onClick={() => setIsCreateMenuOpen(!isCreateMenuOpen)}>
+                              Create a rule
+                            </EuiButton>
+                          }
+                          isOpen={isCreateMenuOpen}
+                          closePopover={() => setIsCreateMenuOpen(false)}
+                          panelPaddingSize="none"
+                          anchorPosition="downRight"
+                        >
+                          <div style={{ minWidth: 200 }}>
+                            {[
+                              { label: 'AI Rule creation', icon: 'sparkles', onClick: () => navigate('/detection-rules/create') },
+                              { label: 'Manual Rule creation', icon: 'pencil', onClick: () => navigate('/detection-rules/create') },
+                              { label: 'Import rules', icon: 'importAction', onClick: () => {} },
+                              { label: 'Migrate rules', icon: 'merge', onClick: () => {} },
+                            ].map(({ label, icon, onClick }) => (
+                              <EuiButtonEmpty key={label} iconType={icon} size="s" color="text" flush="both"
+                                style={{ width: '100%', padding: '8px 16px', justifyContent: 'flex-start' }}
+                                onClick={() => { setIsCreateMenuOpen(false); onClick(); }}
+                              >
+                                {label}
+                              </EuiButtonEmpty>
+                            ))}
+                          </div>
+                        </EuiPopover>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  ]}
+                />
 
-        <EuiSpacer size="l" />
+                <EuiSpacer size="xl" />
 
-        <EuiButtonGroup
-              legend="Rules view"
-              options={[
-                { id: 'summary', label: 'Summary' },
-                { id: 'errors', label: 'Errors' },
-                { id: 'performance', label: 'Performance' },
-              ]}
-              idSelected={rulesSubView}
-              onChange={(id) => setRulesSubView(id as 'summary' | 'errors' | 'performance')}
-              buttonSize="s"
-              color="primary"
-            />
-            <EuiSpacer size="m" />
-            {/* ── Errors summary cards ── */}
-            {rulesSubView === 'errors' && (() => {
-              const CARDS = [
-                { accent: '#BD271E', value: '3', label: 'Rules failing', sub: '2 critical · 1 medium', btnLabel: 'View failures', btnIcon: 'alert' },
-                { accent: '#F5A700', value: 'Timeout ×2', label: 'Top error type', sub: 'Index not found ×1 · Parse error ×1', btnLabel: 'View logs', btnIcon: 'inspect' },
-                { accent: '#F5A700', value: '2', label: 'Coverage impact', sub: 'MITRE techniques now uncovered', btnLabel: 'View gaps', btnIcon: 'eyeClosed' },
-                { accent: '#017D73', value: '2 rules', label: 'AutoDEX remediated', sub: 'Fixed automatically today', btnLabel: 'View actions', btnIcon: 'checkInCircleFilled' },
-              ];
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gridTemplateRows: 'minmax(148px, auto)', gap: 8, alignItems: 'stretch' }}>
-                  {CARDS.map((c) => (
-                    <EuiPanel key={c.label} hasBorder hasShadow={false} paddingSize="m" style={{ borderLeft: `3px solid ${c.accent}`, borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
-                      <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>{c.label}</EuiText>
-                      <div style={{ fontSize: 26, fontWeight: 700, color: c.accent, lineHeight: 1.15, marginBottom: 6 }}>{c.value}</div>
-                      <EuiText size="xs" color="subdued" style={{ flex: 1 }}>{c.sub}</EuiText>
-                      <div style={{ marginTop: 'auto', paddingTop: 10 }}>
-                        <EuiButtonEmpty size="xs" iconType={c.btnIcon} flush="left" color="primary">{c.btnLabel}</EuiButtonEmpty>
-                      </div>
-                    </EuiPanel>
+                {/* Tabs */}
+                <EuiTabs size="m" style={{ marginBottom: -1 }}>
+                  {[
+                    { id: 'installed' as const, label: 'Installed Rules', count: 1423 },
+                    { id: 'monitoring' as const, label: 'Rule Monitoring', count: 1423 },
+                    { id: 'updates' as const, label: 'Rule Updates', count: 1885 },
+                  ].map((tab) => (
+                    <EuiTab
+                      key={tab.id}
+                      isSelected={selectedTab === tab.id}
+                      onClick={() => setSelectedTab(tab.id)}
+                      append={<EuiBadge color={selectedTab === tab.id ? 'primary' : 'hollow'}>{tab.count}</EuiBadge>}
+                    >
+                      {tab.label}
+                    </EuiTab>
                   ))}
-                </div>
-              );
-            })()}
-
-            {/* ── Performance summary cards ── */}
-            {rulesSubView === 'performance' && (() => {
-              const CARDS = [
-                { accent: '#0077CC', value: '2.4s', label: 'Avg execution time', sub: '↑ 0.6s slower vs last week', btnLabel: 'View breakdown', btnIcon: 'clock' },
-                { accent: '#F5A700', value: '4 rules', label: 'Exceeding threshold', sub: 'Rules taking >5s to execute', btnLabel: 'View slow rules', btnIcon: 'inspect' },
-                { accent: '#0077CC', value: '14.2k', label: 'Daily executions', sub: 'Across 1,200 enabled rules today', btnLabel: 'View schedule', btnIcon: 'tableDensityExpanded' },
-                { accent: '#017D73', value: '0.8%', label: 'Timeout rate', sub: '↓ Down from 1.2% last week', btnLabel: 'View timeouts', btnIcon: 'visGauge' },
-              ];
-              return (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gridTemplateRows: 'minmax(148px, auto)', gap: 8, alignItems: 'stretch' }}>
-                  {CARDS.map((c) => (
-                    <EuiPanel key={c.label} hasBorder hasShadow={false} paddingSize="m" style={{ borderLeft: `3px solid ${c.accent}`, borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
-                      <EuiText size="s" style={{ fontWeight: 600, marginBottom: 4 }}>{c.label}</EuiText>
-                      <div style={{ fontSize: 26, fontWeight: 700, color: c.accent, lineHeight: 1.15, marginBottom: 6 }}>{c.value}</div>
-                      <EuiText size="xs" color="subdued" style={{ flex: 1 }}>{c.sub}</EuiText>
-                      <div style={{ marginTop: 'auto', paddingTop: 10 }}>
-                        <EuiButtonEmpty size="xs" iconType={c.btnIcon} flush="left" color="primary">{c.btnLabel}</EuiButtonEmpty>
-                      </div>
-                    </EuiPanel>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {rulesSubView === 'summary' && (
-              <DetectionSummaryPanel
-                executionFailures={[
-                  { id: 'r1', name: 'Unusual Network Destination Domain Name', severity: 'high', contextLabel: 'Timeout after 30s · logs-endpoint.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Unusual Network Destination Domain Name"' },
-                  { id: 'r2', name: 'Route53 Resolver Query Log Configuration Deleted', severity: 'medium', contextLabel: 'Index not found · logs-aws.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Route53 Resolver Query Log Configuration Deleted"' },
-                  { id: 'r3', name: 'Suspicious File Renamed via SMB', severity: 'high', contextLabel: 'EQL parse error · logs-system.*', actionLabel: 'Diagnose', aiPrompt: 'Diagnose the execution failure for rule "Suspicious File Renamed via SMB"' },
-                ]}
-                highNoiseRules={[
-                  { id: 'n1', name: 'Potential PowerShell HackTool Script by Author', severity: 'medium', contextLabel: '340 alerts/week · 98% from backup-agent', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "Potential PowerShell HackTool Script by Author"' },
-                  { id: 'n2', name: 'Unusual Execution via Microsoft Common Console File', severity: 'low', contextLabel: '210 alerts/week · 94% from dev-hosts', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "Unusual Execution via Microsoft Common Console File"' },
-                  { id: 'n3', name: 'EC2 AMI Shared with Another Account', severity: 'medium', contextLabel: '180 alerts/week · 91% from ci-pipeline', actionLabel: 'Tune', aiPrompt: 'Show me tuning recommendations for "EC2 AMI Shared with Another Account"' },
-                ]}
-                coverageGaps={[
-                  { id: 'g1', name: 'Credential Dumping via Reg.exe', severity: 'critical', techniqueId: 'T1003', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1003 Credential Dumping via Reg.exe?' },
-                  { id: 'g2', name: 'DLL Side-Loading', severity: 'high', techniqueId: 'T1574.002', contextLabel: 'Partial coverage only', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1574.002 DLL Side-Loading?' },
-                  { id: 'g3', name: 'Scheduled Task Creation', severity: 'high', techniqueId: 'T1053.005', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1053.005 Scheduled Task Creation?' },
-                  { id: 'g4', name: 'Token Impersonation', severity: 'high', techniqueId: 'T1134', contextLabel: 'No rule covers this technique', actionLabel: 'Add rule', aiPrompt: 'Which prebuilt rules cover T1134 Token Impersonation?' },
-                ]}
-                coveragePct={67}
-                ruleUpdates={[
-                  { id: 'u1', name: 'Unusual Network Destination Domain Name', severity: 'high', contextLabel: 'v8.11 → v8.12 · 3 changes', changeDescription: 'Updated MITRE mapping and query performance', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "Unusual Network Destination Domain Name"' },
-                  { id: 'u2', name: 'Potential Widespread Malware Infection', severity: 'high', contextLabel: 'v3.2 → v3.3 · 1 change', changeDescription: 'Fixed false positive on backup processes', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "Potential Widespread Malware Infection"' },
-                  { id: 'u3', name: 'AWS EC2 Admin Credential Fetch', severity: 'medium', contextLabel: 'v2.1 → v2.2 · 2 changes', changeDescription: 'Improved detection coverage', actionLabel: 'Review', aiPrompt: 'Summarise what changed in the latest update for "AWS EC2 Admin Credential Fetch"' },
-                ]}
-                autoDex={{
-                  isRunning: true,
-                  lastRunAt: '3 min ago',
-                  fixedCount: 2,
-                  tunedCount: 5,
-                  installedCount: 4,
-                  updatedCount: 5,
-                }}
-                onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
-                onViewRules={(category) => console.log('View rules:', category)}
-                onNavigateToRule={(id) => navigate(`/detection-rules/${id}`)}
-              />
-            )}
+                </EuiTabs>
               </div>
 
         {/* Scrollable section */}

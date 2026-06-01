@@ -25,6 +25,8 @@ export interface AutoDexMockLog {
   needsApproval: boolean;
   isSuggestion?: boolean;
   rulesAffected?: number;
+  manualFixSteps?: string[];
+  completedBadge?: 'auto' | 'approved' | 'suggestion-resolved';
 }
 
 export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
@@ -88,6 +90,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     },
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '3',
@@ -149,6 +152,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     },
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '5',
@@ -196,6 +200,14 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     needsApproval: false,
     isSuggestion: true,
     rulesAffected: 2,
+    completedBadge: 'suggestion-resolved',
+    manualFixSteps: [
+      'Navigate to Security → Rules and open "Windows Registry Modification via reg.exe".',
+      'Select the Exceptions tab and click Add exception.',
+      'Set the condition: process.args matches "HKLM\\\\SOFTWARE\\\\Policies\\\\*" AND process.parent.name is one of ("msiexec.exe", "setup.exe", "installer.exe").',
+      'Set the scope to All rules using this list or this rule only depending on your environment policy.',
+      'Save the exception and monitor alert volume over the next 24 hours to confirm the 74% reduction.',
+    ],
   },
   {
     id: '7',
@@ -219,6 +231,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'Rule was failing due to missing field mappings after an Elastic Agent update. AutoDEX corrected the index pattern and verified execution resumed.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '9',
@@ -229,6 +242,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'Rule producing 120 alerts/week from a known CI/CD service account. AutoDEX added a scoped exception for aws.cloudtrail.user_identity.arn matching the pipeline ARN.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '10',
@@ -239,6 +253,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'T1530 (Data from Cloud Storage) coverage gap identified. AutoDEX installed and enabled the Elastic prebuilt rule after confirming GCP audit logs are flowing.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '11',
@@ -249,6 +264,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'Version 1.1→1.2: Minor query optimisation released by Elastic Security Labs. AutoDEX applied automatically — no scope changes detected.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '12',
@@ -259,6 +275,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'Index pattern mismatch after Winlogbeat schema update. AutoDEX updated the pattern from winlogbeat-* to winlogbeat-8* and re-enabled the rule.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'suggestion-resolved',
   },
   {
     id: '13',
@@ -269,6 +286,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: '85 alerts/week traced to a monitoring agent on all server hosts. AutoDEX added an exception for the agent process scoped to the monitoring host group.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'auto',
   },
   {
     id: '14',
@@ -279,6 +297,7 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'T1078.004 gap identified in Azure tenant. AutoDEX installed the Elastic prebuilt rule after confirming Azure AD sign-in logs are present in the data stream.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
   },
   {
     id: '15',
@@ -289,5 +308,17 @@ export const MOCK_AUTODEX_LOGS: AutoDexMockLog[] = [
     reasoning: 'Version 1.0→1.1: Elastic Security Labs released a performance fix. AutoDEX applied the update automatically as it reduces false positive rate only.',
     status: 'success',
     needsApproval: false,
+    completedBadge: 'approved',
+  },
+  {
+    id: '16',
+    timestamp: 'Apr 11, 2026 @ 09:44:02',
+    action: 'Execution failure',
+    actionColor: 'danger',
+    rule: 'Windows Registry Modification via reg.exe',
+    reasoning: 'Analyst reviewed the suggested exception scope and applied it manually via the Security UI. Alert volume reduced by 74% as predicted. Suggestion marked as resolved.',
+    status: 'success',
+    needsApproval: false,
+    completedBadge: 'suggestion-resolved',
   },
 ];

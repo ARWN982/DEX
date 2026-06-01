@@ -8,7 +8,6 @@ import {
   EuiFlexItem,
   EuiListGroup,
   EuiListGroupItem,
-  EuiNotificationBadge,
   EuiPopover,
   EuiSpacer,
   EuiTablePagination,
@@ -88,11 +87,8 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-        <EuiNotificationBadge size="m" color="accent" data-test-subj="autodex-approvalsCount">
-          {pendingItems.length}
-        </EuiNotificationBadge>
-        <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
-          Approvals required
+        <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 600, color: '#111C2C' }}>
+          Actions for you
         </h2>
       </div>
 
@@ -165,7 +161,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                               color: log.isSuggestion ? '#836500' : '#A71627',
                             }}
                           >
-                            {log.isSuggestion ? 'Suggestion' : 'Approval needed'}
+                            {log.isSuggestion ? 'Action required' : 'Approval needed'}
                           </span>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
@@ -179,12 +175,6 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
 
                     <EuiFlexItem grow={false}>
                       <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} justifyContent="flexEnd">
-                        <EuiFlexItem grow={false}>
-                          <EuiBadge color="hollow">{rulesAffected} rules affected</EuiBadge>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <div style={{ width: 1, height: 23, background: '#CAD3E2' }} />
-                        </EuiFlexItem>
                         <EuiFlexItem grow={false}>
                           <div
                             style={{
@@ -207,7 +197,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                                   flush="right"
                                   onClick={() => setApprovalPopoverId(approvalPopoverId === log.id ? null : log.id)}
                                 >
-                                  Approval action
+                                  {log.isSuggestion ? 'Actions' : 'Approval action'}
                                 </EuiButtonEmpty>
                               }
                             >
@@ -269,22 +259,79 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                   </EuiFlexGroup>
 
                   {isExpanded && (
-                    <>
-                      <EuiSpacer size="s" />
-                      <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
-                        <EuiText size="xs">
-                          <p style={{ margin: 0 }}><strong>Reasoning:</strong> {log.reasoning}</p>
-                        </EuiText>
-                        {log.fullReasoning?.summary && (
-                          <>
-                            <EuiSpacer size="xs" />
-                            <EuiText size="xs">
-                              <p style={{ margin: 0 }}><strong>Summary:</strong> {log.fullReasoning.summary}</p>
-                            </EuiText>
-                          </>
-                        )}
-                      </div>
-                    </>
+                    <div style={{ marginTop: 10, marginLeft: 28 }}>
+                      {log.isSuggestion ? (
+                        <>
+                          {/* DIAGNOSIS */}
+                          <div style={{ marginBottom: 16 }}>
+                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+                            <p style={{ margin: 0, fontSize: 13, color: '#343741', lineHeight: '20px' }}>{log.reasoning}</p>
+                          </div>
+
+                          {/* ACTIONS REQUIRED */}
+                          {log.manualFixSteps && (
+                            <div>
+                              <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
+                              <ol style={{ margin: 0, paddingLeft: 20 }}>
+                                {log.manualFixSteps.map((step, idx) => (
+                                  <li key={idx} style={{ fontSize: 13, color: '#343741', lineHeight: '20px', marginBottom: 6 }}>{step}</li>
+                                ))}
+                              </ol>
+                            </div>
+                          )}
+                        </>
+                      ) : log.fullReasoning ? (
+                        <>
+                          {/* DIAGNOSIS */}
+                          <div style={{ marginBottom: 16 }}>
+                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+                            {log.fullReasoning.diagnosis.map((para, idx) => (
+                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
+                            ))}
+                          </div>
+
+                          {/* DECISION RATIONALE */}
+                          <div style={{ marginBottom: 16 }}>
+                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
+                            {log.fullReasoning.decision.map((para, idx) => (
+                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
+                            ))}
+                          </div>
+
+                          {/* CHANGES SUGGESTED */}
+                          <div>
+                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes suggested</p>
+                            <div style={{ border: '1px solid #D3DAE6', borderRadius: 4, overflow: 'hidden' }}>
+                              {log.fullReasoning.changesMade.map((change, idx) => {
+                                const isLast = idx === log.fullReasoning!.changesMade.length - 1;
+                                const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
+                                if (typeof change === 'string') {
+                                  return (
+                                    <div key={idx} style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}>
+                                      <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change}
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <React.Fragment key={idx}>
+                                    <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '6px 12px', borderBottom: '1px solid #D3DAE6' }}>
+                                      <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#BD271E' }}>-</span>{change.before}
+                                    </div>
+                                    <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}>
+                                      <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}
+                                    </div>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px' }}>
+                          <p style={{ margin: 0, fontSize: 13, color: '#343741' }}>{log.reasoning}</p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               );

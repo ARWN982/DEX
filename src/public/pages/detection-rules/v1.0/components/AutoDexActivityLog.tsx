@@ -235,7 +235,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   const [fullReasoningLogId, setFullReasoningLogId] = useState<string | null>(null);
 
   const PAGE_SIZE_OPTIONS = [5, 10, 25];
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(activityMode || completedOnly ? 10 : 5);
   const [pageIndex, setPageIndex] = useState(0);
 
   // When the parent activates a locked filter, programmatically select the type filter chips.
@@ -333,156 +333,119 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
     </EuiFlexGroup>
   );
 
-  /** Renders one log entry — Figma card style with left border, header row, collapsible reasoning panel. */
+  const ACTION_PANEL_BUTTON_MIN_WIDTH = 176;
+
+  /** Renders one log entry. Activity mode uses the flat approvals-panel row style; otherwise uses the card style. */
   const renderLog = (log: (typeof filteredLogs)[0], i: number, logsArr: typeof filteredLogs, padded = false, forceActivityMode = false) => {
     const decision = approvalDecisions[log.id];
     const inActivityMode = forceActivityMode || activityMode;
-    const pendingApproval = !inActivityMode && requiresApproval && log.needsApproval && !decision;
-    const isSuggestion = !inActivityMode && !!log.isSuggestion && !log.needsApproval;
-    const leftBorderColor = inActivityMode ? '#D3DAE6' : pendingApproval ? '#fcd883' : isSuggestion ? '#ffcda1' : '#00BFB3';
-    const isReasoningOpen = fullReasoningLogId === log.id;
+    const isExpanded = fullReasoningLogId === log.id;
 
-    return (
-      <div
-        key={log.id}
-        style={{
-          background: 'white',
-          borderLeft: `4px solid ${leftBorderColor}`,
-          border: '1px solid #D3DAE6',
-          borderLeftWidth: 4,
-          borderLeftColor: leftBorderColor,
-          borderRadius: 4,
-          padding: '10px 10px 10px 16px',
-          marginBottom: 10,
-          boxShadow: '0 1px 2px rgba(43,57,79,0.06), 0 2px 4px rgba(43,57,79,0.05)',
-        }}
-      >
-        {/* ── Header row ── */}
-        <EuiFlexGroup alignItems="center" gutterSize="none" responsive={false}>
-          {/* Left: category + badge + rule name + timestamp */}
-          <EuiFlexItem>
-            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
-              <EuiFlexItem grow={false}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#516381', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  {log.action}
-                </span>
-              </EuiFlexItem>
-              {pendingApproval && (
+    // ── Activity mode: flat row matching the approvals panel style ──────────
+    if (inActivityMode) {
+      const isFirstRow = i === 0;
+      const isLastRow = i === logsArr.length - 1;
+
+      const badge = decision === 'dismissed'
+        ? 'dismissed'
+        : decision === 'approved'
+          ? 'approved'
+          : log.completedBadge ?? (log.needsApproval ? 'approved' : 'auto');
+
+      const statusBadge = badge === 'dismissed'
+        ? <EuiBadge color="default" iconType="minusInCircle">Dismissed</EuiBadge>
+        : badge === 'suggestion-resolved'
+          ? <EuiBadge color="success" iconType="checkInCircleFilled">Suggestion resolved</EuiBadge>
+          : badge === 'approved'
+            ? <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
+            : <EuiBadge color="primary" iconType="checkInCircleFilled">Auto</EuiBadge>;
+
+      return (
+        <div
+          key={log.id}
+          style={{
+            background: 'white',
+            border: '1px solid #CAD3E2',
+            padding: 12,
+            marginBottom: i < logsArr.length - 1 ? -1 : 0,
+            borderRadius: isFirstRow && isLastRow ? 6 : isFirstRow ? '6px 6px 0 0' : isLastRow ? '0 0 6px 6px' : undefined,
+          }}
+        >
+          <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="none">
+            <EuiFlexItem>
+              <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
                 <EuiFlexItem grow={false}>
-                  <EuiBadge color="warning">Approvals needed</EuiBadge>
+                  <EuiButtonIcon
+                    iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
+                    aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    size="s"
+                    color="text"
+                    onClick={() => setFullReasoningLogId(isExpanded ? null : log.id)}
+                  />
                 </EuiFlexItem>
-              )}
-              {isSuggestion && (
+                <EuiFlexItem grow={false} style={{ width: 150 }}>
+                  <EuiText size="xs" style={{ fontWeight: 600, color: '#516381', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                    {log.action}
+                  </EuiText>
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>{statusBadge}</EuiFlexItem>
                 <EuiFlexItem grow={false}>
-                  <EuiBadge style={{ background: '#ffcda1', color: '#5a2d0c', borderColor: '#ffcda1' }}>Suggestion</EuiBadge>
+                  <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
                 </EuiFlexItem>
-              )}
-              {inActivityMode && (
                 <EuiFlexItem grow={false}>
-                  {decision === 'approved' || (log.needsApproval && decision)
-                    ? <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
-                    : decision === 'dismissed'
-                      ? <EuiBadge color="default" iconType="minusInCircle">Dismissed</EuiBadge>
-                      : log.needsApproval
-                        ? <EuiBadge color="success" iconType="checkInCircleFilled">Approved</EuiBadge>
-                        : <EuiBadge color="primary">Auto</EuiBadge>
-                  }
+                  <EuiText size="s" color="subdued">{log.timestamp.replace(', 2026', '')}</EuiText>
                 </EuiFlexItem>
-              )}
-              {!inActivityMode && decision && (
+              </EuiFlexGroup>
+            </EuiFlexItem>
+
+            <EuiFlexItem grow={false}>
+              <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} justifyContent="flexEnd">
                 <EuiFlexItem grow={false}>
-                  <EuiBadge
-                    color={decision === 'approved' ? 'success' : 'default'}
-                    iconType={decision === 'approved' ? 'checkInCircleFilled' : 'minusInCircle'}
-                  >
-                    {decision === 'approved' ? 'Approved' : 'Dismissed'}
-                  </EuiBadge>
+                  <div style={{ width: ACTION_PANEL_BUTTON_MIN_WIDTH, display: 'flex', justifyContent: 'flex-end' }}>
+                    <EuiButtonEmpty
+                      size="s"
+                      iconType="arrowDown"
+                      iconSide="right"
+                      color="primary"
+                      flush="right"
+                      onClick={() => onOpenAIAssistant(`Tell me about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}
+                    >
+                      Actions
+                    </EuiButtonEmpty>
+                  </div>
                 </EuiFlexItem>
-              )}
-              <EuiFlexItem grow={false}>
-                <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiText size="s" color="subdued">{log.timestamp}</EuiText>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-          {/* Right: Take action + ellipsis */}
-          <EuiFlexItem grow={false}>
-            <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <EuiButtonEmpty
-                  size="xs"
-                  iconType="chevronSingleDown"
-                  iconSide="right"
-                  color="primary"
-                  onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}
-                >
-                  Take action
-                </EuiButtonEmpty>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiButtonIcon
-                  size="xs"
-                  iconType="boxesHorizontal"
-                  color="primary"
-                  aria-label="More options"
-                />
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
+                <EuiFlexItem grow={false}>
+                  <EuiButtonIcon
+                    size="s"
+                    iconType="boxesHorizontal"
+                    color="primary"
+                    aria-label="More actions"
+                  />
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiFlexItem>
+          </EuiFlexGroup>
 
-        {/* ── Reasoning summary panel — expands in place ── */}
-        <div style={{ marginTop: 10 }}>
-          <div
-            style={{
-              background: '#F6F9FC',
-              border: '1px solid #d6c0ff',
-              borderRadius: 4,
-              padding: '8px 8px 8px 12px',
-            }}
-          >
-            {/* Toggle header */}
-            <button
-              type="button"
-              onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}
-            >
-              <EuiIcon type={isReasoningOpen ? 'chevronSingleDown' : 'chevronSingleRight'} size="s" color="subdued" />
-              <EuiText size="s" style={{ fontWeight: 600, color: '#1d2a3e' }}>Reasoning</EuiText>
-            </button>
-
-            {/* First line always visible */}
-            <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '24px', marginBottom: isReasoningOpen ? 12 : 0 }}>
-              {log.reasoning}
-            </EuiText>
-
-            {/* Expanded content — full reasoning detail */}
-            {isReasoningOpen && (
-              <>
-
-                {log.fullReasoning && (
-                  <>
-                    <EuiHorizontalRule margin="s" />
-                    <EuiText size="xs" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#69707D', marginBottom: 8 }}>
-                      Diagnosis
-                    </EuiText>
+          {/* Expanded reasoning */}
+          {isExpanded && (
+            <div style={{ marginTop: 10, marginLeft: 28 }}>
+              {log.fullReasoning ? (
+                <>
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
                     {log.fullReasoning.diagnosis.map((para, idx) => (
-                      <EuiText key={idx} size="s" style={{ marginBottom: 8, color: '#343741' }}><p>{para}</p></EuiText>
+                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
                     ))}
-                    <EuiHorizontalRule margin="s" />
-                    <EuiText size="xs" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#69707D', marginBottom: 8 }}>
-                      Decision rationale
-                    </EuiText>
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
                     {log.fullReasoning.decision.map((para, idx) => (
-                      <EuiText key={idx} size="s" style={{ marginBottom: 8, color: '#343741' }}><p>{para}</p></EuiText>
+                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
                     ))}
-                    <EuiHorizontalRule margin="s" />
-                    <EuiText size="xs" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#69707D', marginBottom: 8 }}>
-                      Changes made
-                    </EuiText>
-                    <div style={{ border: '1px solid #D3DAE6', borderRadius: 6, overflow: 'hidden' }}>
+                  </div>
+                  <div>
+                    <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes made</p>
+                    <div style={{ border: '1px solid #D3DAE6', borderRadius: 4, overflow: 'hidden' }}>
                       {log.fullReasoning.changesMade.map((change, idx) => {
                         const isLast = idx === log.fullReasoning!.changesMade.length - 1;
                         const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
@@ -505,10 +468,94 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                         );
                       })}
                     </div>
-                  </>
-                )}
-              </>
-            )}
+                  </div>
+                </>
+              ) : (
+                <p style={{ margin: 0, fontSize: 13, color: '#343741', lineHeight: '20px' }}>{log.reasoning}</p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ── Default card style (pending approvals / suggestions in the old view) ──
+    const pendingApproval = requiresApproval && log.needsApproval && !decision;
+    const isSuggestion = !!log.isSuggestion && !log.needsApproval;
+    const leftBorderColor = pendingApproval ? '#fcd883' : isSuggestion ? '#ffcda1' : '#00BFB3';
+    const isReasoningOpen = isExpanded;
+
+    return (
+      <div
+        key={log.id}
+        style={{
+          background: 'white',
+          borderLeft: `4px solid ${leftBorderColor}`,
+          border: '1px solid #D3DAE6',
+          borderLeftWidth: 4,
+          borderLeftColor: leftBorderColor,
+          borderRadius: 4,
+          padding: '10px 10px 10px 16px',
+          marginBottom: 10,
+          boxShadow: '0 1px 2px rgba(43,57,79,0.06), 0 2px 4px rgba(43,57,79,0.05)',
+        }}
+      >
+        <EuiFlexGroup alignItems="center" gutterSize="none" responsive={false}>
+          <EuiFlexItem>
+            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
+              <EuiFlexItem grow={false}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#516381', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  {log.action}
+                </span>
+              </EuiFlexItem>
+              {pendingApproval && (
+                <EuiFlexItem grow={false}>
+                  <EuiBadge color="warning">Approvals needed</EuiBadge>
+                </EuiFlexItem>
+              )}
+              {isSuggestion && (
+                <EuiFlexItem grow={false}>
+                  <EuiBadge style={{ background: '#ffcda1', color: '#5a2d0c', borderColor: '#ffcda1' }}>Suggestion</EuiBadge>
+                </EuiFlexItem>
+              )}
+              {decision && (
+                <EuiFlexItem grow={false}>
+                  <EuiBadge color={decision === 'approved' ? 'success' : 'default'} iconType={decision === 'approved' ? 'checkInCircleFilled' : 'minusInCircle'}>
+                    {decision === 'approved' ? 'Approved' : 'Dismissed'}
+                  </EuiBadge>
+                </EuiFlexItem>
+              )}
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" color="subdued">{log.timestamp}</EuiText>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="chevronSingleDown" iconSide="right" color="primary"
+                  onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}>
+                  Take action
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonIcon size="xs" iconType="boxesHorizontal" color="primary" aria-label="More options" />
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+
+        <div style={{ marginTop: 10 }}>
+          <div style={{ background: '#F6F9FC', border: '1px solid #d6c0ff', borderRadius: 4, padding: '8px 8px 8px 12px' }}>
+            <button type="button" onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}>
+              <EuiIcon type={isReasoningOpen ? 'chevronSingleDown' : 'chevronSingleRight'} size="s" color="subdued" />
+              <EuiText size="s" style={{ fontWeight: 600, color: '#1d2a3e' }}>Reasoning</EuiText>
+            </button>
+            <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '24px' }}>{log.reasoning}</EuiText>
           </div>
         </div>
       </div>
