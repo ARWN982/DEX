@@ -959,6 +959,109 @@ function renderRightAlignedTableAction(content: React.ReactNode) {
   );
 }
 
+// ─── Actions filter group (two popover dropdowns) ─────────────────────────────
+
+interface ActionsFilterGroupProps {
+  allActions: ActionItem[];
+  typeFilter?: VisibilityTabId;
+  severityFilter?: 'critical' | 'warning';
+  onTypeFilterChange?: (f: VisibilityTabId | undefined) => void;
+  onSeverityFilterChange?: (f: 'critical' | 'warning' | undefined) => void;
+}
+
+const ActionsFilterGroup: React.FC<ActionsFilterGroupProps> = ({
+  allActions,
+  typeFilter,
+  severityFilter,
+  onTypeFilterChange,
+  onSeverityFilterChange,
+}) => {
+  const [typeOpen, setTypeOpen] = useState(false);
+  const [severityOpen, setSeverityOpen] = useState(false);
+
+  const typeOptions = (['continuity', 'retention', 'quality', 'coverage', 'detections'] as VisibilityTabId[]).map(
+    (pillar) => ({
+      label: CATEGORY_LABELS[pillar],
+      pillar,
+      checked: typeFilter === pillar ? ('on' as const) : undefined,
+    })
+  );
+
+  const severityOptions = [
+    { label: 'Critical', value: 'critical' as const, checked: severityFilter === 'critical' ? ('on' as const) : undefined },
+    { label: 'Warning',  value: 'warning'  as const, checked: severityFilter === 'warning'  ? ('on' as const) : undefined },
+  ];
+
+  const activeTypeCount  = typeFilter     ? 1 : 0;
+  const activeSevCount   = severityFilter ? 1 : 0;
+
+  return (
+    <EuiFilterGroup>
+      {/* Type dropdown */}
+      <EuiPopover
+        button={
+          <EuiFilterButton
+            iconType="chevronSingleDown"
+            onClick={() => { setTypeOpen((o) => !o); setSeverityOpen(false); }}
+            isSelected={typeOpen}
+            numFilters={allActions.length}
+            hasActiveFilters={!!typeFilter}
+            numActiveFilters={activeTypeCount}
+          >
+            Type
+          </EuiFilterButton>
+        }
+        isOpen={typeOpen}
+        closePopover={() => setTypeOpen(false)}
+        panelPaddingSize="none"
+      >
+        <EuiSelectable
+          aria-label="Filter by type"
+          options={typeOptions}
+          onChange={(newOptions) => {
+            const selected = newOptions.find((o) => o.checked === 'on');
+            onTypeFilterChange?.(selected ? (selected as typeof typeOptions[0]).pillar : undefined);
+          }}
+          singleSelection
+        >
+          {(list) => <div style={{ width: 200 }}>{list}</div>}
+        </EuiSelectable>
+      </EuiPopover>
+
+      {/* Severity dropdown */}
+      <EuiPopover
+        button={
+          <EuiFilterButton
+            iconType="chevronSingleDown"
+            onClick={() => { setSeverityOpen((o) => !o); setTypeOpen(false); }}
+            isSelected={severityOpen}
+            numFilters={2}
+            hasActiveFilters={!!severityFilter}
+            numActiveFilters={activeSevCount}
+          >
+            Severity
+          </EuiFilterButton>
+        }
+        isOpen={severityOpen}
+        closePopover={() => setSeverityOpen(false)}
+        panelPaddingSize="none"
+      >
+        <EuiSelectable
+          aria-label="Filter by severity"
+          options={severityOptions}
+          onChange={(newOptions) => {
+            const selected = newOptions.find((o) => o.checked === 'on');
+            onSeverityFilterChange?.(selected ? (selected as typeof severityOptions[0]).value : undefined);
+          }}
+          singleSelection
+        >
+          {(list) => <div style={{ width: 160 }}>{list}</div>}
+        </EuiSelectable>
+      </EuiPopover>
+    </EuiFilterGroup>
+  );
+};
+
 interface ActionsRequiredPanelProps {
   coverage: RuleIntegrationCoverage | null;
   integrations: SiemReadinessPackageInfo[];
@@ -1036,38 +1139,13 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
             actions required
           </h2>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Severity filter */}
-          <EuiFilterGroup>
-            <EuiFilterButton
-              hasActiveFilters={severityFilter === 'critical'}
-              onClick={() => onSeverityFilterChange?.(severityFilter === 'critical' ? undefined : 'critical')}
-              numFilters={allActions.filter((a) => a.severity === 'critical').length}
-            >
-              Severity: Critical
-            </EuiFilterButton>
-            <EuiFilterButton
-              hasActiveFilters={severityFilter === 'warning'}
-              onClick={() => onSeverityFilterChange?.(severityFilter === 'warning' ? undefined : 'warning')}
-              numFilters={allActions.filter((a) => a.severity === 'warning').length}
-            >
-              Severity: Warning
-            </EuiFilterButton>
-          </EuiFilterGroup>
-          {/* Type filter */}
-          <EuiFilterGroup>
-            {(['continuity', 'retention', 'quality', 'coverage', 'detections'] as VisibilityTabId[]).map((pillar) => (
-              <EuiFilterButton
-                key={pillar}
-                hasActiveFilters={typeFilter === pillar}
-                onClick={() => onTypeFilterChange?.(typeFilter === pillar ? undefined : pillar)}
-                numFilters={allActions.filter((a) => a.pillar === pillar).length}
-              >
-                {CATEGORY_LABELS[pillar]}
-              </EuiFilterButton>
-            ))}
-          </EuiFilterGroup>
-        </div>
+        <ActionsFilterGroup
+          allActions={allActions}
+          typeFilter={typeFilter}
+          severityFilter={severityFilter}
+          onTypeFilterChange={onTypeFilterChange}
+          onSeverityFilterChange={onSeverityFilterChange}
+        />
       </div>
 
       {actions.length === 0 ? (
