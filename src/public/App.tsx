@@ -81,7 +81,7 @@ const App: React.FC = () => {
         )}
         <div style={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<SiemReadinessPage />} />
+            <Route path="/" element={<AutoDexPage />} />
             
             {/* Template routes */}
             <Route
