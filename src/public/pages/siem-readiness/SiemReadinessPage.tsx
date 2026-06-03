@@ -1027,14 +1027,16 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
         </h2>
       </div>
       {activeFilter && (
-        <EuiBadge
-          color="hollow"
-          iconType="cross"
-          iconOnClick={() => onFilterChange?.(undefined)}
-          iconOnClickAriaLabel="Clear filter"
-        >
-          {ACTION_FILTER_LABELS[activeFilter]}
-        </EuiBadge>
+        <div style={{ display: 'flex' }}>
+          <EuiBadge
+            color="hollow"
+            iconType="cross"
+            iconOnClick={() => onFilterChange?.(undefined)}
+            iconOnClickAriaLabel="Clear filter"
+          >
+            {ACTION_FILTER_LABELS[activeFilter]}
+          </EuiBadge>
+        </div>
       )}
 
       {actions.length === 0 ? (
