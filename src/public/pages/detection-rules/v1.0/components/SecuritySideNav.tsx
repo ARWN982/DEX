@@ -150,7 +150,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
                 icon="radar"
                 label="Rules"
                 isActive={isActive('/detection-rules') || isActive('/autodex')}
-                onClick={() => navigate('/autodex')}
+                onClick={() => navigate('/detection-rules')}
               />
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
