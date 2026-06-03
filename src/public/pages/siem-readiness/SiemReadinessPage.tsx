@@ -468,6 +468,12 @@ const PlatformViewSelect: React.FC<{
   const [isOpen, setIsOpen] = useState(false);
   const selected = PLATFORM_VIEW_OPTIONS.find((o) => o.value === value) ?? PLATFORM_VIEW_OPTIONS[0];
 
+  const selectableOptions = PLATFORM_VIEW_OPTIONS.map((opt) => ({
+    label: opt.text,
+    data: { value: opt.value },
+    checked: value === opt.value ? ('on' as const) : undefined,
+  }));
+
   return (
     <EuiPopover
       button={
@@ -495,28 +501,20 @@ const PlatformViewSelect: React.FC<{
       panelPaddingSize="none"
       anchorPosition="downRight"
     >
-      <div style={{ minWidth: 180 }}>
-        {PLATFORM_VIEW_OPTIONS.map((opt) => (
-          <div
-            key={opt.value}
-            onClick={() => { onChange(opt.value); setIsOpen(false); }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 16px', cursor: 'pointer', fontSize: 14,
-              background: value === opt.value ? '#E6F1FA' : 'white',
-              color: value === opt.value ? '#1750BA' : '#111C2C',
-              fontWeight: value === opt.value ? 500 : 400,
-            }}
-          >
-            <EuiIcon
-              type={value === opt.value ? 'check' : 'empty'}
-              size="s"
-              color={value === opt.value ? 'primary' : 'subdued'}
-            />
-            {opt.text}
-          </div>
-        ))}
-      </div>
+      <EuiSelectable
+        aria-label="Select view"
+        options={selectableOptions}
+        singleSelection
+        onChange={(newOptions) => {
+          const picked = newOptions.find((o) => o.checked === 'on');
+          if (picked) {
+            onChange((picked as typeof selectableOptions[0]).data.value);
+            setIsOpen(false);
+          }
+        }}
+      >
+        {(list) => <div style={{ width: 200 }}>{list}</div>}
+      </EuiSelectable>
     </EuiPopover>
   );
 };
