@@ -454,6 +454,8 @@ const AddToChatButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
   </EuiButtonEmpty>
 );
 
+const ALL_CATEGORY_NAMES = ['Endpoint', 'Identity', 'Network', 'Cloud', 'Application/SaaS'] as const;
+
 const PLATFORM_VIEW_OPTIONS = [
   { value: 'default', text: 'Default' },
   ...ALL_CATEGORY_NAMES.map((cat) => ({ value: cat, text: cat })),
@@ -3361,8 +3363,6 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
 };
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-
-const ALL_CATEGORY_NAMES = ['Endpoint', 'Identity', 'Network', 'Cloud', 'Application/SaaS'] as const;
 
 interface PlatformConfig { id: string; name: string; category: string; derivedFrom: string; enabled: boolean }
 
