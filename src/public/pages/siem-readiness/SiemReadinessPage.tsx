@@ -456,30 +456,68 @@ const AddToChatButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
 
 const PLATFORM_VIEW_OPTIONS = [
   { value: 'default', text: 'Default' },
+  ...ALL_CATEGORY_NAMES.map((cat) => ({ value: cat, text: cat })),
 ];
 
 const PlatformViewSelect: React.FC<{
   value: string;
   onChange: (value: string) => void;
-}> = ({ value, onChange }) => (
-  <div style={{ flexShrink: 0 }}>
-    <EuiFormControlLayout
-      prepend={<span style={{ color: '#111C2C', fontWeight: 400, whiteSpace: 'nowrap' }}>View</span>}
-      compressed
-      fullWidth={false}
-      style={{ minWidth: 168, margin: 0 }}
+}> = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selected = PLATFORM_VIEW_OPTIONS.find((o) => o.value === value) ?? PLATFORM_VIEW_OPTIONS[0];
+
+  return (
+    <EuiPopover
+      button={
+        <EuiFormControlLayout
+          prepend={<span style={{ color: '#111C2C', fontWeight: 400, whiteSpace: 'nowrap', padding: '0 8px' }}>View</span>}
+          compressed
+          fullWidth={false}
+          style={{ minWidth: 160, margin: 0, cursor: 'pointer' }}
+          onClick={() => setIsOpen((o) => !o)}
+        >
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '0 8px', height: 32, fontSize: 14, color: '#111C2C',
+              background: 'white', gap: 6, userSelect: 'none',
+            }}
+          >
+            <span>{selected.text}</span>
+            <EuiIcon type="chevronSingleDown" size="s" color="subdued" />
+          </div>
+        </EuiFormControlLayout>
+      }
+      isOpen={isOpen}
+      closePopover={() => setIsOpen(false)}
+      panelPaddingSize="none"
+      anchorPosition="downRight"
     >
-      <EuiSelect
-        compressed
-        options={PLATFORM_VIEW_OPTIONS}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        aria-label="Platform view"
-        style={{ minWidth: 96 }}
-      />
-    </EuiFormControlLayout>
-  </div>
-);
+      <div style={{ minWidth: 180 }}>
+        {PLATFORM_VIEW_OPTIONS.map((opt) => (
+          <div
+            key={opt.value}
+            onClick={() => { onChange(opt.value); setIsOpen(false); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 16px', cursor: 'pointer', fontSize: 14,
+              background: value === opt.value ? '#E6F1FA' : 'white',
+              color: value === opt.value ? '#1750BA' : '#111C2C',
+              fontWeight: value === opt.value ? 500 : 400,
+            }}
+          >
+            <EuiIcon
+              type={value === opt.value ? 'check' : 'empty'}
+              size="s"
+              color={value === opt.value ? 'primary' : 'subdued'}
+            />
+            {opt.text}
+          </div>
+        ))}
+      </div>
+    </EuiPopover>
+  );
+};
 
 const StatusHero: React.FC<{ summary: ReadinessSummary; onAddToChat?: () => void }> = ({ summary, onAddToChat }) => {
   const msg = getOverallStatusMessage({
@@ -3422,7 +3460,9 @@ const SiemReadinessPage: React.FC = () => {
     }));
   const [editingPlatformId, setEditingPlatformId] = useState<string | null>(null);
 
-  const filteredCategories = categories.filter(c => enabledCategories.has(c.category));
+  const filteredCategories = categories.filter(
+    (c) => enabledCategories.has(c.category) && (platformView === 'default' || c.category === platformView)
+  );
 
   // ── Compute ReadinessSummary ──────────────────────────────────────────────
   const summary: ReadinessSummary = useMemo(() => {
