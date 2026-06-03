@@ -1825,13 +1825,6 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
           justifyContent: 'space-between',
         }}
       >
-        <EuiBadge
-          color="hollow"
-          iconType="sortDown"
-          data-test-subj={`siemReadiness-pillarScore-${id}`}
-        >
-          {scoreLabel}
-        </EuiBadge>
         <EuiButtonEmpty
           size="s"
           color="primary"
