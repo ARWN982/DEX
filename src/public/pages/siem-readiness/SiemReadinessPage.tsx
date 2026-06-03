@@ -968,12 +968,21 @@ interface ActionsRequiredPanelProps {
   categories: CategoryGroup[];
   qualityResults: QualityResult[];
   summary: ReadinessSummary;
-  activeFilter?: ActionFilter;
-  onFilterChange?: (filter: ActionFilter) => void;
+  typeFilter?: VisibilityTabId;
+  severityFilter?: 'critical' | 'warning';
+  onTypeFilterChange?: (f: VisibilityTabId | undefined) => void;
+  onSeverityFilterChange?: (f: 'critical' | 'warning' | undefined) => void;
   onAddToChat?: (prompt: string) => void;
 }
 
-const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilter, onFilterChange, onAddToChat, ...props }) => {
+const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
+  typeFilter,
+  severityFilter,
+  onTypeFilterChange,
+  onSeverityFilterChange,
+  onAddToChat,
+  ...props
+}) => {
   const allActions = useMemo(
     () => deriveActionItems(props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults),
     [props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults]
@@ -986,14 +995,14 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
 
   useEffect(() => {
     setPageIndex(0);
-  }, [activeFilter]);
+  }, [typeFilter, severityFilter]);
 
   const actions = useMemo(() => {
-    if (!activeFilter) return allActions;
-    const groupPillars = GROUP_PILLARS[activeFilter as HealthGroupId];
-    if (groupPillars) return allActions.filter((a) => groupPillars.includes(a.pillar));
-    return allActions.filter((a) => a.pillar === activeFilter);
-  }, [allActions, activeFilter]);
+    let filtered = allActions;
+    if (typeFilter) filtered = filtered.filter((a) => a.pillar === typeFilter);
+    if (severityFilter) filtered = filtered.filter((a) => a.severity === severityFilter);
+    return filtered;
+  }, [allActions, typeFilter, severityFilter]);
 
   const pagedActions = actions.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
@@ -1018,26 +1027,48 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({ activeFilte
         gap: 16,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-        <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
-          {actions.length}
-        </EuiNotificationBadge>
-        <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
-          actions required
-        </h2>
-      </div>
-      {activeFilter && (
-        <div style={{ display: 'flex' }}>
-          <EuiBadge
-            color="hollow"
-            iconType="cross"
-            iconOnClick={() => onFilterChange?.(undefined)}
-            iconOnClickAriaLabel="Clear filter"
-          >
-            {ACTION_FILTER_LABELS[activeFilter]}
-          </EuiBadge>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
+            {actions.length}
+          </EuiNotificationBadge>
+          <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
+            actions required
+          </h2>
         </div>
-      )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Severity filter */}
+          <EuiFilterGroup>
+            <EuiFilterButton
+              hasActiveFilters={severityFilter === 'critical'}
+              onClick={() => onSeverityFilterChange?.(severityFilter === 'critical' ? undefined : 'critical')}
+              numFilters={allActions.filter((a) => a.severity === 'critical').length}
+            >
+              Severity: Critical
+            </EuiFilterButton>
+            <EuiFilterButton
+              hasActiveFilters={severityFilter === 'warning'}
+              onClick={() => onSeverityFilterChange?.(severityFilter === 'warning' ? undefined : 'warning')}
+              numFilters={allActions.filter((a) => a.severity === 'warning').length}
+            >
+              Severity: Warning
+            </EuiFilterButton>
+          </EuiFilterGroup>
+          {/* Type filter */}
+          <EuiFilterGroup>
+            {(['continuity', 'retention', 'quality', 'coverage', 'detections'] as VisibilityTabId[]).map((pillar) => (
+              <EuiFilterButton
+                key={pillar}
+                hasActiveFilters={typeFilter === pillar}
+                onClick={() => onTypeFilterChange?.(typeFilter === pillar ? undefined : pillar)}
+                numFilters={allActions.filter((a) => a.pillar === pillar).length}
+              >
+                {CATEGORY_LABELS[pillar]}
+              </EuiFilterButton>
+            ))}
+          </EuiFilterGroup>
+        </div>
+      </div>
 
       {actions.length === 0 ? (
         <div style={{ padding: 24, width: '100%' }}>
@@ -1697,6 +1728,7 @@ const RulesAffectedPopover: React.FC<RulesAffectedPopoverProps> = ({
 interface HealthMetric {
   value: string | number;
   label: string;
+  pillar: VisibilityTabId;
 }
 
 interface PillarSummaryCardProps {
@@ -1706,10 +1738,8 @@ interface PillarSummaryCardProps {
   numColor: string;
   metrics: HealthMetric[];
   totalRulesAffected: number | null;
-  scoreLabel: string;
-  actions: number;
-  isFilterActive: boolean;
-  onActionsClick: () => void;
+  activeTypeFilter?: VisibilityTabId;
+  onMetricClick?: (pillar: VisibilityTabId) => void;
 }
 
 const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
@@ -1719,10 +1749,8 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
   numColor,
   metrics,
   totalRulesAffected,
-  scoreLabel,
-  actions,
-  isFilterActive,
-  onActionsClick,
+  activeTypeFilter,
+  onMetricClick,
 }) => {
   const isCritical = severity === 'Critical';
 
@@ -1796,50 +1824,35 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
             gap: 8,
           }}
         >
-          {metrics.map((metric) => (
-            <div
-              key={metric.label}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
-                {metric.value}
-              </span>
-              <EuiText size="s" style={{ color: '#516381', lineHeight: '24px' }}>
-                {metric.label}
-              </EuiText>
-            </div>
-          ))}
+          {metrics.map((metric) => {
+            const isActive = activeTypeFilter === metric.pillar;
+            return (
+              <div
+                key={metric.label}
+                onClick={() => onMetricClick?.(metric.pillar)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                  flex: 1,
+                  minWidth: 0,
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: 4,
+                  background: isActive ? '#E6F1FA' : 'transparent',
+                  transition: 'background 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
+                  {metric.value}
+                </span>
+                <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', lineHeight: '24px', fontWeight: isActive ? 600 : 400 }}>
+                  {metric.label}
+                </EuiText>
+              </div>
+            );
+          })}
         </div>
-      </div>
-
-      <div
-        style={{
-          background: '#F6F9FC',
-          padding: '8px 16px 8px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <EuiButtonEmpty
-          size="s"
-          color="primary"
-          onClick={onActionsClick}
-          disabled={actions === 0}
-          data-test-subj={`siemReadiness-pillarActions-${id}`}
-          style={{ height: 32, padding: '0 8px', fontSize: 14, fontWeight: 500 }}
-        >
-          <EuiNotificationBadge size="m" color={isFilterActive ? 'accent' : 'subdued'} style={{ marginRight: 4 }}>
-            {actions}
-          </EuiNotificationBadge>
-          View actions
-        </EuiButtonEmpty>
       </div>
     </div>
   );
@@ -3265,7 +3278,8 @@ const SiemReadinessPage: React.FC = () => {
   const initialTab = mapTabParam(searchParams.get('tab'));
   const [selectedTab, setSelectedTab] = useState<SiemTab>(initialTab);
   const [ruleSubTab, setRuleSubTab] = useState<'all' | 'mitre'>('all');
-  const [actionFilter, setActionFilter] = useState<ActionFilter>(undefined);
+  const [typeFilter, setTypeFilter] = useState<VisibilityTabId | undefined>(undefined);
+  const [severityFilter, setSeverityFilter] = useState<'critical' | 'warning' | undefined>(undefined);
   const actionsPanelRef = useRef<HTMLDivElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState('');
@@ -3285,8 +3299,8 @@ const SiemReadinessPage: React.FC = () => {
   const SIEM_READINESS_SUMMARY_PROMPT =
     'Summarize my SIEM Readiness status across Visibility health and Detection health. Highlight critical issues and recommend the top actions I should take.';
 
-  const goToActions = (filter: VisibilityTabId | HealthGroupId) => {
-    setActionFilter((current) => (current === filter ? undefined : filter));
+  const handleMetricClick = (pillar: VisibilityTabId) => {
+    setTypeFilter((current) => (current === pillar ? undefined : pillar));
     actionsPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
   const { loading, coverage, categories, integrations, qualityResults, pipelines, retentionItems, ruleFieldIssues } = useSiemReadinessData();
@@ -3428,7 +3442,7 @@ const SiemReadinessPage: React.FC = () => {
     if (pillarId === 'data-health' || pillarId === 'detection-health') {
       setSelectedTab(pillarId);
       if (pillarId === 'detection-health') setRuleSubTab('all');
-      setActionFilter(undefined);
+      setTypeFilter(undefined);
       return;
     }
     const pillar = pillarId as VisibilityTabId;
@@ -3437,7 +3451,7 @@ const SiemReadinessPage: React.FC = () => {
       setSelectedTab('detection-health');
       if (pillar === 'coverage') setRuleSubTab('all');
     }
-    setActionFilter(undefined);
+    setTypeFilter(undefined);
   };
 
   const dataHealthStatus = useMemo(
@@ -3482,10 +3496,10 @@ const SiemReadinessPage: React.FC = () => {
         severity: toSeverity(dataHealthStatus),
         numColor: toNumColor(dataHealthStatus),
         metrics: [
-          { value: summary.silentStreams, label: 'silent streams' },
-          { value: summary.volumeDropCount, label: 'volume drops' },
-          { value: summary.retentionBelowBenchmark, label: 'categories below benchmark' },
-          { value: qualityIssues, label: 'ECS issues' },
+          { value: summary.silentStreams, label: 'silent streams', pillar: 'continuity' as const },
+          { value: summary.volumeDropCount, label: 'volume drops', pillar: 'continuity' as const },
+          { value: summary.retentionBelowBenchmark, label: 'categories below benchmark', pillar: 'retention' as const },
+          { value: qualityIssues, label: 'ECS issues', pillar: 'quality' as const },
         ],
         totalRulesAffected: sumBlast(DATA_HEALTH_PILLARS),
         scoreLabel: '80% Data trust score',
@@ -3497,10 +3511,10 @@ const SiemReadinessPage: React.FC = () => {
         severity: toSeverity(detectionHealthStatus),
         numColor: toNumColor(detectionHealthStatus),
         metrics: [
-          { value: integrationsMissingRules, label: 'integrations missing rules' },
-          { value: coverageMissing, label: 'required integrations' },
-          { value: ruleFieldIssues.length, label: 'rule field issues' },
-          { value: executionIssueCount, label: 'execution failures' },
+          { value: integrationsMissingRules, label: 'integrations missing rules', pillar: 'coverage' as const },
+          { value: coverageMissing, label: 'required integrations', pillar: 'coverage' as const },
+          { value: ruleFieldIssues.length, label: 'rule field issues', pillar: 'detections' as const },
+          { value: executionIssueCount, label: 'execution failures', pillar: 'detections' as const },
         ],
         totalRulesAffected: 76,
         scoreLabel: '73% Detection confidence score',
@@ -3671,10 +3685,8 @@ const SiemReadinessPage: React.FC = () => {
                         numColor={card.numColor}
                         metrics={card.metrics}
                         totalRulesAffected={card.totalRulesAffected}
-                        scoreLabel={card.scoreLabel}
-                        actions={card.actions}
-                        isFilterActive={actionFilter === card.id}
-                        onActionsClick={() => goToActions(card.id)}
+                        activeTypeFilter={typeFilter}
+                        onMetricClick={handleMetricClick}
                       />
                     </EuiFlexItem>
                   ))}
@@ -3692,8 +3704,10 @@ const SiemReadinessPage: React.FC = () => {
                     categories={filteredCategories}
                     qualityResults={qualityResults}
                     summary={summary}
-                    activeFilter={actionFilter}
-                    onFilterChange={setActionFilter}
+                    typeFilter={typeFilter}
+                    severityFilter={severityFilter}
+                    onTypeFilterChange={setTypeFilter}
+                    onSeverityFilterChange={setSeverityFilter}
                     onAddToChat={handleAddToChat}
                   />
                 </div>
