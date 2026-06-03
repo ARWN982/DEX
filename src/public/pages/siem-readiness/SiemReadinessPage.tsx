@@ -2887,44 +2887,6 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
         </EuiFlexItem>
 
       </EuiFlexGroup>
-
-      {/* ── Entity and risk engine health ── */}
-      <EuiSpacer size="l" />
-      <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-        <EuiTitle size="s"><h3>Entity and risk engine health</h3></EuiTitle>
-        <EuiSpacer size="xs" />
-        <EuiText size="s" color="subdued">
-          The risk scoring engine calculates threat scores for every user and device. If it stops, alert prioritisation becomes unreliable.
-        </EuiText>
-        <EuiSpacer size="m" />
-
-        {/* Transforms */}
-        <EuiBasicTable
-          items={[
-            { id: 'er1', transform: 'entity-risk-score-latest-default',  state: 'Running', opsBehind: 0  },
-            { id: 'er2', transform: 'entity-risk-score-history-default', state: 'Running', opsBehind: 0  },
-          ]}
-          columns={[
-            { field: 'transform', name: 'Transform', render: (v: string) => <EuiText size="s">{v}</EuiText> },
-            { field: 'state', name: 'State', width: '110px', render: (s: string) => {
-              const c: Record<string, string> = { Running: 'success', Stopped: 'danger', Failed: 'danger', Behind: 'warning' };
-              return <EuiBadge color={c[s] ?? 'hollow'}>{s}</EuiBadge>;
-            }},
-            { field: 'opsBehind', name: 'Operations behind', width: '160px', render: (n: number) =>
-              n === 0 ? <EuiText size="s" color="subdued">Up to date</EuiText> : <EuiText size="s" color="warning">{n}</EuiText>
-            },
-            {
-              name: 'Action',
-              width: '180px',
-              align: 'right',
-              render: () => renderRightAlignedTableAction(
-                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" flush="right">View transform</EuiButtonEmpty>
-              ),
-            },
-          ] as Array<EuiBasicTableColumn<{ id: string; transform: string; state: string; opsBehind: number }>>}
-          itemId="id"
-        />
-      </EuiPanel>
     </>
   );
 };
