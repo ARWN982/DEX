@@ -79,7 +79,7 @@ const GROUP_PILLARS: Record<HealthGroupId, VisibilityTabId[]> = {
 };
 
 function getHealthGroupLabelForPillar(pillar: VisibilityTabId): string {
-  if (DATA_HEALTH_PILLARS.includes(pillar)) return 'Data health';
+  if (DATA_HEALTH_PILLARS.includes(pillar)) return 'Visibility health';
   return 'Detection health';
 }
 
@@ -941,7 +941,7 @@ const CATEGORY_LABELS: Record<VisibilityTabId, string> = {
 
 const ACTION_FILTER_LABELS: Record<VisibilityTabId | HealthGroupId, string> = {
   ...CATEGORY_LABELS,
-  'data-health': 'Data health',
+  'data-health': 'Visibility health',
   'detection-health': 'Detection health',
 };
 
@@ -3283,7 +3283,7 @@ const SiemReadinessPage: React.FC = () => {
   };
 
   const SIEM_READINESS_SUMMARY_PROMPT =
-    'Summarize my SIEM Readiness status across Data health and Detection health. Highlight critical issues and recommend the top actions I should take.';
+    'Summarize my SIEM Readiness status across Visibility health and Detection health. Highlight critical issues and recommend the top actions I should take.';
 
   const goToActions = (filter: VisibilityTabId | HealthGroupId) => {
     setActionFilter((current) => (current === filter ? undefined : filter));
@@ -3478,7 +3478,7 @@ const SiemReadinessPage: React.FC = () => {
     return {
       dataHealth: {
         id: 'data-health' as const,
-        label: 'Data health',
+        label: 'Visibility health',
         severity: toSeverity(dataHealthStatus),
         numColor: toNumColor(dataHealthStatus),
         metrics: [
@@ -3543,7 +3543,7 @@ const SiemReadinessPage: React.FC = () => {
       pillars: [
         {
           id: 'data-health',
-          label: 'Data health',
+          label: 'Visibility health',
           severity: toAgentSeverity(dataHealthStatus),
           summary: formatMetricsSummary(healthGroupCards.dataHealth.metrics),
         },
@@ -3710,7 +3710,7 @@ const SiemReadinessPage: React.FC = () => {
                       <EuiFlexItem grow={false}>
                         <EuiHealth color={readinessToHealthColor(dataHealthStatus)} />
                       </EuiFlexItem>
-                      <EuiFlexItem grow={false}>Data health</EuiFlexItem>
+                      <EuiFlexItem grow={false}>Visibility health</EuiFlexItem>
                     </EuiFlexGroup>
                   </EuiTab>
                   <EuiTab

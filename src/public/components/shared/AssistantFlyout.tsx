@@ -83,7 +83,7 @@ export const AssistantFlyout: React.FC<AssistantFlyoutProps> = ({
     setInput('');
     setIsTyping(true);
 
-    const isSiemQuery = /siem|readiness|data health|detection health|coverage|quality|detections|continuity|retention|integration|ecs|ilm|rule field/i.test(text);
+    const isSiemQuery = /siem|readiness|visibility health|data health|detection health|coverage|quality|detections|continuity|retention|integration|ecs|ilm|rule field/i.test(text);
 
     setTimeout(() => {
       setMessages((prev) => [
@@ -93,7 +93,7 @@ export const AssistantFlyout: React.FC<AssistantFlyoutProps> = ({
           role: 'assistant',
           content: isSiemQuery
             ? 'Here is your current SIEM Readiness status:'
-            : `I'm reviewing your request. Based on your SIEM Readiness environment, I can help with Data health issues such as continuity, retention, and ECS compatibility, and Detection health issues such as integrations, rule coverage, and execution failures.`,
+            : `I'm reviewing your request. Based on your SIEM Readiness environment, I can help with Visibility health issues such as continuity, retention, and ECS compatibility, and Detection health issues such as integrations, rule coverage, and execution failures.`,
           isSiemResponse: isSiemQuery,
         },
       ]);
