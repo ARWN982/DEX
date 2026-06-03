@@ -17,7 +17,13 @@ const AutoDexPage: React.FC = () => {
   const [configureModalOpen, setConfigureModalOpen] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <>
+    <style>{`
+      @media (max-width: 1400px) { .autodex-root { zoom: 0.9; } }
+      @media (max-width: 1200px) { .autodex-root { zoom: 0.8; } }
+      @media (max-width: 1024px) { .autodex-root { zoom: 0.7; } }
+    `}</style>
+    <div className="autodex-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <SecurityHeader onMenuClick={() => {}} />
       <SecuritySideNav />
 
@@ -100,6 +106,7 @@ const AutoDexPage: React.FC = () => {
 
       <AutoDexConfigureModal isOpen={configureModalOpen} onClose={() => setConfigureModalOpen(false)} />
     </div>
+    </>
   );
 };
 
