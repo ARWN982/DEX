@@ -458,7 +458,7 @@ const ALL_CATEGORY_NAMES = ['Endpoint', 'Identity', 'Network', 'Cloud', 'Applica
 
 const PLATFORM_VIEW_OPTIONS = [
   { value: 'default', text: 'Default' },
-  ...ALL_CATEGORY_NAMES.map((cat) => ({ value: cat, text: cat })),
+  { value: 'custom', text: 'Custom platforms' },
 ];
 
 const PlatformViewSelect: React.FC<{
@@ -3459,7 +3459,7 @@ const SiemReadinessPage: React.FC = () => {
   const [editingPlatformId, setEditingPlatformId] = useState<string | null>(null);
 
   const filteredCategories = categories.filter(
-    (c) => enabledCategories.has(c.category) && (platformView === 'default' || c.category === platformView)
+    (c) => enabledCategories.has(c.category) && (platformView === 'default' || platformView === 'custom' || c.category === platformView)
   );
 
   // ── Compute ReadinessSummary ──────────────────────────────────────────────
