@@ -1113,23 +1113,24 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
           {headerSlot}
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
-            Actions required
-          </h2>
-          <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
-            {actions.length}
-          </EuiNotificationBadge>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
+              Actions required
+            </h2>
+            <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
+              {actions.length}
+            </EuiNotificationBadge>
+          </div>
+          <ActionsFilterGroup
+            allActions={allActions}
+            typeFilter={typeFilter}
+            severityFilter={severityFilter}
+            onTypeFilterChange={onTypeFilterChange}
+            onSeverityFilterChange={onSeverityFilterChange}
+          />
         </div>
-        <ActionsFilterGroup
-          allActions={allActions}
-          typeFilter={typeFilter}
-          severityFilter={severityFilter}
-          onTypeFilterChange={onTypeFilterChange}
-          onSeverityFilterChange={onSeverityFilterChange}
-        />
-      </div>
 
       {actions.length === 0 ? (
         <div style={{ padding: 24, width: '100%' }}>
@@ -1316,6 +1317,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 };
