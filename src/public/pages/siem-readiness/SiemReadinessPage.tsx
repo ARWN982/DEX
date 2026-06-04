@@ -1115,12 +1115,12 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
       )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
+            Actions required
+          </h2>
           <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
             {actions.length}
           </EuiNotificationBadge>
-          <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
-            actions required
-          </h2>
         </div>
         <ActionsFilterGroup
           allActions={allActions}
