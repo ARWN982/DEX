@@ -3732,13 +3732,13 @@ const SiemReadinessPage: React.FC = () => {
                 {/* Tab content panels */}
                 {selectedTab === 'data-health' && (
                   <>
+                    <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
+                    <EuiSpacer size="xl" />
                     <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={handleAddToChat} />
                     <EuiSpacer size="xl" />
                     <QualityTab categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />
                     <EuiSpacer size="xl" />
                     <RetentionTab categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />
-                    <EuiSpacer size="xl" />
-                    <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
                   </>
                 )}
                 {selectedTab === 'detection-health' && (
