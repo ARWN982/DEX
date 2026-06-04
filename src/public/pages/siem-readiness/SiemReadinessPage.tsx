@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   EuiAccordion,
+  EuiAvatar,
   EuiBadge,
   EuiBasicTable,
   EuiBetaBadge,
@@ -1230,7 +1231,12 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
       {/* Status row — matches Figma 1938:32931 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <EuiText size="s" style={{ margin: 0, fontWeight: 500, color: '#111C2C' }}>Status:</EuiText>
-        <EuiIcon type="warning" color="warning" size="s" />
+        <EuiAvatar
+          name="warning"
+          iconType="warning"
+          color="#ffc9c2"
+          size="s"
+        />
         <EuiText size="s" style={{ margin: 0, color: '#111C2C' }}>
           You have <strong>{totalCount}</strong> actions to get your SIEM healthy.{' '}
           <strong>{visibilityCount}</strong> are in
