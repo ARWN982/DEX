@@ -1162,6 +1162,9 @@ interface ActionsRequiredPanelProps {
   onTypeFilterChange?: (f: VisibilityTabId | undefined) => void;
   onSeverityFilterChange?: (f: 'critical' | 'warning' | undefined) => void;
   onAddToChat?: (prompt: string) => void;
+  visibilityCount: number;
+  detectionCount: number;
+  totalCount: number;
 }
 
 const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
@@ -1170,6 +1173,9 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
   onTypeFilterChange,
   onSeverityFilterChange,
   onAddToChat,
+  visibilityCount,
+  detectionCount,
+  totalCount,
   ...props
 }) => {
   const allActions = useMemo(
@@ -1221,33 +1227,57 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
         gap: 16,
       }}
     >
+      {/* Status row — matches Figma 1938:32931 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <EuiText size="s" style={{ margin: 0, fontWeight: 500, color: '#111C2C' }}>Status:</EuiText>
+        <EuiIcon type="warning" color="warning" size="s" />
+        <EuiText size="s" style={{ margin: 0, color: '#111C2C' }}>
+          You have <strong>{totalCount}</strong> actions to get your SIEM healthy.{' '}
+          <strong>{visibilityCount}</strong> are in
+        </EuiText>
+        <button
+          onClick={() => document.getElementById('siem-visibility-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          <EuiBadge color="hollow" iconType="database">Visibility health</EuiBadge>
+        </button>
+        <EuiText size="s" style={{ margin: 0, color: '#111C2C' }}>and <strong>{detectionCount}</strong> in</EuiText>
+        <button
+          onClick={() => document.getElementById('siem-detection-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        >
+          <EuiBadge color="hollow" iconType="radar">Detection health</EuiBadge>
+        </button>
+      </div>
+
+      {/* Search + filters row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <EuiFieldSearch
+            placeholder="Type text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            fullWidth
+            aria-label="Search actions"
+          />
+        </div>
+        <ActionsFilterGroup
+          allActions={allActions}
+          typeFilter={typeFilter}
+          severityFilter={severityFilter}
+          onTypeFilterChange={onTypeFilterChange}
+          onSeverityFilterChange={onSeverityFilterChange}
+        />
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 500, color: '#111C2C' }}>
-              Actions required
-            </h2>
-            <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
-              {actions.length}
-            </EuiNotificationBadge>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
-            <EuiFieldSearch
-              placeholder="Search actions…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              compressed
-              style={{ minWidth: 200 }}
-              aria-label="Search actions"
-            />
-            <ActionsFilterGroup
-              allActions={allActions}
-              typeFilter={typeFilter}
-              severityFilter={severityFilter}
-              onTypeFilterChange={onTypeFilterChange}
-              onSeverityFilterChange={onSeverityFilterChange}
-            />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 14, lineHeight: '24px', fontWeight: 500, color: '#516381' }}>
+            Actions required
+          </h2>
+          <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
+            {actions.length}
+          </EuiNotificationBadge>
         </div>
 
       {actions.length === 0 ? (
@@ -3824,45 +3854,6 @@ const SiemReadinessPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Status banner ── */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  marginBottom: 16,
-                  flexWrap: 'wrap',
-                }}>
-                  <EuiText size="s" style={{ margin: 0 }}>
-                    <span style={{ color: '#516381', fontWeight: 500 }}>Status:</span>
-                  </EuiText>
-                  <EuiIcon type="warning" color="warning" size="s" />
-                  <EuiText size="s" style={{ margin: 0 }}>
-                    <span style={{ color: '#111C2C' }}>
-                      You have <strong>{allActionItems.length}</strong> actions to get your SIEM healthy.{' '}
-                      <strong>{allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}</strong> are in
-                    </span>
-                  </EuiText>
-                  <span
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#F6F9FC', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
-                    onClick={() => document.getElementById('siem-visibility-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  >
-                    <EuiIcon type="visArea" size="s" />
-                    Visibility health
-                  </span>
-                  <EuiText size="s" style={{ margin: 0 }}>
-                    <span style={{ color: '#111C2C' }}>
-                      and <strong>{allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}</strong> in
-                    </span>
-                  </EuiText>
-                  <span
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#F6F9FC', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
-                    onClick={() => document.getElementById('siem-detection-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  >
-                    <EuiIcon type="eye" size="s" />
-                    Detection health
-                  </span>
-                </div>
-
                 {/* ── Actions required panel ── */}
                 <div ref={actionsPanelRef}>
                   <ActionsRequiredPanel
@@ -3879,6 +3870,9 @@ const SiemReadinessPage: React.FC = () => {
                     onTypeFilterChange={setTypeFilter}
                     onSeverityFilterChange={setSeverityFilter}
                     onAddToChat={handleAddToChat}
+                    totalCount={allActionItems.length}
+                    visibilityCount={allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}
+                    detectionCount={allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}
                   />
                 </div>
                 <EuiSpacer size="l" />
