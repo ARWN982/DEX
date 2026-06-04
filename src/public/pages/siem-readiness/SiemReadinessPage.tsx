@@ -1077,7 +1077,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
         {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <EuiHealth color={readinessToHealthColor(healthStatus)} />
+            <EuiIcon type={id === 'data-health' ? 'database' : 'radar'} size="m" color={readinessToHealthColor(healthStatus)} />
             <EuiText style={{ fontSize: 16, fontWeight: 600, color: '#000000' }}>{label}</EuiText>
             <span style={{
               display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
