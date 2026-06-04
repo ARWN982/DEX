@@ -3776,12 +3776,12 @@ const SiemReadinessPage: React.FC = () => {
                     <QualityTab categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />
                     <EuiSpacer size="xl" />
                     <RetentionTab categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />
-                    <EuiSpacer size="xl" />
-                    <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
                   </>
                 )}
                 {selectedTab === 'detection-health' && (
                   <>
+                    <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
+                    <EuiSpacer size="xl" />
                     <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
                   </>
                 )}
