@@ -1147,6 +1147,8 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
 };
 
 // ─── Actions required panel ───────────────────────────────────────────────────
+
+interface ActionsRequiredPanelProps {
   coverage: RuleIntegrationCoverage | null;
   integrations: SiemReadinessPackageInfo[];
   ruleFieldIssues: RuleFieldIssue[];
@@ -3841,33 +3843,25 @@ const SiemReadinessPage: React.FC = () => {
                       <strong>{allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}</strong> are in{' '}
                     </span>
                   </EuiText>
-                  <EuiBadge
-                    color="hollow"
-                    iconType="visArea"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      const el = document.getElementById('siem-visibility-health-card');
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
+                  <span
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#fff', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
+                    onClick={() => document.getElementById('siem-visibility-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   >
+                    <EuiIcon type="visArea" size="s" />
                     Visibility health
-                  </EuiBadge>
+                  </span>
                   <EuiText size="s" style={{ margin: 0 }}>
                     <span style={{ color: '#111C2C' }}>
                       {' '}and <strong>{allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}</strong> in{' '}
                     </span>
                   </EuiText>
-                  <EuiBadge
-                    color="hollow"
-                    iconType="eye"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      const el = document.getElementById('siem-detection-health-card');
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
+                  <span
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#fff', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
+                    onClick={() => document.getElementById('siem-detection-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   >
+                    <EuiIcon type="eye" size="s" />
                     Detection health
-                  </EuiBadge>
+                  </span>
                 </div>
 
                 {/* ── Actions required panel ── */}
