@@ -1077,7 +1077,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
         {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <EuiIcon type={id === 'data-health' ? 'database' : 'radar'} size="m" color={readinessToHealthColor(healthStatus)} />
+            <EuiIcon type={id === 'data-health' ? 'database' : 'radar'} size="m" color="#1d2a3e" />
             <EuiText style={{ fontSize: 16, fontWeight: 600, color: '#000000' }}>{label}</EuiText>
             <span style={{
               display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
@@ -1090,10 +1090,10 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
           </div>
           {totalRulesAffected !== null && totalRulesAffected > 0 && (
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 2, height: 20, padding: '0 8px',
+              display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px',
               borderRadius: 20, border: '1px solid #CAD3E2', fontSize: 12, fontWeight: 500, color: '#1D2A3E',
             }}>
-              <EuiIcon type="radar" size="s" />
+              <EuiIcon type="crosshairs" size="s" />
               {totalRulesAffected} total rules affected
             </span>
           )}
@@ -1115,8 +1115,11 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
                 <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
                   {metric.value}
                 </span>
-                <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', lineHeight: '24px', fontWeight: isActive ? 600 : 400 }}>
+                <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', lineHeight: '20px', fontWeight: isActive ? 600 : 400 }}>
                   {metric.label}
+                </EuiText>
+                <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '20px', fontWeight: 600 }}>
+                  {CATEGORY_LABELS[metric.pillar]}
                 </EuiText>
               </div>
             );
