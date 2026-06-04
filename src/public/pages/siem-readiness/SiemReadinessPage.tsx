@@ -1277,15 +1277,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{ margin: 0, fontSize: 14, lineHeight: '24px', fontWeight: 500, color: '#516381' }}>
-            Actions required
-          </h2>
-          <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
-            {actions.length}
-          </EuiNotificationBadge>
-        </div>
-
+      
       {actions.length === 0 ? (
         <div style={{ padding: 24, width: '100%' }}>
           <EuiEmptyPrompt
