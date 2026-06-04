@@ -1231,7 +1231,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
               {actions.length}
             </EuiNotificationBadge>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'nowrap' }}>
             <EuiFieldSearch
               placeholder="Search actions…"
               value={searchQuery}
@@ -3828,23 +3828,22 @@ const SiemReadinessPage: React.FC = () => {
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
-                  padding: '10px 16px',
-                  background: '#FFF8E6',
-                  border: '1px solid #F5A700',
-                  borderRadius: 6,
+                  gap: 6,
                   marginBottom: 16,
                   flexWrap: 'wrap',
                 }}>
-                  <EuiIcon type="warning" color="warning" size="m" />
+                  <EuiText size="s" style={{ margin: 0 }}>
+                    <span style={{ color: '#516381', fontWeight: 500 }}>Status:</span>
+                  </EuiText>
+                  <EuiIcon type="warning" color="warning" size="s" />
                   <EuiText size="s" style={{ margin: 0 }}>
                     <span style={{ color: '#111C2C' }}>
                       You have <strong>{allActionItems.length}</strong> actions to get your SIEM healthy.{' '}
-                      <strong>{allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}</strong> are in{' '}
+                      <strong>{allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}</strong> are in
                     </span>
                   </EuiText>
                   <span
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#fff', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#F6F9FC', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
                     onClick={() => document.getElementById('siem-visibility-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   >
                     <EuiIcon type="visArea" size="s" />
@@ -3852,11 +3851,11 @@ const SiemReadinessPage: React.FC = () => {
                   </span>
                   <EuiText size="s" style={{ margin: 0 }}>
                     <span style={{ color: '#111C2C' }}>
-                      {' '}and <strong>{allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}</strong> in{' '}
+                      and <strong>{allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}</strong> in
                     </span>
                   </EuiText>
                   <span
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#fff', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', borderRadius: 12, border: '1px solid #D3DAE6', background: '#F6F9FC', fontSize: 12, fontWeight: 500, color: '#1750BA', cursor: 'pointer' }}
                     onClick={() => document.getElementById('siem-detection-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   >
                     <EuiIcon type="eye" size="s" />
