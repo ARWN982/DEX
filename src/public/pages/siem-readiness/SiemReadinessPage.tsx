@@ -456,68 +456,6 @@ const AddToChatButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
 
 const ALL_CATEGORY_NAMES = ['Endpoint', 'Identity', 'Network', 'Cloud', 'Application/SaaS'] as const;
 
-const PLATFORM_VIEW_OPTIONS = [
-  { value: 'default', text: 'Default' },
-  { value: 'custom', text: 'Custom platforms' },
-];
-
-const PlatformViewSelect: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-}> = ({ value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const selected = PLATFORM_VIEW_OPTIONS.find((o) => o.value === value) ?? PLATFORM_VIEW_OPTIONS[0];
-
-  const selectableOptions = PLATFORM_VIEW_OPTIONS.map((opt) => ({
-    label: opt.text,
-    data: { value: opt.value },
-    checked: value === opt.value ? ('on' as const) : undefined,
-  }));
-
-  return (
-    <EuiPopover
-      button={
-        <EuiFormControlLayout
-          prepend={<span style={{ color: '#111C2C', fontWeight: 400, whiteSpace: 'nowrap', padding: '0 8px' }}>View</span>}
-          compressed
-          fullWidth={false}
-          style={{ minWidth: 160, margin: 0, cursor: 'pointer' }}
-          onClick={() => setIsOpen((o) => !o)}
-        >
-          <div
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '0 8px', height: 32, fontSize: 14, color: '#111C2C',
-              background: 'white', gap: 6, userSelect: 'none',
-            }}
-          >
-            <span>{selected.text}</span>
-            <EuiIcon type="chevronSingleDown" size="s" color="subdued" />
-          </div>
-        </EuiFormControlLayout>
-      }
-      isOpen={isOpen}
-      closePopover={() => setIsOpen(false)}
-      panelPaddingSize="none"
-      anchorPosition="downRight"
-    >
-      <EuiSelectable
-        aria-label="Select view"
-        options={selectableOptions}
-        singleSelection
-        onChange={(newOptions) => {
-          const picked = newOptions.find((o) => o.checked === 'on');
-          if (picked) {
-            onChange((picked as typeof selectableOptions[0]).data.value);
-            setIsOpen(false);
-          }
-        }}
-      >
-        {(list) => <div style={{ width: 200 }}>{list}</div>}
-      </EuiSelectable>
-    </EuiPopover>
-  );
-};
 
 const StatusHero: React.FC<{ summary: ReadinessSummary; onAddToChat?: () => void }> = ({ summary, onAddToChat }) => {
   const msg = getOverallStatusMessage({
@@ -3360,7 +3298,6 @@ const SiemReadinessPage: React.FC = () => {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState('');
   const [assistantSession, setAssistantSession] = useState(0);
-  const [platformView, setPlatformView] = useState('default');
 
   const openAssistant = (prompt = '') => {
     setAssistantPrompt(prompt);
@@ -3421,7 +3358,7 @@ const SiemReadinessPage: React.FC = () => {
   const [editingPlatformId, setEditingPlatformId] = useState<string | null>(null);
 
   const filteredCategories = categories.filter(
-    (c) => enabledCategories.has(c.category) && (platformView === 'default' || platformView === 'custom' || c.category === platformView)
+    (c) => enabledCategories.has(c.category)
   );
 
   // ── Compute ReadinessSummary ──────────────────────────────────────────────
@@ -3748,7 +3685,6 @@ const SiemReadinessPage: React.FC = () => {
                     >
                       Configurations
                     </EuiButtonEmpty>
-                    <PlatformViewSelect value={platformView} onChange={setPlatformView} />
                   </div>
                 </div>
 
