@@ -1052,6 +1052,7 @@ interface ActionsRequiredPanelProps {
   onTypeFilterChange?: (f: VisibilityTabId | undefined) => void;
   onSeverityFilterChange?: (f: 'critical' | 'warning' | undefined) => void;
   onAddToChat?: (prompt: string) => void;
+  headerSlot?: React.ReactNode;
 }
 
 const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
@@ -1060,6 +1061,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
   onTypeFilterChange,
   onSeverityFilterChange,
   onAddToChat,
+  headerSlot,
   ...props
 }) => {
   const allActions = useMemo(
@@ -1106,6 +1108,11 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
         gap: 16,
       }}
     >
+      {headerSlot && (
+        <div style={{ marginBottom: 4 }}>
+          {headerSlot}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <EuiNotificationBadge size="m" color="accent" data-test-subj="siemReadiness-actionsCount">
@@ -3688,26 +3695,7 @@ const SiemReadinessPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Health stat cards ── */}
-                <EuiFlexGroup gutterSize="s" responsive={false} alignItems="stretch">
-                  {[healthGroupCards.dataHealth, healthGroupCards.detectionHealth].map((card) => (
-                    <EuiFlexItem key={card.id} grow={1} style={{ minWidth: 0 }}>
-                      <PillarSummaryCard
-                        id={card.id}
-                        label={card.label}
-                        severity={card.severity}
-                        numColor={card.numColor}
-                        metrics={card.metrics}
-                        totalRulesAffected={card.totalRulesAffected}
-                        activeTypeFilter={typeFilter}
-                        onMetricClick={handleMetricClick}
-                      />
-                    </EuiFlexItem>
-                  ))}
-                </EuiFlexGroup>
-                <EuiSpacer size="l" />
-
-                {/* ── Actions required panel ── */}
+                {/* ── Actions required panel (includes health stat cards at top) ── */}
                 <div ref={actionsPanelRef}>
                   <ActionsRequiredPanel
                     coverage={coverage}
@@ -3723,6 +3711,24 @@ const SiemReadinessPage: React.FC = () => {
                     onTypeFilterChange={setTypeFilter}
                     onSeverityFilterChange={setSeverityFilter}
                     onAddToChat={handleAddToChat}
+                    headerSlot={
+                      <EuiFlexGroup gutterSize="s" responsive={false} alignItems="stretch">
+                        {[healthGroupCards.dataHealth, healthGroupCards.detectionHealth].map((card) => (
+                          <EuiFlexItem key={card.id} grow={1} style={{ minWidth: 0 }}>
+                            <PillarSummaryCard
+                              id={card.id}
+                              label={card.label}
+                              severity={card.severity}
+                              numColor={card.numColor}
+                              metrics={card.metrics}
+                              totalRulesAffected={card.totalRulesAffected}
+                              activeTypeFilter={typeFilter}
+                              onMetricClick={handleMetricClick}
+                            />
+                          </EuiFlexItem>
+                        ))}
+                      </EuiFlexGroup>
+                    }
                   />
                 </div>
                 <EuiSpacer size="l" />
