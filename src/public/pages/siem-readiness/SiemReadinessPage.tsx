@@ -1312,144 +1312,102 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                     border: '1px solid #CAD3E2',
                     padding: 12,
                     marginBottom: index < pagedActions.length - 1 ? -1 : 0,
-                    borderRadius: isFirstRow && isLastRow
-                      ? 6
-                      : isFirstRow
-                        ? '6px 6px 0 0'
-                        : isLastRow
-                          ? '0 0 6px 6px'
-                          : undefined,
+                    borderRadius: isFirstRow && isLastRow ? 6 : isFirstRow ? '6px 6px 0 0' : isLastRow ? '0 0 6px 6px' : undefined,
                   }}
                   data-test-subj={`siemReadiness-actionItem-${action.id}`}
                 >
-                  <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="none">
-                    <EuiFlexItem>
-                      <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
-                        <EuiFlexItem grow={false}>
-                          <EuiButtonIcon
-                            iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
-                            aria-label={isExpanded ? 'Collapse action' : 'Expand action'}
-                            size="s"
-                            color="text"
-                            onClick={() => toggleExpanded(action.id)}
-                            data-test-subj={`siemReadiness-actionExpand-${action.id}`}
-                          />
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false} style={{ width: 130 }}>
-                          <EuiText size="xs" style={{ fontWeight: 600, color: '#516381', letterSpacing: '0.02em' }}>
-                            {pillarLabel}
-                          </EuiText>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              height: 20,
-                              padding: '0 8px',
-                              borderRadius: 20,
-                              fontSize: 12,
-                              fontWeight: 500,
-                              lineHeight: '16px',
-                              textTransform: 'uppercase',
-                              background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0',
-                              color: action.severity === 'critical' ? '#A71627' : '#836500',
-                            }}
-                          >
-                            {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
-                          </span>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiText size="s" style={{ fontWeight: 600 }}>{action.title}</EuiText>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiText size="s" color="subdued">{timestamp}</EuiText>
-                        </EuiFlexItem>
-                      </EuiFlexGroup>
-                    </EuiFlexItem>
+                  {/* Collapsed row — Figma 1938:31465 / 31485 / 31505 */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    {/* Left: expand + health badge + severity + title + timestamp */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                      <EuiButtonIcon
+                        iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                        size="xs"
+                        color="text"
+                        onClick={() => toggleExpanded(action.id)}
+                      />
+                      {/* Health group badge: database icon for Visibility, radar for Detection */}
+                      <EuiBadge
+                        color="hollow"
+                        iconType={DATA_HEALTH_PILLARS.includes(action.pillar) ? 'database' : 'radar'}
+                      >
+                        {getHealthGroupLabelForPillar(action.pillar)}
+                      </EuiBadge>
+                      {/* Severity badge */}
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
+                        borderRadius: 20, fontSize: 12, fontWeight: 500,
+                        background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0',
+                        color: action.severity === 'critical' ? '#A71627' : '#836500',
+                        flexShrink: 0,
+                      }}>
+                        {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
+                      </span>
+                      {/* Title: bold category + regular detail */}
+                      <EuiText size="s" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {(() => {
+                          const colonIdx = action.title.indexOf(':');
+                          if (colonIdx > -1) {
+                            return (
+                              <>
+                                <strong>{action.title.slice(0, colonIdx)}:</strong>
+                                {' '}{action.title.slice(colonIdx + 1).trim()}
+                              </>
+                            );
+                          }
+                          return <strong>{action.title}</strong>;
+                        })()}
+                      </EuiText>
+                      <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{timestamp}</EuiText>
+                    </div>
 
-                    <EuiFlexItem grow={false}>
-                      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} justifyContent="flexEnd">
-                        <EuiFlexItem grow={false}>
-                          <RulesAffectedPopover
-                            title={`${action.rulesAffected} rules affected`}
-                            rules={buildRulesList(action.rulesAffected, action.title, action.mitreTactics)}
-                            count={action.rulesAffected}
-                            variant="badge"
-                            linkLabel={`${action.rulesAffected} rules affected`}
-                            testSubj={`siemReadiness-actionRulesAffected-${action.id}`}
+                    {/* Right: rules affected + divider + action button + dots */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                      <EuiBadge color="hollow" iconType="crosshairs">
+                        {action.rulesAffected} rules affected
+                      </EuiBadge>
+                      <div style={{ width: 1, height: 23, background: '#CAD3E2', flexShrink: 0 }} />
+                      <EuiButtonEmpty
+                        size="xs"
+                        iconType={action.actionIcon ?? 'popout'}
+                        iconSide="left"
+                        color="primary"
+                        href={action.fixLink ? '#' : undefined}
+                        data-test-subj={`siemReadiness-actionHere-${action.id}`}
+                      >
+                        Action here
+                      </EuiButtonEmpty>
+                      <EuiPopover
+                        isOpen={openPopoverId === action.id}
+                        closePopover={() => setOpenPopoverId(null)}
+                        panelPaddingSize="s"
+                        anchorPosition="downRight"
+                        button={
+                          <EuiButtonIcon
+                            size="xs"
+                            iconType="boxesVertical"
+                            color="primary"
+                            aria-label="More actions"
+                            onClick={() => setOpenPopoverId(openPopoverId === action.id ? null : action.id)}
                           />
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <div style={{ width: 1, height: 23, background: '#CAD3E2' }} />
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <div
-                            style={{
-                              width: ACTION_PANEL_BUTTON_MIN_WIDTH,
-                              display: 'flex',
-                              justifyContent: 'flex-end',
-                            }}
-                          >
-                            <EuiButtonEmpty
-                              size="s"
-                              iconType={action.actionIcon ?? 'popout'}
-                              iconSide="right"
-                              color="primary"
-                              flush="right"
-                              href={action.fixLink ? '#' : undefined}
-                              data-test-subj={`siemReadiness-actionHere-${action.id}`}
-                            >
-                              {action.actionLabel}
-                            </EuiButtonEmpty>
-                          </div>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiPopover
-                            isOpen={openPopoverId === action.id}
-                            closePopover={() => setOpenPopoverId(null)}
-                            panelPaddingSize="s"
-                            anchorPosition="downRight"
-                            button={
-                              <EuiButtonIcon
-                                size="s"
-                                iconType="boxesHorizontal"
-                                color="primary"
-                                aria-label="More actions"
-                                data-test-subj={`siemReadiness-moreActions-${action.id}`}
-                                onClick={() => setOpenPopoverId(openPopoverId === action.id ? null : action.id)}
-                              />
-                            }
-                          >
-                            <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
-                              <EuiListGroupItem
-                                iconType="productAgent"
-                                label="Add to chat"
-                                size="s"
-                                onClick={() => {
-                                  setOpenPopoverId(null);
-                                  onAddToChat?.(getActionChatPrompt(action));
-                                }}
-                              />
-                              <EuiListGroupItem iconType="folderClosed" label="Create a case" size="s" onClick={() => setOpenPopoverId(null)} />
-                            </EuiListGroup>
-                          </EuiPopover>
-                        </EuiFlexItem>
-                      </EuiFlexGroup>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
+                        }
+                      >
+                        <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                          <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => { setOpenPopoverId(null); onAddToChat?.(getActionChatPrompt(action)); }} />
+                          <EuiListGroupItem iconType="folderClosed" label="Create a case" size="s" onClick={() => setOpenPopoverId(null)} />
+                        </EuiListGroup>
+                      </EuiPopover>
+                    </div>
+                  </div>
 
                   {isExpanded && (
                     <>
                       <EuiSpacer size="s" />
                       <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
-                        <EuiText size="xs">
-                          <p style={{ margin: 0 }}><strong>Issue:</strong> {action.description}</p>
-                        </EuiText>
+                        <EuiText size="xs"><p style={{ margin: 0 }}><strong>Issue:</strong> {action.description}</p></EuiText>
                         <EuiSpacer size="xs" />
-                        <EuiText size="xs">
-                          <p style={{ margin: 0 }}><strong>Action:</strong> {action.fixRecommendation}</p>
-                        </EuiText>
+                        <EuiText size="xs"><p style={{ margin: 0 }}><strong>Action:</strong> {action.fixRecommendation}</p></EuiText>
                       </div>
                     </>
                   )}
