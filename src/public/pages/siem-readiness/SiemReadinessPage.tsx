@@ -2414,7 +2414,21 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
   return (
     <div>
       <EuiPanel hasBorder paddingSize="m">
-        <EuiTitle size="s"><h3>Integrations missing rules</h3></EuiTitle>
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
+          <EuiFlexItem grow={false}>
+            <EuiTitle size="s"><h3>Integrations missing rules</h3></EuiTitle>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center">
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="folderClosed" color="primary">View Cases&nbsp;<EuiBadge color="hollow">0</EuiBadge></EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="plusInCircle" color="primary">Create new case</EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
         <EuiSpacer size="s" />
         <EuiText size="s" color="subdued">
           Installed integrations with missing or partial detection rules.
@@ -2810,7 +2824,21 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
     <>
       {/* ── Rule field issues ── */}
       <EuiPanel hasBorder paddingSize="m">
-        <EuiTitle size="s"><h3>Rule field issues</h3></EuiTitle>
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
+          <EuiFlexItem grow={false}>
+            <EuiTitle size="s"><h3>Rule field issues</h3></EuiTitle>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center">
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="folderClosed" color="primary">View Cases&nbsp;<EuiBadge color="hollow">0</EuiBadge></EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="plusInCircle" color="primary">Create new case</EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
         <EuiSpacer size="s" />
         {ruleFieldIssues.length > 0 ? (
           <>
@@ -2918,7 +2946,21 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
   if (findings.length === 0) {
     return (
       <EuiPanel hasBorder paddingSize="m">
-        <EuiTitle size="s"><h3>Continuity</h3></EuiTitle>
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
+          <EuiFlexItem grow={false}>
+            <EuiTitle size="s"><h3>Continuity</h3></EuiTitle>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center">
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="folderClosed" color="primary">View Cases&nbsp;<EuiBadge color="hollow">0</EuiBadge></EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="plusInCircle" color="primary">Create new case</EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
         <EuiSpacer size="s" />
         <EuiText size="s" color="subdued">
           See which data streams have stopped sending data, dropped in volume, or exceeded latency SLAs. Detection rules that depend on these streams may be running but not matching anything.
@@ -2983,7 +3025,21 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
     <>
       {/* ── Findings panel ── */}
       <EuiPanel hasBorder paddingSize="m">
-        <EuiTitle size="s"><h3>Continuity</h3></EuiTitle>
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
+          <EuiFlexItem grow={false}>
+            <EuiTitle size="s"><h3>Continuity</h3></EuiTitle>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center">
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="folderClosed" color="primary">View Cases&nbsp;<EuiBadge color="hollow">0</EuiBadge></EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="xs" iconType="plusInCircle" color="primary">Create new case</EuiButtonEmpty>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
         <EuiSpacer size="s" />
         <EuiText size="s" color="subdued">
           See which data streams have stopped sending data, dropped in volume, or exceeded latency SLAs. Detection rules that depend on these streams may be running but not matching anything.
@@ -3123,7 +3179,21 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
 
   return (
     <EuiPanel hasBorder paddingSize="m">
-      <EuiTitle size="s"><h3>Retention</h3></EuiTitle>
+      <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="s">
+        <EuiFlexItem grow={false}>
+          <EuiTitle size="s"><h3>Retention</h3></EuiTitle>
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <EuiFlexGroup gutterSize="xs" responsive={false} alignItems="center">
+            <EuiFlexItem grow={false}>
+              <EuiButtonEmpty size="xs" iconType="folderClosed" color="primary">View Cases&nbsp;<EuiBadge color="hollow">0</EuiBadge></EuiButtonEmpty>
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiButtonEmpty size="xs" iconType="plusInCircle" color="primary">Create new case</EuiButtonEmpty>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiFlexItem>
+      </EuiFlexGroup>
       <EuiSpacer size="s" />
       <EuiText size="s" color="subdued">
         Compare log category retention against compliance benchmarks. Categories below benchmark may lack the historical data your rules and investigations need.
