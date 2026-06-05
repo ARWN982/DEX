@@ -944,6 +944,7 @@ interface ActionsFilterGroupProps {
   severityFilter?: 'critical' | 'warning';
   onTypeFilterChange?: (f: VisibilityTabId | undefined) => void;
   onSeverityFilterChange?: (f: 'critical' | 'warning' | undefined) => void;
+  allowedPillars?: VisibilityTabId[];
 }
 
 const ActionsFilterGroup: React.FC<ActionsFilterGroupProps> = ({
@@ -952,11 +953,13 @@ const ActionsFilterGroup: React.FC<ActionsFilterGroupProps> = ({
   severityFilter,
   onTypeFilterChange,
   onSeverityFilterChange,
+  allowedPillars,
 }) => {
   const [typeOpen, setTypeOpen] = useState(false);
   const [severityOpen, setSeverityOpen] = useState(false);
 
-  const typeOptions = (['continuity', 'retention', 'quality', 'coverage', 'detections'] as VisibilityTabId[]).map(
+  const availablePillars = allowedPillars ?? (['continuity', 'retention', 'quality', 'coverage', 'detections'] as VisibilityTabId[]);
+  const typeOptions = availablePillars.map(
     (pillar) => ({
       label: CATEGORY_LABELS[pillar],
       pillar,
@@ -1127,21 +1130,23 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
         </div>
       </div>
 
-      {/* View data footer */}
-      <div
-        style={{
-          background: '#F6F9FC', padding: '8px 20px', borderTop: '1px solid #E3E8F2',
-          display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 6,
-          userSelect: 'none',
-        }}
-        onClick={() => setExpanded((e) => !e)}
-      >
-        <EuiIcon type={expanded ? 'arrowDown' : 'arrowRight'} size="s" color="primary" />
-        <EuiText size="s" style={{ color: '#1750BA', fontWeight: 500 }}>View data</EuiText>
-      </div>
+      {/* View data footer — only shown when there are children */}
+      {children && (
+        <div
+          style={{
+            background: '#F6F9FC', padding: '8px 20px', borderTop: '1px solid #E3E8F2',
+            display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 6,
+            userSelect: 'none',
+          }}
+          onClick={() => setExpanded((e) => !e)}
+        >
+          <EuiIcon type={expanded ? 'arrowDown' : 'arrowRight'} size="s" color="primary" />
+          <EuiText size="s" style={{ color: '#1750BA', fontWeight: 500 }}>View data</EuiText>
+        </div>
+      )}
 
       {/* Expanded content */}
-      {expanded && (
+      {children && expanded && (
         <div style={{ padding: '24px 20px', borderTop: '1px solid #E3E8F2' }}>
           {children}
         </div>
@@ -1161,14 +1166,12 @@ interface ActionsRequiredPanelProps {
   categories: CategoryGroup[];
   qualityResults: QualityResult[];
   summary: ReadinessSummary;
+  allowedPillars: VisibilityTabId[];
   typeFilter?: VisibilityTabId;
   severityFilter?: 'critical' | 'warning';
   onTypeFilterChange?: (f: VisibilityTabId | undefined) => void;
   onSeverityFilterChange?: (f: 'critical' | 'warning' | undefined) => void;
   onAddToChat?: (prompt: string) => void;
-  visibilityCount: number;
-  detectionCount: number;
-  totalCount: number;
 }
 
 const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
@@ -1177,15 +1180,16 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
   onTypeFilterChange,
   onSeverityFilterChange,
   onAddToChat,
-  visibilityCount,
-  detectionCount,
-  totalCount,
+  allowedPillars,
   ...props
 }) => {
-  const allActions = useMemo(
-    () => deriveActionItems(props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults),
-    [props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults]
+  const baseActions = useMemo(
+    () => deriveActionItems(props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults)
+      .filter((a) => allowedPillars.includes(a.pillar)),
+    [props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults, allowedPillars]
   );
+}) => {
+  const allActions = baseActions;
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
@@ -1231,32 +1235,12 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
         gap: 16,
       }}
     >
-      {/* Status row — matches Figma 1938:32931 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <EuiText size="s" style={{ margin: 0, fontWeight: 500, color: '#111C2C' }}>Status:</EuiText>
-        <EuiAvatar
-          name="warning"
-          iconType="warning"
-          color="#ffc9c2"
-          size="s"
-        />
-        <EuiText size="s" style={{ margin: 0, color: '#111C2C' }}>
-          You have <strong>{totalCount}</strong> actions to get your SIEM healthy.{' '}
-          <strong>{visibilityCount}</strong> are in
-        </EuiText>
-        <button
-          onClick={() => document.getElementById('siem-visibility-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-        >
-          <EuiBadge color="hollow" iconType="database">Visibility health</EuiBadge>
-        </button>
-        <EuiText size="s" style={{ margin: 0, color: '#111C2C' }}>and <strong>{detectionCount}</strong> in</EuiText>
-        <button
-          onClick={() => document.getElementById('siem-detection-health-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-        >
-          <EuiBadge color="hollow" iconType="radar">Detection health</EuiBadge>
-        </button>
+      {/* Take action heading + search + filters */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <EuiText style={{ fontSize: 15, fontWeight: 600, color: '#111C2C', margin: 0 }}>Take action</EuiText>
+          <EuiNotificationBadge size="m" color="accent">{actions.length}</EuiNotificationBadge>
+        </div>
       </div>
 
       {/* Search + filters row */}
@@ -1276,6 +1260,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
           severityFilter={severityFilter}
           onTypeFilterChange={onTypeFilterChange}
           onSeverityFilterChange={onSeverityFilterChange}
+          allowedPillars={allowedPillars}
         />
       </div>
 
@@ -3791,6 +3776,12 @@ const SiemReadinessPage: React.FC = () => {
                     <EuiTitle size="m">
                       <h1 style={{ fontSize: '2.025rem', margin: 0 }}>SIEM Readiness</h1>
                     </EuiTitle>
+                    {(dataHealthStatus === 'critical' || detectionHealthStatus === 'critical') && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 24, padding: '0 8px', borderRadius: 16, background: '#FFC9C2', color: '#BD271E', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>
+                        <EuiIcon type="warning" color="danger" size="s" />
+                        Critical issues detected
+                      </span>
+                    )}
                   </div>
                   <div style={{
                     display: 'flex',
@@ -3813,42 +3804,85 @@ const SiemReadinessPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Actions required panel ── */}
-                <div ref={actionsPanelRef}>
-                  <ActionsRequiredPanel
-                    coverage={coverage}
-                    integrations={integrations}
-                    ruleFieldIssues={ruleFieldIssues}
-                    pipelines={pipelines}
-                    retentionItems={retentionItems}
-                    categories={filteredCategories}
-                    qualityResults={qualityResults}
-                    summary={summary}
-                    typeFilter={typeFilter}
-                    severityFilter={severityFilter}
-                    onTypeFilterChange={setTypeFilter}
-                    onSeverityFilterChange={setSeverityFilter}
-                    onAddToChat={handleAddToChat}
-                    totalCount={allActionItems.length}
-                    visibilityCount={allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}
-                    detectionCount={allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}
-                  />
-                </div>
-                <EuiSpacer size="l" />
-
-                {/* ── Visibility health expandable card ── */}
-                <div id="siem-visibility-health-card">
-                  <ExpandableHealthCard
-                    id="data-health"
-                    label="Visibility health"
-                    severity={healthGroupCards.dataHealth.severity}
-                    numColor={healthGroupCards.dataHealth.numColor}
-                    metrics={healthGroupCards.dataHealth.metrics}
-                    totalRulesAffected={healthGroupCards.dataHealth.totalRulesAffected}
-                    activeTypeFilter={typeFilter}
-                    onMetricClick={handleMetricClick}
-                    healthStatus={dataHealthStatus}
+                {/* ── Health tabs ── */}
+                <EuiTabs data-test-subj="siemReadiness-tabs">
+                  <EuiTab
+                    isSelected={selectedTab === 'data-health'}
+                    onClick={() => { setSelectedTab('data-health'); setTypeFilter(undefined); setSeverityFilter(undefined); }}
+                    data-test-subj="siemReadiness-tab-data-health"
                   >
+                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                      <EuiFlexItem grow={false}>
+                        <EuiIcon type="database" size="s" color={readinessToHealthColor(dataHealthStatus)} />
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>Visibility health</EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiNotificationBadge size="s" color={selectedTab === 'data-health' ? 'accent' : 'subdued'}>
+                          {allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}
+                        </EuiNotificationBadge>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </EuiTab>
+                  <EuiTab
+                    isSelected={selectedTab === 'detection-health'}
+                    onClick={() => { setSelectedTab('detection-health'); setTypeFilter(undefined); setSeverityFilter(undefined); }}
+                    data-test-subj="siemReadiness-tab-detection-health"
+                  >
+                    <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
+                      <EuiFlexItem grow={false}>
+                        <EuiIcon type="radar" size="s" color={readinessToHealthColor(detectionHealthStatus)} />
+                      </EuiFlexItem>
+                      <EuiFlexItem grow={false}>Detection health</EuiFlexItem>
+                      <EuiFlexItem grow={false}>
+                        <EuiNotificationBadge size="s" color={selectedTab === 'detection-health' ? 'accent' : 'subdued'}>
+                          {allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}
+                        </EuiNotificationBadge>
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  </EuiTab>
+                </EuiTabs>
+
+                <EuiSpacer size="m" />
+
+                {/* ── Visibility health tab ── */}
+                {selectedTab === 'data-health' && (
+                  <>
+                    {/* Metrics card */}
+                    <ExpandableHealthCard
+                      id="data-health"
+                      label="Visibility health"
+                      severity={healthGroupCards.dataHealth.severity}
+                      numColor={healthGroupCards.dataHealth.numColor}
+                      metrics={healthGroupCards.dataHealth.metrics}
+                      totalRulesAffected={healthGroupCards.dataHealth.totalRulesAffected}
+                      activeTypeFilter={typeFilter}
+                      onMetricClick={handleMetricClick}
+                      healthStatus={dataHealthStatus}
+                    >
+                      {null}
+                    </ExpandableHealthCard>
+                    <EuiSpacer size="m" />
+                    {/* Actions */}
+                    <div ref={actionsPanelRef}>
+                      <ActionsRequiredPanel
+                        coverage={coverage}
+                        integrations={integrations}
+                        ruleFieldIssues={ruleFieldIssues}
+                        pipelines={pipelines}
+                        retentionItems={retentionItems}
+                        categories={filteredCategories}
+                        qualityResults={qualityResults}
+                        summary={summary}
+                        allowedPillars={DATA_HEALTH_PILLARS}
+                        typeFilter={typeFilter}
+                        severityFilter={severityFilter}
+                        onTypeFilterChange={setTypeFilter}
+                        onSeverityFilterChange={setSeverityFilter}
+                        onAddToChat={handleAddToChat}
+                      />
+                    </div>
+                    <EuiSpacer size="xl" />
+                    {/* Data sections */}
                     <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
                     <EuiSpacer size="xl" />
                     <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={handleAddToChat} />
@@ -3856,28 +3890,51 @@ const SiemReadinessPage: React.FC = () => {
                     <QualityTab categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />
                     <EuiSpacer size="xl" />
                     <RetentionTab categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />
-                  </ExpandableHealthCard>
-                </div>
-                <EuiSpacer size="m" />
+                  </>
+                )}
 
-                {/* ── Detection health expandable card ── */}
-                <div id="siem-detection-health-card">
-                  <ExpandableHealthCard
-                    id="detection-health"
-                    label="Detection health"
-                    severity={healthGroupCards.detectionHealth.severity}
-                    numColor={healthGroupCards.detectionHealth.numColor}
-                    metrics={healthGroupCards.detectionHealth.metrics}
-                    totalRulesAffected={healthGroupCards.detectionHealth.totalRulesAffected}
-                    activeTypeFilter={typeFilter}
-                    onMetricClick={handleMetricClick}
-                    healthStatus={detectionHealthStatus}
-                  >
+                {/* ── Detection health tab ── */}
+                {selectedTab === 'detection-health' && (
+                  <>
+                    {/* Metrics card */}
+                    <ExpandableHealthCard
+                      id="detection-health"
+                      label="Detection health"
+                      severity={healthGroupCards.detectionHealth.severity}
+                      numColor={healthGroupCards.detectionHealth.numColor}
+                      metrics={healthGroupCards.detectionHealth.metrics}
+                      totalRulesAffected={healthGroupCards.detectionHealth.totalRulesAffected}
+                      activeTypeFilter={typeFilter}
+                      onMetricClick={handleMetricClick}
+                      healthStatus={detectionHealthStatus}
+                    >
+                      {null}
+                    </ExpandableHealthCard>
+                    <EuiSpacer size="m" />
+                    {/* Actions */}
+                    <ActionsRequiredPanel
+                      coverage={coverage}
+                      integrations={integrations}
+                      ruleFieldIssues={ruleFieldIssues}
+                      pipelines={pipelines}
+                      retentionItems={retentionItems}
+                      categories={filteredCategories}
+                      qualityResults={qualityResults}
+                      summary={summary}
+                      allowedPillars={DETECTION_HEALTH_PILLARS}
+                      typeFilter={typeFilter}
+                      severityFilter={severityFilter}
+                      onTypeFilterChange={setTypeFilter}
+                      onSeverityFilterChange={setSeverityFilter}
+                      onAddToChat={handleAddToChat}
+                    />
+                    <EuiSpacer size="xl" />
+                    {/* Data sections */}
                     <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
                     <EuiSpacer size="xl" />
                     <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
-                  </ExpandableHealthCard>
-                </div>
+                  </>
+                )}
 
               </div>
             </EuiPanel>
