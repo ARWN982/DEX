@@ -267,45 +267,41 @@ const CoverageOverviewDashboardComponent = () => {
               display: 'flex',
               alignItems: 'center',
               gap: 16,
-              padding: 16,
+              padding: '16px',
               background: '#F6F9FC',
               border: '1px solid #E3E8F2',
               borderRadius: 4,
-              overflow: 'hidden',
             }}>
-              {/* Shield image */}
-              <div style={{ width: 80, height: 80, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{
-                  width: 80, height: 80, borderRadius: 8,
-                  background: 'linear-gradient(135deg, #153385 0%, #101C3F 40%, #0B64DD 80%, #48EFCF 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <span style={{ fontSize: 36 }}>🛡️</span>
-                </div>
+              {/* Elastic Security shield icon */}
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                <EuiIcon type="logoSecurity" size="xxl" />
               </div>
 
               {/* Text */}
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
-                <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#111C2C' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#111C2C', marginBottom: 2 }}>
                   MITRE ATT&amp;CK {selectedMitreVersionId} is now applied to your coverage view.
-                </EuiText>
-                <EuiText size="s" style={{ color: '#516381', lineHeight: '20px' }}>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 400, lineHeight: '20px', color: '#516381' }}>
                   Some tactics and techniques have been added, renamed, or revoked since v18.
-                </EuiText>
+                </div>
               </div>
 
               {/* Actions */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" color="primary">
+                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" color="primary" flush="right">
                   Learn more
                 </EuiButtonEmpty>
-                <div style={{
-                  background: '#D9E8FF', borderRadius: 4,
-                  padding: '0 8px', height: 32, display: 'inline-flex', alignItems: 'center',
-                  cursor: 'pointer',
-                }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#1750BA' }}>TBC</span>
-                </div>
+                <button
+                  style={{
+                    background: '#D9E8FF', border: 'none', borderRadius: 4,
+                    padding: '0 12px', height: 32, cursor: 'pointer',
+                    fontSize: 14, fontWeight: 500, color: '#1750BA',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  TBC
+                </button>
               </div>
 
               {/* Dismiss */}
