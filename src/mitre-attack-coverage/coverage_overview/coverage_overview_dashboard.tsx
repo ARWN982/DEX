@@ -22,8 +22,33 @@ import {
   EuiText,
   EuiTitle,
 } from '@elastic/eui';
-import { CoverageOverviewLink } from '../shims/page_components';
 import * as i18n from './translations';
+
+const MitreIconSVG: React.FC<{ size?: number }> = ({ size = 80 }) => (
+  <svg width={size} height={size} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M15.825 7.6189L7.2 7.8939L7.1875 16.2564L9.7375 13.7064L18.775 22.7376L22.3125 19.2064L13.275 10.1689L15.825 7.6189Z" fill="#153385" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M16.2313 7.21265L7.60625 7.48765L7.59375 15.8501L10.1437 13.3001L19.1813 22.3314L22.7188 18.8001L13.6813 9.76265L16.2313 7.21265Z" fill="#48EFCF" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M64.0496 7.6189L72.6746 7.8939L72.6871 16.2564L70.1371 13.7064L61.1059 22.7376L57.5684 19.2064L66.5996 10.1689L64.0496 7.6189Z" fill="#153385" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M63.6434 7.21265L72.2684 7.48765L72.2809 15.8501L69.7309 13.3001L60.6934 22.3314L57.1621 18.8001L66.1934 9.76265L63.6434 7.21265Z" fill="#48EFCF" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M15.825 65.1313L7.2 64.8563L7.1875 56.4938L9.7375 59.0438L18.775 50.0063L22.3125 53.5438L13.275 62.5813L15.825 65.1313Z" fill="#153385" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M16.2313 65.5376L7.60625 65.2626L7.59375 56.9001L10.1437 59.4501L19.1813 50.4126L22.7188 53.9501L13.6813 62.9876L16.2313 65.5376Z" fill="#48EFCF" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M64.0496 65.1313L72.6746 64.8563L72.6871 56.4938L70.1371 59.0438L61.1059 50.0063L57.5684 53.5438L66.5996 62.5813L64.0496 65.1313Z" fill="#153385" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M63.6434 65.5376L72.2684 65.2626L72.2809 56.9001L69.7309 59.4501L60.6934 50.4126L57.1621 53.9501L66.1934 62.9876L63.6434 65.5376Z" fill="#48EFCF" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M14.8062 13.7563C14.8062 13.7563 18.0562 22.4313 18.0562 36.7563C18.0562 51.0813 14.8062 57.7876 14.8062 57.7876C14.8062 57.7876 23.7812 54.9501 40.2499 54.9501C56.7187 54.9501 65.0749 57.7876 65.0749 57.7876C65.0749 57.7876 61.9874 49.6001 61.9874 35.8126C61.9874 22.0251 65.0749 13.7688 65.0749 13.7688C65.0749 13.7688 55.0749 16.6063 40.8499 16.6063C32.1124 16.5688 23.3937 15.6126 14.8062 13.7563Z" fill="#0B64DD" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M32.2122 32.6875H27.2935V49.3563H32.2122V32.6875Z" fill="white"/>
+    <path d="M32.2122 30.0437H27.2935V37.225H32.2122V30.0437Z" fill="#48EFCF"/>
+    <path d="M52.5809 23.3875H47.6621V30.2H52.5809V23.3875Z" fill="#48EFCF"/>
+    <path d="M42.3748 27.8313H37.4561V49.3563H42.3748V27.8313Z" fill="white"/>
+    <path d="M52.5311 30.2249H47.6123V49.3624H52.5311V30.2249Z" fill="white"/>
+    <path d="M42.3997 25.2561H37.481V41.1749H42.3997V25.2561Z" fill="#48EFCF"/>
+    <path d="M41.9498 72.2312C50.5311 68.75 56.7561 61.3812 56.7561 54.45V45.0437L41.9498 40.1375H41.9061L28.3936 45.0437V54.45C28.3936 61.3875 33.3311 68.75 41.9061 72.2312H41.9498Z" fill="#153385" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M41.9499 72.2312C50.1374 68.75 55.4624 61.3812 55.4624 54.45V45.0437L41.9499 40.1375H41.9124L28.3999 45.0437V54.45C28.3999 61.3875 33.7249 68.75 41.9124 72.2312H41.9499Z" fill="#48EFCF" stroke="#101C3F" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M41.6686 48.2251C43.2873 48.2251 44.5998 49.5376 44.5998 51.1563V54.4501H38.7373V51.1563C38.7373 49.5376 40.0498 48.2251 41.6686 48.2251Z" stroke="#0B64DD" strokeWidth="1.60714" strokeMiterlimit="10"/>
+    <path d="M47.5498 53.0376H35.8623V62.0938H47.5498V53.0376Z" fill="#0B64DD"/>
+    <path d="M41.7061 58.0752C42.5345 58.0752 43.2061 57.4036 43.2061 56.5752C43.2061 55.7468 42.5345 55.0752 41.7061 55.0752C40.8776 55.0752 40.2061 55.7468 40.2061 56.5752C40.2061 57.4036 40.8776 58.0752 41.7061 58.0752Z" fill="#101C3F"/>
+    <path d="M42.3874 55.9126H41.0249V60.4063H42.3874V55.9126Z" fill="#101C3F"/>
+  </svg>
+);
 import { CoverageOverviewTacticPanel } from './tactic_panel';
 import { CoverageOverviewMitreTechniquePanelPopover } from './technique_panel_popover';
 import { CoverageOverviewFiltersPanel } from './filters_panel';
@@ -273,9 +298,9 @@ const CoverageOverviewDashboardComponent = () => {
               border: '1px solid #E3E8F2',
               borderRadius: 4,
             }}>
-              {/* Elastic Security shield icon */}
-              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-                <EuiIcon type="logoSecurity" size="xxl" />
+              {/* MITRE icon */}
+              <div style={{ flexShrink: 0, width: 80, height: 80 }}>
+                <MitreIconSVG size={80} />
               </div>
 
               {/* Text */}
@@ -288,20 +313,18 @@ const CoverageOverviewDashboardComponent = () => {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions — Figma 713:2535: only Learn more pill */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" color="primary" flush="right">
-                  Learn more
-                </EuiButtonEmpty>
                 <button
                   style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
                     background: '#D9E8FF', border: 'none', borderRadius: 4,
-                    padding: '0 12px', height: 32, cursor: 'pointer',
+                    padding: '0 8px', height: 32, cursor: 'pointer',
                     fontSize: 14, fontWeight: 500, color: '#1750BA',
-                    whiteSpace: 'nowrap',
                   }}
                 >
-                  TBC
+                  Learn more
+                  <EuiIcon type="popout" size="s" color="#1750BA" />
                 </button>
               </div>
 
