@@ -1080,7 +1080,6 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
         {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <EuiIcon type={id === 'data-health' ? 'database' : 'radar'} size="m" color="#1d2a3e" />
             <EuiText style={{ fontSize: 16, fontWeight: 600, color: '#000000' }}>{label}</EuiText>
             <span style={{
               display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
@@ -1305,13 +1304,6 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                         color="text"
                         onClick={() => toggleExpanded(action.id)}
                       />
-                      {/* Health group badge: database icon for Visibility, radar for Detection */}
-                      <EuiBadge
-                        color="hollow"
-                        iconType={DATA_HEALTH_PILLARS.includes(action.pillar) ? 'database' : 'radar'}
-                      >
-                        {getHealthGroupLabelForPillar(action.pillar)}
-                      </EuiBadge>
                       {/* Severity badge */}
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
@@ -3810,12 +3802,9 @@ const SiemReadinessPage: React.FC = () => {
                     data-test-subj="siemReadiness-tab-data-health"
                   >
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}>
-                        <EuiIcon type="database" size="s" color={readinessToHealthColor(dataHealthStatus)} />
-                      </EuiFlexItem>
                       <EuiFlexItem grow={false}>Visibility health</EuiFlexItem>
                       <EuiFlexItem grow={false}>
-                        <EuiNotificationBadge size="s" color={selectedTab === 'data-health' ? 'accent' : 'subdued'}>
+                        <EuiNotificationBadge size="s" color="accent">
                           {allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length}
                         </EuiNotificationBadge>
                       </EuiFlexItem>
@@ -3827,12 +3816,9 @@ const SiemReadinessPage: React.FC = () => {
                     data-test-subj="siemReadiness-tab-detection-health"
                   >
                     <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-                      <EuiFlexItem grow={false}>
-                        <EuiIcon type="radar" size="s" color={readinessToHealthColor(detectionHealthStatus)} />
-                      </EuiFlexItem>
                       <EuiFlexItem grow={false}>Detection health</EuiFlexItem>
                       <EuiFlexItem grow={false}>
-                        <EuiNotificationBadge size="s" color={selectedTab === 'detection-health' ? 'accent' : 'subdued'}>
+                        <EuiNotificationBadge size="s" color="accent">
                           {allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length}
                         </EuiNotificationBadge>
                       </EuiFlexItem>
