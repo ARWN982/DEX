@@ -40,56 +40,50 @@ const CoverageOverviewFiltersPanelComponent = () => {
   );
 
   return (
-    <EuiFlexGroup justifyContent="spaceBetween" wrap={false} responsive={false} style={{ minWidth: 0 }}>
+    <EuiFlexGroup alignItems="center" gutterSize="s" wrap={false} responsive={false} style={{ minWidth: 0 }}>
+      <EuiFlexItem grow={false}>
+        <RuleActivityFilter
+          onChange={setRuleActivityFilter}
+          isLoading={isLoading}
+          selected={filter.activity ?? []}
+        />
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <RuleSourceFilter
+          onChange={setRuleSourceFilter}
+          isLoading={isLoading}
+          selected={filter.source ?? []}
+        />
+      </EuiFlexItem>
       <EuiFlexItem>
-        <EuiFlexGroup>
-          <EuiFlexItem grow={0}>
-            <RuleActivityFilter
-              onChange={setRuleActivityFilter}
-              isLoading={isLoading}
-              selected={filter.activity ?? []}
-            />
-          </EuiFlexItem>
-          <EuiFlexItem grow={0}>
-            <RuleSourceFilter
-              onChange={setRuleSourceFilter}
-              isLoading={isLoading}
-              selected={filter.source ?? []}
-            />
-          </EuiFlexItem>
-        </EuiFlexGroup>
-        <EuiFlexGroup alignItems="center" style={{ marginTop: 12 }}>
-          <EuiFlexItem>
-            <EuiFieldSearch
-              fullWidth
-              incremental={false}
-              data-test-subj="coverageOverviewFilterSearchBar"
-              placeholder={i18n.CoverageOverviewSearchBarPlaceholder}
-              onSearch={handleRuleSearchOnChange}
-            />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiFilterGroup>
-              <EuiFilterButton
-                withNext
-                isToggle
-                isSelected={!showExpandedCells}
-                hasActiveFilters={!showExpandedCells}
-                onClick={handleCollapseCellsFilterClick}
-              >
-                {i18n.COLLAPSE_CELLS_FILTER_BUTTON}
-              </EuiFilterButton>
-              <EuiFilterButton
-                isToggle
-                isSelected={showExpandedCells}
-                hasActiveFilters={showExpandedCells}
-                onClick={handleExpandCellsFilterClick}
-              >
-                {i18n.EXPAND_CELLS_FILTER_BUTTON}
-              </EuiFilterButton>
-            </EuiFilterGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
+        <EuiFieldSearch
+          fullWidth
+          incremental={false}
+          data-test-subj="coverageOverviewFilterSearchBar"
+          placeholder={i18n.CoverageOverviewSearchBarPlaceholder}
+          onSearch={handleRuleSearchOnChange}
+        />
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <EuiFilterGroup>
+          <EuiFilterButton
+            withNext
+            isToggle
+            isSelected={!showExpandedCells}
+            hasActiveFilters={!showExpandedCells}
+            onClick={handleCollapseCellsFilterClick}
+          >
+            {i18n.COLLAPSE_CELLS_FILTER_BUTTON}
+          </EuiFilterButton>
+          <EuiFilterButton
+            isToggle
+            isSelected={showExpandedCells}
+            hasActiveFilters={showExpandedCells}
+            onClick={handleExpandCellsFilterClick}
+          >
+            {i18n.EXPAND_CELLS_FILTER_BUTTON}
+          </EuiFilterButton>
+        </EuiFilterGroup>
       </EuiFlexItem>
     </EuiFlexGroup>
   );
