@@ -1121,7 +1121,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
                   {metric.label}
                 </EuiText>
                 <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '20px', fontWeight: 600 }}>
-                  {CATEGORY_LABELS[metric.pillar]}
+                  {metric.sectionLabel ?? CATEGORY_LABELS[metric.pillar]}
                 </EuiText>
               </div>
             );
@@ -1874,6 +1874,7 @@ interface HealthMetric {
   value: string | number;
   label: string;
   pillar: VisibilityTabId;
+  sectionLabel?: string;
 }
 
 interface PillarSummaryCardProps {
@@ -3648,10 +3649,10 @@ const SiemReadinessPage: React.FC = () => {
         severity: toSeverity(detectionHealthStatus),
         numColor: toNumColor(detectionHealthStatus),
         metrics: [
-          { value: integrationsMissingRules, label: 'integrations missing rules', pillar: 'coverage' as const },
-          { value: coverageMissing, label: 'required integrations', pillar: 'coverage' as const },
-          { value: ruleFieldIssues.length, label: 'rule field issues', pillar: 'detections' as const },
-          { value: executionIssueCount, label: 'execution failures', pillar: 'detections' as const },
+          { value: integrationsMissingRules, label: 'integrations missing rules', pillar: 'coverage' as const, sectionLabel: 'Integrations missing rules' },
+          { value: coverageMissing, label: 'required integrations', pillar: 'coverage' as const, sectionLabel: 'Enabled rule data coverage' },
+          { value: ruleFieldIssues.length, label: 'rule field issues', pillar: 'detections' as const, sectionLabel: 'Rule field issues' },
+          { value: executionIssueCount, label: 'execution failures', pillar: 'detections' as const, sectionLabel: 'Rule field issues' },
         ],
         totalRulesAffected: 76,
         scoreLabel: '73% Detection confidence score',
