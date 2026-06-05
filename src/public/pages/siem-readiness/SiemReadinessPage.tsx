@@ -1183,13 +1183,11 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
   allowedPillars,
   ...props
 }) => {
-  const baseActions = useMemo(
+  const allActions = useMemo(
     () => deriveActionItems(props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults)
-      .filter((a) => allowedPillars.includes(a.pillar)),
+      .filter((a: ActionItem) => allowedPillars.includes(a.pillar)),
     [props.coverage, props.integrations, props.ruleFieldIssues, props.pipelines, props.retentionItems, props.categories, props.qualityResults, allowedPillars]
   );
-}) => {
-  const allActions = baseActions;
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
@@ -1279,7 +1277,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-            {pagedActions.map((action, index) => {
+            {pagedActions.map((action: ActionItem, index: number) => {
               const pillarLabel = getHealthGroupLabelForPillar(action.pillar).toUpperCase();
               const isExpanded = expandedIds.has(action.id);
               const isFirstRow = index === 0;
