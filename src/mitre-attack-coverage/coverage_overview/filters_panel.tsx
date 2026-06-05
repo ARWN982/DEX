@@ -41,20 +41,6 @@ const CoverageOverviewFiltersPanelComponent = () => {
 
   return (
     <EuiFlexGroup alignItems="center" gutterSize="s" wrap={false} responsive={false} style={{ minWidth: 0 }}>
-      <EuiFlexItem grow={false}>
-        <RuleActivityFilter
-          onChange={setRuleActivityFilter}
-          isLoading={isLoading}
-          selected={filter.activity ?? []}
-        />
-      </EuiFlexItem>
-      <EuiFlexItem grow={false}>
-        <RuleSourceFilter
-          onChange={setRuleSourceFilter}
-          isLoading={isLoading}
-          selected={filter.source ?? []}
-        />
-      </EuiFlexItem>
       <EuiFlexItem>
         <EuiFieldSearch
           fullWidth
@@ -84,6 +70,20 @@ const CoverageOverviewFiltersPanelComponent = () => {
             {i18n.EXPAND_CELLS_FILTER_BUTTON}
           </EuiFilterButton>
         </EuiFilterGroup>
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <RuleActivityFilter
+          onChange={setRuleActivityFilter}
+          isLoading={isLoading}
+          selected={filter.activity ?? []}
+        />
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <RuleSourceFilter
+          onChange={setRuleSourceFilter}
+          isLoading={isLoading}
+          selected={filter.source ?? []}
+        />
       </EuiFlexItem>
     </EuiFlexGroup>
   );
