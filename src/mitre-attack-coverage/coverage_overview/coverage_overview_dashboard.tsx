@@ -9,6 +9,7 @@ import {
   EuiBadge,
   EuiButton,
   EuiButtonEmpty,
+  EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
   EuiHorizontalRule,
@@ -191,6 +192,7 @@ const CoverageOverviewDashboardComponent = () => {
 
   const selectedVersion = getMitreVersion(selectedMitreVersionId);
   const versionedTactics = useVersionedTactics(data, selectedVersion);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Derive stats from tactic data
   const { mappedRules, needsReview, unmappedRules } = useMemo(() => {
@@ -256,29 +258,66 @@ const CoverageOverviewDashboardComponent = () => {
           <CoverageOverviewLink>Learn more</CoverageOverviewLink>
         </EuiText>
 
-        {/* Announcement banner */}
+        {/* Announcement banner — Figma 713:2020 */}
         <EuiSpacer size="m" />
-        {selectedVersion?.isLatest && (
+        {selectedVersion?.isLatest && !bannerDismissed && (
           <>
-            <EuiPanel color="subdued" paddingSize="s" hasBorder style={{ borderRadius: 4 }}>
-              <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
-                <EuiFlexItem grow={false}>
-                  <div style={{ width: 48, height: 48, background: 'linear-gradient(135deg, #00BFB3 0%, #0071c2 100%)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 22 }}>🛡️</span>
-                  </div>
-                </EuiFlexItem>
-                <EuiFlexItem>
-                  <EuiText size="s"><strong>MITRE ATT&CK {selectedMitreVersionId} is now applied to your coverage view.</strong></EuiText>
-                  <EuiText size="xs" color="subdued">Some tactics and techniques have been added, renamed, or revoked since v18.</EuiText>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty size="s" iconType="popout" iconSide="right">Learn more</EuiButtonEmpty>
-                </EuiFlexItem>
-                <EuiFlexItem grow={false}>
-                  <EuiButton size="s" fill>TBC</EuiButton>
-                </EuiFlexItem>
-              </EuiFlexGroup>
-            </EuiPanel>
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              padding: 16,
+              background: '#F6F9FC',
+              border: '1px solid #E3E8F2',
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}>
+              {/* Shield image */}
+              <div style={{ width: 80, height: 80, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{
+                  width: 80, height: 80, borderRadius: 8,
+                  background: 'linear-gradient(135deg, #153385 0%, #101C3F 40%, #0B64DD 80%, #48EFCF 100%)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 36 }}>🛡️</span>
+                </div>
+              </div>
+
+              {/* Text */}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
+                <EuiText style={{ fontSize: 16, fontWeight: 600, lineHeight: '24px', color: '#111C2C' }}>
+                  MITRE ATT&amp;CK {selectedMitreVersionId} is now applied to your coverage view.
+                </EuiText>
+                <EuiText size="s" style={{ color: '#516381', lineHeight: '20px' }}>
+                  Some tactics and techniques have been added, renamed, or revoked since v18.
+                </EuiText>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <EuiButtonEmpty size="s" iconType="popout" iconSide="right" color="primary">
+                  Learn more
+                </EuiButtonEmpty>
+                <div style={{
+                  background: '#D9E8FF', borderRadius: 4,
+                  padding: '0 8px', height: 32, display: 'inline-flex', alignItems: 'center',
+                  cursor: 'pointer',
+                }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: '#1750BA' }}>TBC</span>
+                </div>
+              </div>
+
+              {/* Dismiss */}
+              <EuiButtonIcon
+                size="xs"
+                iconType="cross"
+                aria-label="Dismiss banner"
+                color="text"
+                style={{ position: 'absolute', top: 4, right: 4 }}
+                onClick={() => setBannerDismissed(true)}
+              />
+            </div>
             <EuiSpacer size="m" />
           </>
         )}
