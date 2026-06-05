@@ -23,6 +23,7 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 import * as i18n from './translations';
+import { CoverageOverviewLink } from '../shims/page_components';
 
 const MitreIconSVG: React.FC<{ size?: number }> = ({ size = 80 }) => (
   <svg width={size} height={size} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
