@@ -299,9 +299,9 @@ const CoverageOverviewDashboardComponent = () => {
               border: '1px solid #E3E8F2',
               borderRadius: 4,
             }}>
-              {/* MITRE icon */}
-              <div style={{ flexShrink: 0, width: 80, height: 80 }}>
-                <MitreIconSVG size={80} />
+              {/* MITRE icon — same as rule details page */}
+              <div style={{ flexShrink: 0, width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <EuiIcon type="securityAnalyticsApp" size="xxl" />
               </div>
 
               {/* Text */}
