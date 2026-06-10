@@ -1,21 +1,16 @@
 import { create } from 'zustand';
 import { CommentState, CommentThread, Comment, CommentPosition, CommentAuthor } from '../types/comments';
 import { getCurrentPage } from '../utils/pageUtils';
-
-// Mock current user - in real app this would come from auth
-const mockCurrentUser: CommentAuthor = {
-  id: 'user-1',
-  name: 'Andre Del Rio',
-  email: 'andre@example.com',
-  color: '#0d99ff',
-};
+import { getUserIdentity, updateUserName } from '../utils/userIdentity';
 
 interface CommentStore extends CommentState {
   // State
   isLoading: boolean;
+  isSaving: boolean;
   currentVersion: string;
   currentPage: string;
   lastLoadTime: number;
+  lastAddedComment: { threadId: string; content: string; timestamp: number } | null;
   
   // Actions
   loadComments: (versionId: string, pageId?: string) => Promise<void>;
@@ -29,6 +24,7 @@ interface CommentStore extends CommentState {
   startCreating: (position: CommentPosition) => void;
   cancelCreating: () => void;
   toggleResolvedVisibility: () => void;
+  updateAuthorName: (newName: string) => void;
   
   // Computed/Derived state
   getVisibleThreads: () => CommentThread[];
@@ -41,12 +37,14 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
   activeThreadId: null,
   isCreatingComment: false,
   pendingPosition: null,
-  currentUser: mockCurrentUser,
+  currentUser: getUserIdentity(),
   showResolved: true,
   isLoading: false,
+  isSaving: false,
   currentVersion: '1.0',
   currentPage: getCurrentPage(),
   lastLoadTime: 0,
+  lastAddedComment: null,
 
   // Actions
   loadComments: async (versionId: string, pageId?: string) => {
@@ -73,9 +71,14 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
         const commentThreads: CommentThread[] = await response.json();
         console.log('Loaded', commentThreads.length, 'comment threads for', currentPage, 'v' + versionId);
         
-        // Convert array to record for store format
         const threadsRecord = commentThreads.reduce((acc, thread) => {
-          acc[thread.id] = { ...thread, versionId, pageId: currentPage };
+          const seen = new Set<string>();
+          const dedupedComments = thread.comments.filter(c => {
+            if (seen.has(c.id)) return false;
+            seen.add(c.id);
+            return true;
+          });
+          acc[thread.id] = { ...thread, versionId, pageId: currentPage, comments: dedupedComments };
           return acc;
         }, {} as Record<string, CommentThread>);
         
@@ -92,6 +95,7 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
 
   saveComments: async () => {
     const { threads, currentVersion, currentPage } = get();
+    set({ isSaving: true });
     try {
       console.log('Saving comments for', currentPage, 'v' + currentVersion);
       const threadsArray = Object.values(threads);
@@ -109,6 +113,8 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
       }
     } catch (error) {
       console.error('Error saving comments:', error);
+    } finally {
+      set({ isSaving: false });
     }
   },
 
@@ -125,6 +131,9 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
   },
 
   createThread: (position: CommentPosition, content: string) => {
+    const author = getUserIdentity();
+    if (!author) return;
+
     const { currentVersion } = get();
     const threadId = `thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const commentId = `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -133,7 +142,7 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
       id: commentId,
       threadId,
       content,
-      author: mockCurrentUser,
+      author,
       createdAt: new Date().toISOString(),
     };
 
@@ -162,14 +171,29 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
   },
 
   addComment: (threadId: string, content: string, parentId?: string) => {
-    console.log('addComment called with:', { threadId, content, parentId });
-    const commentId = `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const author = getUserIdentity();
+    if (!author) return;
+
+    // Guard against rapid duplicate submissions (same thread + content within 2s)
+    const { lastAddedComment } = get();
+    const now = Date.now();
+    if (
+      lastAddedComment &&
+      lastAddedComment.threadId === threadId &&
+      lastAddedComment.content === content &&
+      now - lastAddedComment.timestamp < 2000
+    ) {
+      console.log('Ignoring duplicate addComment call');
+      return;
+    }
+
+    const commentId = `comment-${now}-${Math.random().toString(36).substr(2, 9)}`;
     
     const comment: Comment = {
       id: commentId,
       threadId,
       content,
-      author: mockCurrentUser,
+      author,
       createdAt: new Date().toISOString(),
       parentId,
     };
@@ -187,10 +211,10 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
             updatedAt: new Date().toISOString(),
           },
         },
+        lastAddedComment: { threadId, content, timestamp: now },
       };
     });
 
-    // Auto-save immediately after adding comment to avoid race conditions
     get().saveComments();
   },
 
@@ -266,6 +290,26 @@ export const useCommentStore = create<CommentStore>((set, get) => ({
 
   toggleResolvedVisibility: () => {
     set(state => ({ showResolved: !state.showResolved }));
+  },
+
+  updateAuthorName: (newName: string) => {
+    const updatedAuthor = updateUserName(newName);
+    const { threads } = get();
+    const updatedThreads: Record<string, CommentThread> = {};
+
+    for (const [id, thread] of Object.entries(threads)) {
+      updatedThreads[id] = {
+        ...thread,
+        comments: thread.comments.map(comment =>
+          comment.author.id === updatedAuthor.id
+            ? { ...comment, author: { ...comment.author, name: updatedAuthor.name, color: updatedAuthor.color } }
+            : comment
+        ),
+      };
+    }
+
+    set({ threads: updatedThreads, currentUser: updatedAuthor });
+    get().saveComments();
   },
 
   // Computed/Derived state

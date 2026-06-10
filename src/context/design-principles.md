@@ -2,7 +2,6 @@
 
 ## Visual Hierarchy & Contrast
 
-- **Design Tools Inversion:** Design tools (comments, toolbar, job stories) use colors opposite to the main theme — dark tools on light theme, light tools on dark theme for clear visual distinction
 - **Design Tools Iconography:** Design tools should use Phosphor Icons only.
 - **Layered Interface:** Main application uses EUI theme, design overlays use contrasting color system
 - **Z-index Management:** Comments and design tools float above main content with proper layering
@@ -10,7 +9,7 @@
 ## Interaction Design
 
 - **Figma-inspired UX:** Click anywhere to add comments, similar to Figma's interaction paradigm
-- **Progressive Disclosure:** Features like job stories tracking and commenting can be toggled on/off
+- **Progressive Disclosure:** Features like commenting can be toggled on/off
 - **Non-intrusive Overlays:** Design tools don't interfere with main application functionality
 
 ## Component Architecture

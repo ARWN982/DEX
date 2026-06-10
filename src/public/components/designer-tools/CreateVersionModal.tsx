@@ -1,8 +1,12 @@
+import { EuiCheckbox, EuiRadio, useEuiTheme } from "@elastic/eui";
 import { X } from "phosphor-react";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useAppStore } from "../../store/useAppStore";
-import { useVersionStore } from "../../store/useVersionStore";
-import { getToolbarColors } from "../../styles/designToolsColors";
+import { useVersionStore, type CreateVersionOptions } from "../../store/useVersionStore";
+import { getToolbarColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
+import { getComponentFromRegistry } from "../../utils/componentRegistry";
+import { getCurrentPage } from "../../utils/pageUtils";
+import type { StepConfig } from "../shared/CreationStepRow";
 
 interface CreateVersionModalProps {
   isOpen: boolean;
@@ -14,20 +18,29 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   onClose,
 }) => {
   const { colorMode } = useAppStore();
-  const { getCurrentVersion, createVersion } = useVersionStore();
+  const { getCurrentVersion, createVersion, versions, startCreation, updateCreationStep, finishCreation } = useVersionStore();
+  const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
   const [isMajorVersion, setIsMajorVersion] = useState(false);
   const [startFromScratch, setStartFromScratch] = useState(false);
+  const [copyComments, setCopyComments] = useState(false);
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   const currentVersion = getCurrentVersion();
 
-  // Calculate what the next version number will be
   const getNextVersionNumber = () => {
-    const current = currentVersion?.id || "1.0";
-    const [major, minor] = current.split(".").map(Number);
+    const highest = versions.length > 0
+      ? versions
+          .map((v) => v.id)
+          .sort((a, b) => {
+            const [aMaj, aMin] = a.split(".").map(Number);
+            const [bMaj, bMin] = b.split(".").map(Number);
+            return aMaj !== bMaj ? bMaj - aMaj : bMin - aMin;
+          })[0]
+      : "1.0";
+    const [major, minor] = highest.split(".").map(Number);
 
     if (isMajorVersion) {
       return `${major + 1}.0`;
@@ -37,35 +50,64 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const nextVersionNumber = getNextVersionNumber();
-  const versionTypeText = isMajorVersion ? "Major Version" : "Minor Version";
+
+  const getSteps = useCallback((): StepConfig[] => {
+    const ver = nextVersionNumber;
+    const currVer = currentVersion?.id || "1.0";
+    return [
+      {
+        activeLabel: `Scaffolding v${ver} files`,
+        doneLabel: `v${ver} files ready`,
+      },
+      {
+        activeLabel: startFromScratch
+          ? "Setting up blank canvas"
+          : `Copying design from v${currVer}`,
+        doneLabel: startFromScratch
+          ? "Blank canvas ready"
+          : `Design copied from v${currVer}`,
+      },
+      {
+        activeLabel: "Registering version",
+        doneLabel: "Version registered",
+      },
+    ];
+  }, [nextVersionNumber, currentVersion, startFromScratch]);
 
   const handleCreate = async () => {
-    setIsCreating(true);
-    try {
-      await createVersion({
-        isMajorVersion,
-        startFromScratch,
-        description: description.trim() || undefined,
-      });
+    const versionId = getNextVersionNumber();
+    const steps = getSteps();
+    const opts = {
+      isMajorVersion,
+      startFromScratch,
+      copyComments: startFromScratch ? false : copyComments,
+      description: description.trim() || undefined,
+    };
 
-      // Reset form and close modal
-      setIsMajorVersion(false);
-      setStartFromScratch(false);
-      setDescription("");
-      onClose();
-    } catch (error) {
-      console.error("Failed to create version:", error);
-    } finally {
-      setIsCreating(false);
-    }
+    setIsCreating(true);
+
+    // Signal the store so the inline page appears immediately
+    startCreation(versionId, steps);
+
+    // Close the modal right away — progress is shown inline
+    resetForm();
+    onClose();
+
+    // Run creation + step orchestration in the background
+    orchestrateCreation(versionId, opts, updateCreationStep, finishCreation);
+  };
+
+  const resetForm = () => {
+    setIsMajorVersion(false);
+    setStartFromScratch(false);
+    setCopyComments(false);
+    setDescription("");
+    setIsCreating(false);
   };
 
   const handleClose = () => {
     if (!isCreating) {
-      // Reset form state when closing
-      setIsMajorVersion(false);
-      setStartFromScratch(false);
-      setDescription("");
+      resetForm();
       onClose();
     }
   };
@@ -83,12 +125,12 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    padding: dtPadding,
   };
 
   const modalStyle: React.CSSProperties = {
     backgroundColor: colors.primary,
-    borderRadius: "16px",
+    borderRadius: dtRadius.panel,
     padding: "0",
     maxWidth: "480px",
     width: "100%",
@@ -98,7 +140,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const headerStyle: React.CSSProperties = {
-    padding: "24px 24px 0 24px",
+    padding: `${dtPadding} ${dtPadding} 0 ${dtPadding}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -112,9 +154,9 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const closeButtonStyle: React.CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "16px",
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.panel,
     border: "none",
     backgroundColor: "transparent",
     color: colors.textSecondary,
@@ -127,11 +169,18 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const contentStyle: React.CSSProperties = {
-    padding: "24px",
+    padding: dtPadding,
   };
 
   const sectionStyle: React.CSSProperties = {
-    marginBottom: "20px",
+    marginBottom: dtPadding,
+  };
+
+  const dividerStyle: React.CSSProperties = {
+    height: "1px",
+    backgroundColor: colors.border,
+    opacity: 0.5,
+    margin: `${euiTheme.size.xs} 0 ${dtPadding} 0`,
   };
 
   const labelStyle: React.CSSProperties = {
@@ -139,54 +188,21 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     fontSize: "14px",
     fontWeight: "500",
     color: colors.textPrimary,
-    marginBottom: "8px",
+    marginBottom: euiTheme.size.s,
   };
 
   const previewStyle: React.CSSProperties = {
     fontSize: "16px",
     fontWeight: "600",
     color: colors.accent,
-    marginBottom: "8px",
-  };
-
-  const checkboxContainerStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "8px",
-    marginBottom: "12px",
-  };
-
-  const checkboxStyle: React.CSSProperties = {
-    width: "16px",
-    height: "16px",
-    accentColor: colors.accent,
-  };
-
-  const radioContainerStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "flex-start",
-    gap: "8px",
-    marginBottom: "12px",
-  };
-
-  const radioStyle: React.CSSProperties = {
-    width: "16px",
-    height: "16px",
-    marginTop: "2px",
-    accentColor: colors.accent,
-  };
-
-  const radioLabelStyle: React.CSSProperties = {
-    fontSize: "14px",
-    color: colors.textPrimary,
-    lineHeight: "1.4",
+    marginBottom: euiTheme.size.s,
   };
 
   const textareaStyle: React.CSSProperties = {
     width: "100%",
     minHeight: "80px",
-    padding: "12px",
-    borderRadius: "8px",
+    padding: euiTheme.size.m,
+    borderRadius: dtRadius.medium,
     border: `1px solid ${colors.border}`,
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
@@ -197,15 +213,15 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
   };
 
   const footerStyle: React.CSSProperties = {
-    padding: "0 24px 24px 24px",
+    padding: `0 ${dtPadding} ${dtPadding} ${dtPadding}`,
     display: "flex",
-    gap: "12px",
+    gap: euiTheme.size.m,
     justifyContent: "flex-end",
   };
 
   const buttonBaseStyle: React.CSSProperties = {
     padding: "10px 20px",
-    borderRadius: "8px",
+    borderRadius: dtRadius.medium,
     border: "none",
     fontSize: "14px",
     fontWeight: "500",
@@ -227,30 +243,27 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     color: "#ffffff",
   };
 
-  const createButtonDisabledStyle: React.CSSProperties = {
-    ...createButtonStyle,
-    backgroundColor: colors.textMuted,
-    cursor: "not-allowed",
-  };
-
   return (
     <>
-      {/* Backdrop */}
       <div style={overlayStyle} onClick={handleClose}>
-        {/* Modal */}
-        <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
+        <div className="create-version-modal" style={modalStyle} onClick={(e) => e.stopPropagation()}>
+          <style>{`
+            .create-version-modal [class*="euiRadio__circle-selected"],
+            .create-version-modal [class*="euiCheckbox__square-selected"] {
+              background-color: ${colors.accent} !important;
+              border-color: ${colors.accent} !important;
+            }
+          `}</style>
+
           {/* Header */}
           <div style={headerStyle}>
-            <h2 style={titleStyle}>Create New Version</h2>
+            <h2 style={titleStyle}>Create new version</h2>
             <button
               style={closeButtonStyle}
               onClick={handleClose}
-              disabled={isCreating}
               onMouseEnter={(e) => {
-                if (!isCreating) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    colors.buttonHover;
-                }
+                (e.target as HTMLElement).style.backgroundColor =
+                  colors.buttonHover;
               }}
               onMouseLeave={(e) => {
                 (e.target as HTMLElement).style.backgroundColor = "transparent";
@@ -260,82 +273,76 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
             </button>
           </div>
 
-          {/* Content */}
+          {/* Content — form only */}
           <div style={contentStyle}>
-            {/* Version Preview */}
+            {/* Version number + major toggle */}
             <div style={sectionStyle}>
-              <label style={labelStyle}>New Version</label>
-              <div style={previewStyle}>Version {nextVersionNumber}</div>
-            </div>
-
-            {/* Version Type */}
-            <div style={sectionStyle}>
-              <div style={checkboxContainerStyle}>
-                <input
-                  type="checkbox"
-                  id="majorVersion"
-                  checked={isMajorVersion}
-                  onChange={(e) => setIsMajorVersion(e.target.checked)}
-                  style={checkboxStyle}
-                  disabled={isCreating}
-                />
-                <label htmlFor="majorVersion" style={labelStyle}>
-                  This is a major version
-                </label>
+              <div style={{ display: "flex", alignItems: "baseline", gap: euiTheme.size.m, marginBottom: euiTheme.size.m }}>
+                <div style={previewStyle}>Version {nextVersionNumber}</div>
               </div>
+              <EuiCheckbox
+                id="majorVersion"
+                label="Major version"
+                checked={isMajorVersion}
+                onChange={(e) => setIsMajorVersion(e.target.checked)}
+                disabled={isCreating}
+              />
             </div>
 
-            {/* Base Version Options */}
-            <div style={sectionStyle}>
-              <label style={labelStyle}>Create From</label>
+            <div style={dividerStyle} />
 
-              <div style={radioContainerStyle}>
-                <input
-                  type="radio"
-                  id="basedOnCurrent"
-                  name="baseVersion"
-                  checked={!startFromScratch}
-                  onChange={() => setStartFromScratch(false)}
-                  style={radioStyle}
-                  disabled={isCreating}
-                />
-                <label htmlFor="basedOnCurrent" style={radioLabelStyle}>
-                  Based on{" "}
-                  <strong>Version {currentVersion?.id || "1.0"}</strong>
-                  <br />
-                  <span
-                    style={{ color: colors.textSecondary, fontSize: "12px" }}
-                  >
-                    Copy all comments and job stories from current version
+            {/* Starting point */}
+            <div style={sectionStyle}>
+              <label style={labelStyle}>Starting point</label>
+
+              <EuiRadio
+                id="basedOnCurrent"
+                label={
+                  <span>
+                    Based on{" "}
+                    <strong>v{currentVersion?.id || "1.0"}</strong>
                   </span>
-                </label>
-              </div>
+                }
+                checked={!startFromScratch}
+                onChange={() => setStartFromScratch(false)}
+                disabled={isCreating}
+              />
 
-              <div style={radioContainerStyle}>
-                <input
-                  type="radio"
+              {!startFromScratch && (
+                <div style={{ marginLeft: euiTheme.size.l, marginTop: euiTheme.size.s }}>
+                  <EuiCheckbox
+                    id="copyComments"
+                    label={
+                      <span style={{ fontSize: "13px", color: colors.textSecondary }}>
+                        Copy comments
+                      </span>
+                    }
+                    checked={copyComments}
+                    onChange={(e) => setCopyComments(e.target.checked)}
+                    disabled={isCreating}
+                  />
+                </div>
+              )}
+
+              <div style={{ marginTop: euiTheme.size.m }}>
+                <EuiRadio
                   id="startFromScratch"
-                  name="baseVersion"
+                  label="Start from scratch"
                   checked={startFromScratch}
                   onChange={() => setStartFromScratch(true)}
-                  style={radioStyle}
                   disabled={isCreating}
                 />
-                <label htmlFor="startFromScratch" style={radioLabelStyle}>
-                  Start from scratch
-                  <br />
-                  <span
-                    style={{ color: colors.textSecondary, fontSize: "12px" }}
-                  >
-                    Begin with empty comments and job stories
-                  </span>
-                </label>
               </div>
             </div>
+
+            <div style={dividerStyle} />
 
             {/* Description */}
             <div style={sectionStyle}>
-              <label style={labelStyle}>Description (Optional)</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: euiTheme.size.s }}>
+                <label style={{ ...labelStyle, marginBottom: 0 }}>Description</label>
+                <span style={{ fontSize: "12px", color: colors.textSecondary }}>Optional</span>
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -368,7 +375,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
               Cancel
             </button>
             <button
-              style={isCreating ? createButtonDisabledStyle : createButtonStyle}
+              style={createButtonStyle}
               onClick={handleCreate}
               disabled={isCreating}
               onMouseEnter={(e) => {
@@ -383,9 +390,7 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
                 }
               }}
             >
-              {isCreating
-                ? "Creating..."
-                : `Create Version ${nextVersionNumber}`}
+              Create version
             </button>
           </div>
         </div>
@@ -393,3 +398,63 @@ export const CreateVersionModal: React.FC<CreateVersionModalProps> = ({
     </>
   );
 };
+
+/**
+ * Background orchestration: calls createVersion, polls for HMR, and
+ * drives the step animations via the version store.  Runs detached
+ * from the modal component (which is already closed).
+ */
+async function orchestrateCreation(
+  versionId: string,
+  opts: CreateVersionOptions,
+  updateStep: (index: number, status: "pending" | "active" | "complete") => void,
+  finish: () => void,
+) {
+  const { createVersion } = useVersionStore.getState();
+  const startTime = Date.now();
+
+  // Cosmetic step timers — these fire regardless of how fast the API is
+  const step1Timer = setTimeout(() => {
+    updateStep(0, "complete");
+    updateStep(1, "active");
+  }, 1750);
+
+  const step2Timer = setTimeout(() => {
+    updateStep(1, "complete");
+    updateStep(2, "active");
+  }, 3250);
+
+  try {
+    const newVersionId = await createVersion(opts);
+
+    // Wait for HMR / registry to see the new component
+    const pageName = getCurrentPage();
+    const maxWait = 10_000;
+    const interval = 400;
+    let waited = 0;
+
+    while (waited < maxWait) {
+      if (getComponentFromRegistry(pageName, newVersionId)) break;
+      await new Promise((r) => setTimeout(r, interval));
+      waited += interval;
+    }
+
+    // Wait for the visual step timers to play out before finishing.
+    // Step 2 timer fires at 3250ms; add buffer for the animation.
+    const minElapsed = 3800;
+    const remaining = minElapsed - (Date.now() - startTime);
+    if (remaining > 0) {
+      await new Promise((r) => setTimeout(r, remaining));
+    }
+
+    // Complete the final step, then signal done after a brief pause
+    updateStep(2, "complete");
+    await new Promise((r) => setTimeout(r, 800));
+    finish();
+  } catch (error) {
+    console.error("Failed to create version:", error);
+    clearTimeout(step1Timer);
+    clearTimeout(step2Timer);
+    finish();
+  }
+}

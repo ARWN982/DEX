@@ -1,4 +1,4 @@
-import { EuiContextMenu, EuiPopover } from "@elastic/eui";
+import { EuiContextMenu, EuiPopover, useEuiTheme } from "@elastic/eui";
 import { DotsThreeVertical } from "phosphor-react";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,8 @@ import { useAppStore } from "../store/useAppStore";
 import {
   getDesignUIColors,
   createBoxShadow,
-} from "../styles/designToolsColors";
+  dtRadius,
+} from "../styles/designToolsTokens";
 
 interface Project {
   name: string;
@@ -31,9 +32,12 @@ interface Template {
   };
 }
 
+const isProduction = process.env.VIBE_DEPLOY_MODE === 'production';
+
 const Homepage: React.FC = () => {
   const navigate = useNavigate();
   const { colorMode } = useAppStore();
+  const { euiTheme } = useEuiTheme();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -51,9 +55,7 @@ const Homepage: React.FC = () => {
   // Define templates
   const templates = [
     { name: "Discover", path: "/templates/discover", key: "discover" },
-    { name: "Dashboards", path: "/templates/dashboards", key: "dashboards" }, // TODO: Add this route
-    { name: "Stack Management", path: "/templates/stack-management", key: "stack-management" }, // TODO: Add this route
-    { name: "Hosts", path: "/templates/hosts", key: "hosts" }, // TODO: Add this route
+    { name: "Dashboards", path: "/templates/dashboards", key: "dashboards" },
   ];
   
   useEffect(() => {
@@ -119,8 +121,10 @@ const Homepage: React.FC = () => {
     loadProjects();
   }, []);
 
-  // Load template metadata
+  // Load template metadata (skip in production mode)
   useEffect(() => {
+    if (isProduction) return;
+
     const loadTemplateMetadata = async () => {
       try {
         const templatesWithMeta = await Promise.all(
@@ -336,10 +340,15 @@ const Homepage: React.FC = () => {
   const handleSaveProjectMetadata = async (metadata: ProjectMetadata) => {
     if (selectedProject) {
       await saveProjectMetadata(selectedProject.name, metadata);
-      // Update the project in the local state
       setProjects((prev) =>
         prev.map((p) =>
-          p.name === selectedProject.name ? { ...p, metadata } : p
+          p.name === selectedProject.name
+            ? {
+                ...p,
+                displayName: metadata.displayName || p.displayName,
+                metadata,
+              }
+            : p
         )
       );
     }
@@ -348,30 +357,29 @@ const Homepage: React.FC = () => {
   const cardStyle = {
     backgroundColor: colors.primary,
     border: `1px solid ${colors.border}`,
-    borderRadius: "16px",
-    padding: "0px", // Remove padding for thumbnail layout
-    width: "344px", // Updated width
-    height: "256px", // Updated height (200px thumbnail + 56px info)
+    borderRadius: dtRadius.panel,
+    padding: "0px",
+    height: "256px",
     cursor: "pointer",
     transition: "all 0.2s ease",
     display: "flex",
     flexDirection: "column" as const,
     justifyContent: "flex-start",
     boxShadow: createBoxShadow(colors, "light"),
-    overflow: "hidden", // Hide overflow for rounded corners
+    overflow: "hidden",
   };
 
   const cardHoverStyle = {
     ...cardStyle,
     transform: "translateY(-2px)",
-    boxShadow: `0 4px 16px ${colors.shadowLight}`,
+    boxShadow: `0 ${euiTheme.size.xs} ${euiTheme.size.base} ${colors.shadowLight}`,
   };
 
   const titleStyle = {
     fontSize: "24px",
     fontWeight: "600",
     color: colors.textPrimary,
-    marginBottom: "32px",
+    marginBottom: euiTheme.size.xl,
   };
 
   const cardTitleStyle = {
@@ -394,15 +402,15 @@ const Homepage: React.FC = () => {
   const emptyTextStyle = {
     fontSize: "16px",
     color: colors.textSecondary,
-    marginBottom: "24px",
+    marginBottom: euiTheme.size.l,
   };
 
   const createButtonStyle = {
     backgroundColor: colors.primaryButton,
     color: colors.primaryButtonText,
     border: "none",
-    borderRadius: "24px",
-    padding: "12px 24px",
+    borderRadius: dtRadius.medium,
+    padding: `${euiTheme.size.m} ${euiTheme.size.l}`,
     fontSize: "14px",
     fontWeight: "500",
     cursor: "pointer",
@@ -410,10 +418,9 @@ const Homepage: React.FC = () => {
   };
 
   const containerStyle = {
-    maxWidth: "1200px",
+    maxWidth: `${euiTheme.breakpoint.xl}px`,
     margin: "0 auto",
-    padding: "96px 24px 48px 24px", // 48px extra top padding + 48px existing = 96px top
-    minHeight: "100vh", // Full viewport height since no header
+    padding: `96px ${euiTheme.size.l} ${euiTheme.size.xxxl} ${euiTheme.size.l}`,
   };
 
   const sectionStyle = {
@@ -422,16 +429,31 @@ const Homepage: React.FC = () => {
 
   const gridStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, 344px)", // Fixed width cards
-    gap: "24px",
-    marginTop: "24px",
-    justifyContent: "start", // Align cards to the left
+    gridTemplateColumns: "repeat(1, 1fr)",
+    gap: euiTheme.size.l,
+    marginTop: euiTheme.size.l,
   };
 
   console.log('[Homepage Render] State:', { loading, projectsCount: projects.length, projects });
 
   return (
+    <div style={{ backgroundColor: euiTheme.colors.emptyShade, minHeight: "100vh" }}>
     <div style={containerStyle}>
+      <style>{`
+        .homepage-card-grid {
+          grid-template-columns: 1fr !important;
+        }
+        @media (min-width: ${euiTheme.breakpoint.m}px) {
+          .homepage-card-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (min-width: ${euiTheme.breakpoint.xl}px) {
+          .homepage-card-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+      `}</style>
       {/* Your projects section */}
       <div style={sectionStyle}>
         <div
@@ -439,11 +461,11 @@ const Homepage: React.FC = () => {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "24px",
+            marginBottom: euiTheme.size.l,
           }}
         >
           <h1 style={{ ...titleStyle, marginBottom: 0 }}>Your projects</h1>
-          {!loading && projects.length > 0 && (
+          {!isProduction && !loading && projects.length > 0 && (
             <button
               style={createButtonStyle}
               onClick={handleCreateProject}
@@ -464,7 +486,7 @@ const Homepage: React.FC = () => {
             <div style={emptyTextStyle}>Loading projects...</div>
           </div>
         ) : projects.length > 0 ? (
-          <div style={{ ...gridStyle, marginTop: 0 }}>
+          <div className="homepage-card-grid" style={{ ...gridStyle, marginTop: 0 }}>
             {projects.map((project) => {
               const isHovered = hoveredProjectId === project.name;
               const isPopoverOpen = popoverOpenId === project.name;
@@ -486,7 +508,7 @@ const Homepage: React.FC = () => {
                     style={{
                       height: "200px",
                       backgroundColor: colors.secondary,
-                      borderRadius: "16px 16px 0 0",
+                      borderRadius: `${dtRadius.panel} ${dtRadius.panel} 0 0`,
                       overflow: "hidden",
                       position: "relative",
                       display: "flex",
@@ -510,7 +532,7 @@ const Homepage: React.FC = () => {
                           color: colors.textMuted,
                           fontSize: "14px",
                           textAlign: "center",
-                          padding: "20px",
+                          padding: euiTheme.size.l,
                         }}
                       >
                         No thumbnail available
@@ -523,7 +545,7 @@ const Homepage: React.FC = () => {
                   {/* Project Info Section */}
                   <div
                     style={{
-                      padding: "12px 16px",
+                      padding: `${euiTheme.size.m} ${euiTheme.size.base}`,
                       height: "56px",
                       display: "flex",
                       flexDirection: "column",
@@ -543,12 +565,12 @@ const Homepage: React.FC = () => {
                     <div
                       style={{
                         position: "absolute",
-                        top: "8px",
-                        right: "8px",
+                        top: euiTheme.size.s,
+                        right: euiTheme.size.s,
                         zIndex: 10,
                         backgroundColor: "rgba(0, 0, 0, 0.6)",
-                        borderRadius: "6px",
-                        backdropFilter: "blur(8px)",
+                        borderRadius: dtRadius.medium,
+                        backdropFilter: `blur(${euiTheme.size.s})`,
                       }}
                     >
                       <EuiPopover
@@ -561,8 +583,8 @@ const Homepage: React.FC = () => {
                               background: "none",
                               border: "none",
                               cursor: "pointer",
-                              padding: "6px",
-                              borderRadius: "4px",
+                              padding: euiTheme.size.xs,
+                              borderRadius: dtRadius.small,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -623,28 +645,30 @@ const Homepage: React.FC = () => {
         ) : (
           <div style={emptyStateStyle}>
             <div style={emptyTextStyle}>
-              You haven't created any projects yet
+              {isProduction ? "No projects available" : "You haven't created any projects yet"}
             </div>
-            <button
-              style={createButtonStyle}
-              onClick={handleCreateProject}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              Create a project
-            </button>
+            {!isProduction && (
+              <button
+                style={createButtonStyle}
+                onClick={handleCreateProject}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "scale(1.05)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "scale(1)";
+                }}
+              >
+                Create a project
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Templates section */}
-      <div style={sectionStyle}>
+      {/* Templates section (hidden in production mode) */}
+      {!isProduction && <div style={sectionStyle}>
         <h2 style={titleStyle}>Templates</h2>
-        <div style={gridStyle}>
+        <div className="homepage-card-grid" style={gridStyle}>
           {templatesWithMetadata.length > 0 ? templatesWithMetadata.map((template) => {
             const isHovered = templatePopoverOpenId === template.key;
             const isPopoverOpen = templatePopoverOpenId === template.key;
@@ -666,7 +690,7 @@ const Homepage: React.FC = () => {
                   style={{
                     height: "200px",
                     backgroundColor: colors.secondary,
-                    borderRadius: "16px 16px 0 0",
+                    borderRadius: `${dtRadius.panel} ${dtRadius.panel} 0 0`,
                     overflow: "hidden",
                     position: "relative",
                     display: "flex",
@@ -690,7 +714,7 @@ const Homepage: React.FC = () => {
                         color: colors.textMuted,
                         fontSize: "14px",
                         textAlign: "center",
-                        padding: "20px",
+                        padding: euiTheme.size.l,
                       }}
                     >
                       No thumbnail available
@@ -703,7 +727,7 @@ const Homepage: React.FC = () => {
                 {/* Template Info Section */}
                 <div
                   style={{
-                    padding: "12px 16px",
+                    padding: `${euiTheme.size.m} ${euiTheme.size.base}`,
                     height: "56px",
                     display: "flex",
                     flexDirection: "column",
@@ -720,12 +744,12 @@ const Homepage: React.FC = () => {
                   <div
                     style={{
                       position: "absolute",
-                      top: "8px",
-                      right: "8px",
+                      top: euiTheme.size.s,
+                      right: euiTheme.size.s,
                       zIndex: 10,
                       backgroundColor: "rgba(0, 0, 0, 0.6)",
-                      borderRadius: "6px",
-                      backdropFilter: "blur(8px)",
+                      borderRadius: dtRadius.medium,
+                      backdropFilter: `blur(${euiTheme.size.s})`,
                     }}
                   >
                     <EuiPopover
@@ -738,8 +762,8 @@ const Homepage: React.FC = () => {
                             background: "none",
                             border: "none",
                             cursor: "pointer",
-                            padding: "6px",
-                            borderRadius: "4px",
+                            padding: euiTheme.size.xs,
+                            borderRadius: dtRadius.small,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -816,7 +840,7 @@ const Homepage: React.FC = () => {
                   style={{
                     height: "200px",
                     backgroundColor: colors.secondary,
-                    borderRadius: "16px 16px 0 0",
+                    borderRadius: `${dtRadius.panel} ${dtRadius.panel} 0 0`,
                     overflow: "hidden",
                     position: "relative",
                     display: "flex",
@@ -829,7 +853,7 @@ const Homepage: React.FC = () => {
                       color: colors.textMuted,
                       fontSize: "14px",
                       textAlign: "center",
-                      padding: "20px",
+                      padding: euiTheme.size.l,
                     }}
                   >
                     Template screenshot
@@ -841,7 +865,7 @@ const Homepage: React.FC = () => {
                 {/* Template Info Section */}
                 <div
                   style={{
-                    padding: "12px 16px",
+                    padding: `${euiTheme.size.m} ${euiTheme.size.base}`,
                     height: "56px",
                     display: "flex",
                     flexDirection: "column",
@@ -854,7 +878,7 @@ const Homepage: React.FC = () => {
             );
           })}
         </div>
-      </div>
+      </div>}
 
       {/* Project Info Flyout */}
       <ProjectInfoFlyout
@@ -868,17 +892,20 @@ const Homepage: React.FC = () => {
         onSave={handleSaveProjectMetadata}
       />
 
-      {/* Create Project Modal */}
-      <CreateProjectModal
-        isOpen={isCreateProjectModalOpen}
-        onClose={() => {
-          setIsCreateProjectModalOpen(false);
-          setCreateProjectFromTemplate(null);
-        }}
-        onSuccess={handleProjectCreated}
-        templateName={createProjectFromTemplate?.templateName}
-        defaultProjectName={createProjectFromTemplate?.defaultName}
-      />
+      {/* Create Project Modal (hidden in production mode) */}
+      {!isProduction && (
+        <CreateProjectModal
+          isOpen={isCreateProjectModalOpen}
+          onClose={() => {
+            setIsCreateProjectModalOpen(false);
+            setCreateProjectFromTemplate(null);
+          }}
+          onSuccess={handleProjectCreated}
+          templateName={createProjectFromTemplate?.templateName}
+          defaultProjectName={createProjectFromTemplate?.defaultName}
+        />
+      )}
+    </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 const path = require("path");
+const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
@@ -41,6 +42,12 @@ module.exports = {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      'process.env.VIBE_DEPLOY_MODE': JSON.stringify(process.env.VIBE_DEPLOY_MODE || 'development'),
+      'process.env.VIBE_PUBLISH_MODE': JSON.stringify('false'),
+      'process.env.PUBLISH_VERSIONS': JSON.stringify('[]'),
+      'process.env.PUBLISH_PROJECT': JSON.stringify(''),
+    }),
     new HtmlWebpackPlugin({
       template: "./src/public/index.html",
       filename: "index.html",
@@ -68,7 +75,7 @@ module.exports = {
         directory: path.join(__dirname, "public"),
       },
     ],
-    port: 3002,
+    port: 3001,
     proxy: {
       "/api": {
         target: "http://localhost:3000",
@@ -79,7 +86,7 @@ module.exports = {
     hot: true,
     liveReload: true,
     watchFiles: {
-      paths: ['src/**/*'],
+      paths: ['src/**/*.ts', 'src/**/*.tsx', 'src/**/*.css'],
       options: {
         ignored: /node_modules/,
       },

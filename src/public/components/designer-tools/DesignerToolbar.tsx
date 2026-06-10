@@ -1,32 +1,48 @@
-import { Cursor, ChatCircle, UserList } from 'phosphor-react';
+import { useEuiTheme } from '@elastic/eui';
+import { Cursor, ChatCircle, X } from 'phosphor-react';
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
-import { getToolbarColors, createBoxShadow } from '../../styles/designToolsColors';
+import { useVersionStore } from '../../store/useVersionStore';
+import { getToolbarColors, createBoxShadow, dtRadius } from '../../styles/designToolsTokens';
 import { AboutFlyout, type ProjectMetadata } from './AboutFlyout';
+import { CreateProjectModal } from './CreateProjectModal';
 import { VersionSwitcher } from './VersionSwitcher';
+
 
 interface DesignerToolbarProps {
   isCommentingEnabled: boolean;
+  /** When true, comment mode cannot be turned on (e.g. empty version placeholder page). */
+  isCommentingDisabled?: boolean;
   onToggleCommenting: () => void;
-  isJobStoriesTrackingEnabled: boolean;
-  onToggleJobStoriesTracking: () => void;
   onCreateVersion?: () => void;
-  projectName?: string;
+  slug?: string;
 }
+
+const isProduction = process.env.VIBE_DEPLOY_MODE === 'production';
 
 export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   isCommentingEnabled,
+  isCommentingDisabled = false,
   onToggleCommenting,
-  isJobStoriesTrackingEnabled,
-  onToggleJobStoriesTracking,
   onCreateVersion,
-  projectName,
+  slug,
 }) => {
+  const location = useLocation();
+  const isTemplate = location.pathname.startsWith('/templates/');
+  const templateName = isTemplate
+    ? location.pathname.split('/').filter(Boolean)[1] || null
+    : null;
   const [isVisible, setIsVisible] = useState(false);
   const [isAboutFlyoutOpen, setIsAboutFlyoutOpen] = useState(false);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata | null>(null);
+  const [isDismissed, setIsDismissed] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { colorMode } = useAppStore();
+  const { currentVersion } = useVersionStore();
+  const { euiTheme } = useEuiTheme();
+  const navigate = useNavigate();
 
   const handleMouseEnter = () => {
     if (hideTimeoutRef.current) {
@@ -68,15 +84,15 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
 
   const toolbarStyle: React.CSSProperties = {
     position: 'absolute',
-    bottom: isVisible ? '16px' : '-40px', // Show only 16px when not visible
+    bottom: isVisible ? euiTheme.size.base : '-40px',
     left: '50%',
     transform: 'translateX(-50%)',
     backgroundColor: colors.primary,
-    borderRadius: '28px',
-    padding: '8px 16px',
+    borderRadius: dtRadius.toolbar,
+    padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: euiTheme.size.s,
     boxShadow: createBoxShadow(colors, 'medium'),
     transition: 'bottom 0.2s cubic-bezier(0.23, 1, 0.32, 1)',
     zIndex: 1010,
@@ -84,9 +100,9 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   };
 
   const buttonStyle = (isActive: boolean): React.CSSProperties => ({
-    width: '40px',
-    height: '40px',
-    borderRadius: '20px',
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.medium,
     border: 'none',
     backgroundColor: isActive ? colors.accent : 'transparent',
     color: isActive ? '#ffffff' : colors.textSecondary,
@@ -98,18 +114,18 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
     outline: 'none',
   });
 
-  // Load project metadata when projectName changes
+  // Re-fetch metadata when the flyout opens or the project changes
   useEffect(() => {
-    if (projectName) {
+    if (slug && isAboutFlyoutOpen) {
       loadProjectMetadata();
     }
-  }, [projectName]);
+  }, [slug, isAboutFlyoutOpen]);
 
   const loadProjectMetadata = async () => {
-    if (!projectName) return;
+    if (!slug) return;
     
     try {
-      const response = await fetch(`/api/project-metadata/${projectName}`);
+      const response = await fetch(`/api/project-metadata/${slug}`);
       if (response.ok) {
         const metadata = await response.json();
         setProjectMetadata(metadata);
@@ -117,6 +133,10 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
     } catch (error) {
       console.error('Failed to load project metadata:', error);
     }
+  };
+
+  const handleHomeClick = () => {
+    navigate('/');
   };
 
   const handleAboutClick = () => {
@@ -130,10 +150,28 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
   };
 
   const handleCommentClick = () => {
+    if (isCommentingDisabled) return;
     if (!isCommentingEnabled) {
       onToggleCommenting();
     }
   };
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+  };
+
+  // Don't render toolbar if dismissed
+  if (isDismissed) {
+    return (
+      <AboutFlyout
+        isOpen={isAboutFlyoutOpen}
+        onClose={() => setIsAboutFlyoutOpen(false)}
+        projectMetadata={projectMetadata}
+        currentVersion={currentVersion}
+        slug={slug}
+      />
+    );
+  }
 
   return (
     <>
@@ -144,15 +182,15 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         data-exclude-comments
       >
         <div style={toolbarStyle}>
-          {/* About Button */}
+          {/* Home Button */}
           <button
             style={{
               backgroundColor: colors.buttonHover,
               color: colors.textPrimary,
               border: 'none',
-              borderRadius: '16px',
-              padding: '8px 16px',
-              fontSize: '14px',
+              borderRadius: dtRadius.panel,
+              padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
+              fontSize: '11px',
               fontWeight: '500',
               cursor: 'pointer',
               display: 'flex',
@@ -160,10 +198,10 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               justifyContent: 'center',
               transition: 'all 0.2s ease',
               outline: 'none',
-              marginRight: '16px',
+              marginRight: euiTheme.size.base,
             }}
-            onClick={handleAboutClick}
-            title="About this project"
+            onClick={handleHomeClick}
+            title="Go to home page"
             onMouseEnter={(e) => {
               (e.target as HTMLElement).style.backgroundColor = colors.accent;
             }}
@@ -171,21 +209,87 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
             }}
           >
-            About
+            Home
           </button>
 
-          {/* Version Switcher */}
-          <div style={{ marginRight: '16px' }}>
-            <VersionSwitcher onCreateVersion={onCreateVersion} />
-          </div>
+          {!isProduction && isTemplate && templateName && (
+            <button
+              style={{
+                backgroundColor: colors.accent,
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: dtRadius.panel,
+                padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
+                fontSize: '11px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                outline: 'none',
+                marginRight: euiTheme.size.base,
+                whiteSpace: 'nowrap',
+              }}
+              onClick={() => setIsCreateProjectModalOpen(true)}
+              title="Create a project from this template"
+              onMouseEnter={(e) => {
+                (e.target as HTMLElement).style.opacity = '0.85';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLElement).style.opacity = '1';
+              }}
+            >
+              Use this template
+            </button>
+          )}
 
-          {/* Divider */}
-          <div style={{
-            width: '1px',
-            height: '32px',
-            backgroundColor: colors.border,
-            marginRight: '16px',
-          }} />
+          {!isTemplate && (
+            <>
+              {/* About Button */}
+              <button
+                style={{
+                  backgroundColor: colors.buttonHover,
+                  color: colors.textPrimary,
+                  border: 'none',
+                  borderRadius: dtRadius.panel,
+                  padding: `${euiTheme.size.s} ${euiTheme.size.base}`,
+                  fontSize: '11px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  outline: 'none',
+                  marginRight: euiTheme.size.base,
+                }}
+                onClick={handleAboutClick}
+                title="About this project"
+                onMouseEnter={(e) => {
+                  (e.target as HTMLElement).style.backgroundColor = colors.accent;
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+                }}
+              >
+                About
+              </button>
+
+              {/* Version Switcher */}
+              <div style={{ marginRight: euiTheme.size.base }}>
+                <VersionSwitcher onCreateVersion={onCreateVersion} />
+              </div>
+
+              {/* Divider */}
+              <div style={{
+                width: '1px',
+                height: euiTheme.size.xl,
+                backgroundColor: colors.border,
+                marginRight: euiTheme.size.base,
+              }} />
+            </>
+          )}
 
           {/* Cursor Tool */}
           <button
@@ -203,45 +307,55 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
               }
             }}
           >
-            <Cursor size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+            <Cursor size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
 
-          {/* Comment Tool */}
-          <button
-            style={buttonStyle(isCommentingEnabled)}
-            onClick={handleCommentClick}
-            title="Comment tool"
-            onMouseEnter={(e) => {
-              if (!isCommentingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+          {/* Comment Tool - hidden on templates */}
+          {!isTemplate && (
+            <button
+              type="button"
+              disabled={isCommentingDisabled}
+              style={{
+                ...buttonStyle(isCommentingEnabled && !isCommentingDisabled),
+                opacity: isCommentingDisabled ? 0.35 : 1,
+                cursor: isCommentingDisabled ? "not-allowed" : "pointer",
+              }}
+              onClick={handleCommentClick}
+              title={
+                isCommentingDisabled
+                  ? "Comments are unavailable on empty versions"
+                  : "Comment tool"
               }
-            }}
-            onMouseLeave={(e) => {
-              if (!isCommentingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = 'transparent';
-              }
-            }}
-          >
-            <ChatCircle size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
-          </button>
+              onMouseEnter={(e) => {
+                if (isCommentingDisabled) return;
+                if (!isCommentingEnabled) {
+                  (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isCommentingDisabled) return;
+                if (!isCommentingEnabled) {
+                  (e.target as HTMLElement).style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              <ChatCircle size={20} weight="fill" style={{ pointerEvents: 'none' }} />
+            </button>
+          )}
 
-          {/* Job Stories Tracking Tool */}
+          {/* Dismiss Button */}
           <button
-            style={buttonStyle(isJobStoriesTrackingEnabled)}
-            onClick={onToggleJobStoriesTracking}
-            title="Job Stories Tracking"
+            style={buttonStyle(false)}
+            onClick={handleDismiss}
+            title="Dismiss toolbar"
             onMouseEnter={(e) => {
-              if (!isJobStoriesTrackingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
-              }
+              (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
             }}
             onMouseLeave={(e) => {
-              if (!isJobStoriesTrackingEnabled) {
-                (e.target as HTMLElement).style.backgroundColor = 'transparent';
-              }
+              (e.target as HTMLElement).style.backgroundColor = 'transparent';
             }}
           >
-            <UserList size={20} weight="fill" style={{ backgroundColor: 'transparent' }} />
+            <X size={20} weight="fill" style={{ pointerEvents: 'none' }} />
           </button>
         </div>
       </div>
@@ -251,7 +365,22 @@ export const DesignerToolbar: React.FC<DesignerToolbarProps> = ({
         isOpen={isAboutFlyoutOpen}
         onClose={() => setIsAboutFlyoutOpen(false)}
         projectMetadata={projectMetadata}
+        currentVersion={currentVersion}
+        slug={slug}
       />
+
+      {/* Create Project from Template Modal (hidden in production mode) */}
+      {!isProduction && isTemplate && templateName && (
+        <CreateProjectModal
+          isOpen={isCreateProjectModalOpen}
+          onClose={() => setIsCreateProjectModalOpen(false)}
+          onSuccess={() => {
+            setIsCreateProjectModalOpen(false);
+          }}
+          templateName={templateName}
+          defaultProjectName={templateName}
+        />
+      )}
     </>
   );
 };

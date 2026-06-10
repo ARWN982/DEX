@@ -1,11 +1,14 @@
-import { PaperPlaneRight } from "phosphor-react";
+import { useEuiTheme } from "@elastic/eui";
+import { PaperPlaneRight, ArrowRight } from "phosphor-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import {
   getDesignUIColors,
   createBoxShadow,
-} from "../../styles/designToolsColors";
+  dtRadius,
+} from "../../styles/designToolsTokens";
 import { CommentPosition } from "../../types/comments";
+import { getUserIdentity, setUserIdentity } from "../../utils/userIdentity";
 
 interface CommentCreatorProps {
   position: CommentPosition;
@@ -20,16 +23,34 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
   onCancel,
   style = {},
 }) => {
+  const [identity, setIdentity] = useState(getUserIdentity);
+  const [nameInput, setNameInput] = useState("");
   const [content, setContent] = useState("");
-  const textAreaRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { colorMode } = useAppStore();
+  const { euiTheme } = useEuiTheme();
 
   useEffect(() => {
-    // Auto-focus the textarea when the component mounts
-    if (textAreaRef.current) {
-      textAreaRef.current.focus();
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
-  }, []);
+  }, [identity]);
+
+  const handleNameSubmit = () => {
+    if (nameInput.trim()) {
+      const author = setUserIdentity(nameInput);
+      setIdentity(author);
+    }
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onCancel();
+    } else if (e.key === "Enter" && nameInput.trim()) {
+      e.preventDefault();
+      handleNameSubmit();
+    }
+  };
 
   const handleSubmit = () => {
     if (content.trim()) {
@@ -40,12 +61,7 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       onCancel();
-    } else if (
-      e.key === "Enter" &&
-      (e.metaKey || e.ctrlKey) &&
-      content.trim()
-    ) {
-      // Cmd/Ctrl + Enter to submit
+    } else if (e.key === "Enter" && content.trim()) {
       e.preventDefault();
       handleSubmit();
     }
@@ -57,28 +73,71 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
     ...style,
   };
 
-  // Get design UI colors (follows main app theme)
   const colors = getDesignUIColors(colorMode);
 
+  const containerStyle: React.CSSProperties = {
+    ...creatorStyle,
+    width: "400px",
+    backgroundColor: colors.primary,
+    border: "none",
+    borderRadius: dtRadius.pill,
+    boxShadow: createBoxShadow(colors, "medium"),
+    paddingInlineStart: euiTheme.size.base,
+    paddingBlock: euiTheme.size.s,
+    paddingInlineEnd: euiTheme.size.s,
+    display: "flex",
+    alignItems: "center",
+    gap: euiTheme.size.m,
+  };
+
+  if (!identity) {
+    return (
+      <div style={containerStyle}>
+        <input
+          ref={inputRef}
+          type="text"
+          style={{
+            flex: 1,
+            padding: "0",
+            backgroundColor: "transparent",
+            border: "none",
+            color: colors.textPrimary,
+            fontSize: "12px",
+            outline: "none",
+            fontFamily: "inherit",
+          }}
+          placeholder="Enter your name to comment"
+          value={nameInput}
+          onChange={(e) => setNameInput(e.target.value)}
+          onKeyDown={handleNameKeyDown}
+        />
+        <button
+          style={{
+            width: euiTheme.size.xl,
+            height: euiTheme.size.xl,
+            border: "none",
+            backgroundColor: "transparent",
+            cursor: nameInput.trim() ? "pointer" : "not-allowed",
+            color: nameInput.trim() ? colors.primaryButton : colors.textMuted,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.2s ease",
+            padding: "0",
+          }}
+          onClick={handleNameSubmit}
+          disabled={!nameInput.trim()}
+        >
+          <ArrowRight size={20} weight="bold" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        ...creatorStyle,
-        width: "400px",
-        backgroundColor: colors.primary,
-        border: "none",
-        borderRadius: "24px",
-        boxShadow: createBoxShadow(colors, "medium"),
-        paddingInlineStart: "16px",
-        paddingBlock: "8px",
-        paddingInlineEnd: "8px",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-      }}
-    >
+    <div style={containerStyle}>
       <input
-        ref={textAreaRef}
+        ref={inputRef}
         type="text"
         style={{
           flex: 1,
@@ -98,8 +157,8 @@ export const CommentCreator: React.FC<CommentCreatorProps> = ({
 
       <button
         style={{
-          width: "32px",
-          height: "32px",
+          width: euiTheme.size.xl,
+          height: euiTheme.size.xl,
           border: "none",
           backgroundColor: "transparent",
           cursor: content.trim() ? "pointer" : "not-allowed",

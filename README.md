@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+> **When should I use Vibe Kibana [(elastic/vibe-kibana)](https://github.com/elastic/vibe-kibana) vs Kibana [(elastic/kibana)](https://github.com/elastic/kibana)?**
+> 
+> - **Quick exploration of multiple directions** - If you haven't defined a direction yet and want to rapidly iterate through different approaches, start here.
+> 
+>   Once you've settled on a direction in elastic/vibe-kibana, **move to elastic/kibana to build your solution directly in the Kibana codebase.**
+> 
+> - **Brand new complex features** - If you're designing something that doesn't exist at all in Kibana today, Vibe Kibana lets you build and share it without navigating the full Kibana codebase.
+> - **Small, scoped changes** - If you're tweaking an existing page or component, you're encouraged to work directly in the [(elastic/kibana)](https://github.com/elastic/kibana) repo. It's the fastest path to production.
+
+
 # Vibe Kibana
 
 A prototyping tool to build coded prototypes of Kibana.
@@ -15,13 +26,7 @@ Quickly spin up new projects using pre-built templates. Each template comes with
 Access a curated set of shared components—charts, panels, controls, grids, and more—all built with Elastic UI. These components are ready to use and customize, helping you maintain consistency across your prototypes.
 
 #### 📚 Version History
-Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution.
-
-#### 📋 Job Stories
-Track job stories alongside your prototypes. Keep your design decisions grounded in user needs and maintain alignment with product goals.
-
-#### 📄 PRD Tracking
-Document and reference product requirements directly within your project. Keep specs, context, and design work together in one place.
+Create and manage multiple versions of your project. Experiment with different approaches, compare iterations, and keep a history of your design evolution. Each version can include a `notes.md` file to describe what changed — these notes are rendered in the About flyout.
 
 #### ⚡ Auto-reload Development
 Hot reloading for both frontend and backend during development. See your changes instantly without manual refreshes.
@@ -133,7 +138,6 @@ vibe-kibana/
 │   │   │   │   ├── CreateProjectModal.tsx
 │   │   │   │   ├── CreateVersionModal.tsx
 │   │   │   │   ├── DesignerToolbar.tsx
-│   │   │   │   ├── JobStoriesFlyout.tsx
 │   │   │   │   ├── ProjectInfoFlyout.tsx
 │   │   │   │   └── VersionSwitcher.tsx
 │   │   │   └── shared/               # Shared UI components
@@ -141,7 +145,7 @@ vibe-kibana/
 │   │   │       ├── AssistantFlyout.tsx
 │   │   │       ├── EmptyState.tsx
 │   │   │       ├── KibanaHeader.tsx
-│   │   │       ├── NewNav.tsx
+│   │   │       ├── NavBar.tsx
 │   │   │       ├── TabBar.tsx
 │   │   │       └── VisorHex.tsx
 │   │   ├── data/                     # Data generators and sample data
@@ -156,11 +160,11 @@ vibe-kibana/
 │   │   ├── pages/                    # Project pages (auto-discovered)
 │   │   │   ├── Homepage.tsx
 │   │   │   └── [project-name]/       # Each project folder
-│   │   │       ├── about.json        # Project metadata
+│   │   │       ├── about.md          # Project metadata (YAML frontmatter + Markdown description)
 │   │   │       └── v1.0/             # Version folders
 │   │   │           ├── index.tsx     # Page component
 │   │   │           ├── comments.json # Comments data
-│   │   │           └── jobStories.json
+│   │   │           └── notes.md      # Version notes (optional, Markdown)
 │   │   ├── store/                    # Zustand state stores
 │   │   │   ├── useAppStore.ts
 │   │   │   ├── useCommentStore.ts
@@ -177,7 +181,6 @@ vibe-kibana/
 │       │   └── elasticsearch.ts      # ES client
 │       └── routes/                   # API routes
 │           ├── comments.ts
-│           ├── jobStories.ts
 │           ├── projects.ts
 │           └── versions.ts
 ├── dist/                             # Built assets (generated)

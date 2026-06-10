@@ -109,18 +109,6 @@ export const EditorFooter: React.FC<EditorFooterProps> = ({
                       fill: url(#quick-search-gradient) !important;
                     }
                     
-                    @keyframes gradientShimmer {
-                      0% {
-                        background-position: 0% 50%;
-                      }
-                      50% {
-                        background-position: 100% 50%;
-                      }
-                      100% {
-                        background-position: 0% 50%;
-                      }
-                    }
-                    
                     .quick-search-text {
                       background: ${isDarkMode
                         ? "linear-gradient(90deg, #61A2FF, #8A82E8, #D846BB, #FF27A5, #61A2FF)"
@@ -129,7 +117,6 @@ export const EditorFooter: React.FC<EditorFooterProps> = ({
                       -webkit-background-clip: text;
                       -webkit-text-fill-color: transparent;
                       background-clip: text;
-                      animation: gradientShimmer 3s ease-in-out infinite;
                       transition: all 0.15s ease-out;
                     }
                     
@@ -138,7 +125,6 @@ export const EditorFooter: React.FC<EditorFooterProps> = ({
                       -webkit-background-clip: unset;
                       -webkit-text-fill-color: ${euiTheme.colors.primaryText};
                       background-clip: unset;
-                      animation: none;
                     }
                   `}
                 </style>

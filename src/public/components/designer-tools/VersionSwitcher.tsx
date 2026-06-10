@@ -1,8 +1,9 @@
+import { useEuiTheme } from '@elastic/eui';
 import { CaretDown, Plus } from 'phosphor-react';
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useVersionStore } from '../../store/useVersionStore';
-import { getToolbarColors } from '../../styles/designToolsColors';
+import { getToolbarColors, dtRadius } from '../../styles/designToolsTokens';
 
 interface VersionSwitcherProps {
   onCreateVersion?: () => void;
@@ -22,6 +23,7 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
   } = useVersionStore();
   
   const [isOpen, setIsOpen] = useState(false);
+  const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
   // Load versions on mount
@@ -44,11 +46,11 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
   if (isLoading) {
     return (
       <div style={{
-        padding: '8px 12px',
-        borderRadius: '16px',
+        padding: `${euiTheme.size.s} ${euiTheme.size.m}`,
+        borderRadius: dtRadius.panel,
         backgroundColor: colors.secondary,
         color: colors.textSecondary,
-        fontSize: '14px',
+        fontSize: '11px',
       }}>
         Loading...
       </div>
@@ -63,14 +65,14 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
   const buttonStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    borderRadius: '16px',
+    gap: euiTheme.size.s,
+    padding: `${euiTheme.size.s} ${euiTheme.size.m}`,
+    borderRadius: dtRadius.panel,
     border: 'none',
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '11px',
     fontWeight: '500',
     transition: 'all 0.2s ease',
     outline: 'none',
@@ -86,10 +88,10 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
     position: 'absolute',
     bottom: '100%',
     left: 0,
-    marginBottom: '4px',
+    marginBottom: euiTheme.size.xs,
     backgroundColor: colors.primary,
     border: `1px solid ${colors.border}`,
-    borderRadius: '12px',
+    borderRadius: dtRadius.large,
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
     zIndex: 1000,
     minWidth: '200px',
@@ -100,12 +102,12 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 16px',
+    padding: `${euiTheme.size.m} ${euiTheme.size.base}`,
     border: 'none',
     backgroundColor: 'transparent',
     color: colors.textPrimary,
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '11px',
     width: '100%',
     textAlign: 'left',
     transition: 'background-color 0.2s ease',
@@ -202,25 +204,27 @@ export const VersionSwitcher: React.FC<VersionSwitcherProps> = ({
               </button>
             ))}
             
-            {/* Create new version button */}
-            <button
-              style={createButtonStyle}
-              onClick={handleCreateVersion}
-              onMouseEnter={(e) => {
-                Object.assign(e.currentTarget.style, {
-                  ...createButtonStyle,
-                  backgroundColor: colors.buttonHover,
-                });
-              }}
-              onMouseLeave={(e) => {
-                Object.assign(e.currentTarget.style, createButtonStyle);
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Plus size={16} />
-                <span>Create New Version</span>
-              </div>
-            </button>
+            {/* Create new version button - only in full app, not in published output */}
+            {onCreateVersion && (
+              <button
+                style={createButtonStyle}
+                onClick={handleCreateVersion}
+                onMouseEnter={(e) => {
+                  Object.assign(e.currentTarget.style, {
+                    ...createButtonStyle,
+                    backgroundColor: colors.buttonHover,
+                  });
+                }}
+                onMouseLeave={(e) => {
+                  Object.assign(e.currentTarget.style, createButtonStyle);
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: euiTheme.size.s }}>
+                  <Plus size={16} />
+                  <span>Create new version</span>
+                </div>
+              </button>
+            )}
           </div>
         </>
       )}

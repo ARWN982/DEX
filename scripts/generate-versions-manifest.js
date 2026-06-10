@@ -1,60 +1,82 @@
 const fs = require('fs');
 const path = require('path');
 
-// Generate a versions manifest for production deployment
-function generateVersionsManifest() {
-  const pagesDir = path.join(__dirname, '../src/public/pages');
-  const manifest = {};
+const pagesDir = path.join(__dirname, '../src/public/pages');
+const distPublicDir = path.join(__dirname, '../dist/public');
+const apiDir = path.join(__dirname, '../api');
 
-  // Read all page directories
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
+
+function discoverPagesAndVersions() {
   const pages = fs.readdirSync(pagesDir).filter(file => {
-    const stat = fs.statSync(path.join(pagesDir, file));
-    return stat.isDirectory();
+    return fs.statSync(path.join(pagesDir, file)).isDirectory() && !file.startsWith('.');
   });
 
-  // For each page, find version folders
+  const result = {};
   pages.forEach(page => {
     const pageDir = path.join(pagesDir, page);
     const items = fs.readdirSync(pageDir);
-    
+
     const versions = items
       .filter(folder => folder.startsWith('v') && folder.match(/^v\d+\.\d+$/))
-      .map(folder => folder.substring(1)) // Remove 'v' prefix
+      .filter(folder => {
+        const indexPath = path.join(pageDir, folder, 'index.tsx');
+        return fs.existsSync(indexPath);
+      })
+      .map(folder => folder.substring(1))
       .sort((a, b) => {
         const aParts = a.split('.').map(Number);
         const bParts = b.split('.').map(Number);
         return aParts[0] - bParts[0] || aParts[1] - bParts[1];
       });
-    
+
     if (versions.length > 0) {
-      manifest[page] = versions;
+      result[page] = versions;
     }
   });
 
-  // Write manifest to multiple locations
-  
-  // 1. Write to dist/public (for static serving)
-  const distPublicDir = path.join(__dirname, '../dist/public');
-  if (!fs.existsSync(distPublicDir)) {
-    fs.mkdirSync(distPublicDir, { recursive: true });
-  }
-  fs.writeFileSync(
-    path.join(distPublicDir, 'versions-manifest.json'),
-    JSON.stringify(manifest, null, 2)
-  );
-
-  // 2. Write to api directory (for Vercel serverless functions)
-  const apiDir = path.join(__dirname, '../api');
-  if (!fs.existsSync(apiDir)) {
-    fs.mkdirSync(apiDir, { recursive: true });
-  }
-  fs.writeFileSync(
-    path.join(apiDir, 'versions-manifest.json'),
-    JSON.stringify(manifest, null, 2)
-  );
-
-  console.log('Generated versions manifest:', manifest);
+  return result;
 }
 
-generateVersionsManifest();
+function writeJSON(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function generateVersionsManifest(pagesWithVersions) {
+  ensureDir(distPublicDir);
+  ensureDir(apiDir);
+  writeJSON(path.join(distPublicDir, 'versions-manifest.json'), pagesWithVersions);
+  writeJSON(path.join(apiDir, 'versions-manifest.json'), pagesWithVersions);
+  console.log('Generated versions manifest:', pagesWithVersions);
+}
+
+function generateProjectsManifest(pagesWithVersions) {
+  const projects = Object.entries(pagesWithVersions).map(([name, versions]) => {
+    const displayName = name
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    const aboutPath = path.join(pagesDir, name, 'about.json');
+    const hasAbout = fs.existsSync(aboutPath);
+
+    return { name, displayName, hasAbout, versions };
+  });
+
+  projects.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+  const manifest = { success: true, projects };
+
+  ensureDir(apiDir);
+  writeJSON(path.join(apiDir, 'projects-manifest.json'), manifest);
+  console.log('Generated projects manifest:', projects.map(p => p.name));
+}
+
+const pagesWithVersions = discoverPagesAndVersions();
+generateVersionsManifest(pagesWithVersions);
+generateProjectsManifest(pagesWithVersions);
 

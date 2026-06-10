@@ -1,11 +1,9 @@
-import { APIDataGenerator } from './apiDataGenerator';
 import { LogsDataGenerator } from './logsDataGenerator';
 import { DataGenerator, DataGeneratorRegistry } from './types';
 
 // Create registry of data generators
 const registry: DataGeneratorRegistry = {
   'logs-*': new LogsDataGenerator(),
-  'remote_cluster:logs*': new APIDataGenerator(), // Use API generator for remote cluster logs
 };
 
 // Function to get the appropriate data generator for an index pattern

@@ -25,6 +25,8 @@ export const AppContainer: React.FC<AppContainerProps> = ({ children }) => {
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        padding: 0;
+        margin: 0;
       `}
     >
       {children}

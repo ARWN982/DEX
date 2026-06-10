@@ -1,14 +1,25 @@
-import { X } from "phosphor-react";
-import React, { useState, useEffect } from "react";
+import { useEuiTheme } from "@elastic/eui";
+import { PencilSimple, X } from "phosphor-react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
-import { getToolbarColors } from "../../styles/designToolsColors";
+import { getToolbarColors, dtRadius, dtPadding } from "../../styles/designToolsTokens";
 
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  templateName?: string; // Optional template name to create project from
-  defaultProjectName?: string; // Default project name (e.g., template name)
+  templateName?: string;
+  defaultProjectName?: string;
+}
+
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-_]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^[-_]+|[-_]+$/g, "");
 }
 
 export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
@@ -19,35 +30,76 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   defaultProjectName,
 }) => {
   const { colorMode } = useAppStore();
+  const { euiTheme } = useEuiTheme();
   const colors = getToolbarColors(colorMode);
 
-  const [projectName, setProjectName] = useState(defaultProjectName || "");
+  const [displayName, setDisplayName] = useState(defaultProjectName || "");
+  const [slug, setSlug] = useState(toSlug(defaultProjectName || ""));
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const slugInputRef = useRef<HTMLInputElement>(null);
 
-  // Update project name when defaultProjectName changes or modal opens
   useEffect(() => {
     if (isOpen && defaultProjectName) {
-      setProjectName(defaultProjectName);
+      setDisplayName(defaultProjectName);
+      setSlug(toSlug(defaultProjectName));
+      setSlugManuallyEdited(false);
     } else if (!isOpen) {
-      // Reset when modal closes
-      setProjectName("");
+      setDisplayName("");
+      setSlug("");
+      setSlugManuallyEdited(false);
+      setIsEditingSlug(false);
       setDescription("");
       setError(null);
     }
   }, [defaultProjectName, isOpen]);
 
+  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDisplayName(value);
+    if (!slugManuallyEdited) {
+      setSlug(toSlug(value));
+    }
+    if (error) setError(null);
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, "");
+    setSlug(raw);
+    setSlugManuallyEdited(true);
+    if (error) setError(null);
+  };
+
+  const handleEditSlugClick = () => {
+    setIsEditingSlug(true);
+    setTimeout(() => slugInputRef.current?.focus(), 0);
+  };
+
+  const handleSlugBlur = () => {
+    setIsEditingSlug(false);
+    // Clean up trailing/leading dashes on blur
+    setSlug((s) => s.replace(/^[-_]+|[-_]+$/g, ""));
+  };
+
   const handleCreate = async () => {
-    if (!projectName.trim()) {
+    if (!displayName.trim()) {
       setError("Project name is required");
       return;
     }
 
-    // Validate project name (alphanumeric, hyphens, underscores only)
-    const nameRegex = /^[a-z0-9-_]+$/;
-    if (!nameRegex.test(projectName.trim().toLowerCase())) {
-      setError("Project name can only contain lowercase letters, numbers, hyphens, and underscores");
+    const finalSlug = slug || toSlug(displayName);
+
+    if (!finalSlug) {
+      setError("Could not derive a valid slug from the project name");
+      return;
+    }
+
+    const slugRegex = /^[a-z0-9-_]+$/;
+    if (!slugRegex.test(finalSlug)) {
+      setError("Slug can only contain lowercase letters, numbers, hyphens, and underscores");
       return;
     }
 
@@ -55,54 +107,60 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setError(null);
 
     try {
-      // Check if project name already exists
+      // Check for duplicates
       const checkResponse = await fetch(`/api/projects`);
       if (checkResponse.ok) {
-        const checkData = await checkResponse.json();
-        const normalizedName = projectName.trim().toLowerCase();
-        const existingProject = checkData.projects?.find(
-          (p: any) => p.name === normalizedName
-        );
-        if (existingProject) {
-          setError(`A project with the name "${normalizedName}" already exists`);
-          setIsCreating(false);
-          return;
+        const checkText = await checkResponse.text();
+        try {
+          const checkData = JSON.parse(checkText);
+          const existingProject = checkData.projects?.find(
+            (p: any) => p.name === finalSlug
+          );
+          if (existingProject) {
+            setError(`A project with the slug "${finalSlug}" already exists`);
+            setIsCreating(false);
+            return;
+          }
+        } catch {
+          // Skip duplicate check if response isn't JSON
         }
       }
 
       const response = await fetch("/api/projects", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: projectName.trim().toLowerCase(),
+          name: finalSlug,
+          displayName: displayName.trim(),
           description: description.trim() || undefined,
           templateName: templateName,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create project");
+      const responseText = await response.text();
+      let result: any;
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        if (!response.ok) {
+          throw new Error(`Server error (${response.status})`);
+        }
+        throw new Error("Server returned an invalid response. The project may have been created — try refreshing.");
       }
 
-      const result = await response.json();
-      console.log("Project created successfully:", result);
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to create project");
+      }
 
-      // Reset form and close modal
-      setProjectName("");
+      setDisplayName("");
+      setSlug("");
       setDescription("");
       setError(null);
       onClose();
-      
-      // Call success callback to refresh projects list
-      if (onSuccess) {
-        onSuccess();
-      }
-    } catch (error) {
-      console.error("Failed to create project:", error);
-      setError(error instanceof Error ? error.message : "Failed to create project");
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.error("Failed to create project:", err);
+      setError(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setIsCreating(false);
     }
@@ -110,24 +168,19 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   const handleClose = () => {
     if (!isCreating) {
-      // Reset form state when closing
-      setProjectName("");
+      setDisplayName("");
+      setSlug("");
       setDescription("");
       setError(null);
       onClose();
     }
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setProjectName(value);
-    // Clear error when user starts typing
-    if (error) {
-      setError(null);
-    }
-  };
-
   if (!isOpen) return null;
+
+  const isDark = colorMode === "dark";
+  const finalSlug = slug || toSlug(displayName);
+  const canCreate = !isCreating && displayName.trim().length > 0;
 
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
@@ -140,12 +193,12 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "20px",
+    padding: dtPadding,
   };
 
   const modalStyle: React.CSSProperties = {
     backgroundColor: colors.primary,
-    borderRadius: "16px",
+    borderRadius: dtRadius.panel,
     padding: "0",
     maxWidth: "480px",
     width: "100%",
@@ -155,7 +208,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const headerStyle: React.CSSProperties = {
-    padding: "24px 24px 0 24px",
+    padding: `${dtPadding} ${dtPadding} 0 ${dtPadding}`,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -169,9 +222,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const closeButtonStyle: React.CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "16px",
+    width: euiTheme.size.xl,
+    height: euiTheme.size.xl,
+    borderRadius: dtRadius.panel,
     border: "none",
     backgroundColor: "transparent",
     color: colors.textSecondary,
@@ -184,11 +237,11 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const contentStyle: React.CSSProperties = {
-    padding: "24px",
+    padding: dtPadding,
   };
 
   const sectionStyle: React.CSSProperties = {
-    marginBottom: "20px",
+    marginBottom: dtPadding,
   };
 
   const labelStyle: React.CSSProperties = {
@@ -196,19 +249,20 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     fontSize: "14px",
     fontWeight: "500",
     color: colors.textPrimary,
-    marginBottom: "8px",
+    marginBottom: euiTheme.size.s,
   };
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    padding: "12px",
-    borderRadius: "8px",
+    padding: euiTheme.size.m,
+    borderRadius: dtRadius.medium,
     border: `1px solid ${error ? "#d32f2f" : colors.border}`,
     backgroundColor: colors.secondary,
     color: colors.textPrimary,
     fontSize: "14px",
     fontFamily: "inherit",
     outline: "none",
+    boxSizing: "border-box",
   };
 
   const textareaStyle: React.CSSProperties = {
@@ -220,19 +274,19 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const errorStyle: React.CSSProperties = {
     fontSize: "12px",
     color: "#d32f2f",
-    marginTop: "4px",
+    marginTop: euiTheme.size.xs,
   };
 
   const footerStyle: React.CSSProperties = {
-    padding: "0 24px 24px 24px",
+    padding: `0 ${dtPadding} ${dtPadding} ${dtPadding}`,
     display: "flex",
-    gap: "12px",
+    gap: euiTheme.size.m,
     justifyContent: "flex-end",
   };
 
   const buttonBaseStyle: React.CSSProperties = {
     padding: "10px 20px",
-    borderRadius: "8px",
+    borderRadius: dtRadius.medium,
     border: "none",
     fontSize: "14px",
     fontWeight: "500",
@@ -250,8 +304,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   const createButtonStyle: React.CSSProperties = {
     ...buttonBaseStyle,
-    backgroundColor: colors.accent,
-    color: "#ffffff",
+    backgroundColor: colors.primaryButton,
+    color: colors.primaryButtonText,
   };
 
   const createButtonDisabledStyle: React.CSSProperties = {
@@ -260,26 +314,76 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     cursor: "not-allowed",
   };
 
+  const slugRowStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: euiTheme.size.s,
+    marginTop: euiTheme.size.s,
+  };
+
+  const slugLabelStyle: React.CSSProperties = {
+    fontSize: "12px",
+    color: colors.textSecondary,
+    flexShrink: 0,
+  };
+
+  const slugValueStyle: React.CSSProperties = {
+    fontSize: "12px",
+    fontFamily: "monospace",
+    color: isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.45)",
+    letterSpacing: "-0.01em",
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+
+  const slugInputInlineStyle: React.CSSProperties = {
+    flex: 1,
+    minWidth: 0,
+    padding: `${euiTheme.size.xs} ${euiTheme.size.s}`,
+    borderRadius: dtRadius.small,
+    border: `1px solid ${colors.border}`,
+    backgroundColor: colors.secondary,
+    color: colors.textPrimary,
+    fontSize: "12px",
+    fontFamily: "monospace",
+    letterSpacing: "-0.01em",
+    outline: "none",
+  };
+
+  const editSlugButtonStyle: React.CSSProperties = {
+    background: "none",
+    border: "none",
+    padding: "2px 4px",
+    cursor: "pointer",
+    color: colors.textMuted,
+    display: "flex",
+    alignItems: "center",
+    borderRadius: "4px",
+    transition: "color 0.15s ease",
+    flexShrink: 0,
+  };
+
   return (
     <>
-      {/* Backdrop */}
       <div style={overlayStyle} onClick={handleClose}>
-        {/* Modal */}
         <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div style={headerStyle}>
             <h2 style={titleStyle}>
-              {templateName ? `Create Project from ${templateName.charAt(0).toUpperCase() + templateName.slice(1)} Template` : "Create New Project"}
+              {templateName
+                ? `Create project from ${templateName.charAt(0).toUpperCase() + templateName.slice(1)} template`
+                : "Create new project"}
             </h2>
             <button
               style={closeButtonStyle}
               onClick={handleClose}
               disabled={isCreating}
               onMouseEnter={(e) => {
-                if (!isCreating) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    colors.buttonHover;
-                }
+                if (!isCreating)
+                  (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
               }}
               onMouseLeave={(e) => {
                 (e.target as HTMLElement).style.backgroundColor = "transparent";
@@ -291,35 +395,67 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
           {/* Content */}
           <div style={contentStyle}>
-            {/* Project Name */}
+            {/* Display name */}
             <div style={sectionStyle}>
               <label style={labelStyle}>
-                Project Name <span style={{ color: "#d32f2f" }}>*</span>
+                Project name <span style={{ color: "#d32f2f" }}>*</span>
               </label>
               <input
                 type="text"
-                value={projectName}
-                onChange={handleNameChange}
-                placeholder="my-new-project"
+                value={displayName}
+                onChange={handleDisplayNameChange}
+                placeholder="Security onboarding"
                 style={inputStyle}
                 disabled={isCreating}
                 autoFocus
               />
               {error && <div style={errorStyle}>{error}</div>}
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: colors.textSecondary,
-                  marginTop: "4px",
-                }}
-              >
-                Use lowercase letters, numbers, hyphens, and underscores only
+
+              {/* Slug row */}
+              <div style={slugRowStyle}>
+                <span style={slugLabelStyle}>Slug</span>
+                {isEditingSlug ? (
+                  <input
+                    ref={slugInputRef}
+                    type="text"
+                    value={slug}
+                    onChange={handleSlugChange}
+                    onBlur={handleSlugBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === "Escape") {
+                        handleSlugBlur();
+                      }
+                    }}
+                    style={slugInputInlineStyle}
+                    disabled={isCreating}
+                  />
+                ) : (
+                  <>
+                    <span style={slugValueStyle}>
+                      {finalSlug || <span style={{ opacity: 0.4 }}>—</span>}
+                    </span>
+                    <button
+                      style={editSlugButtonStyle}
+                      onClick={handleEditSlugClick}
+                      disabled={isCreating}
+                      title="Edit slug"
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = colors.textPrimary;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = colors.textMuted;
+                      }}
+                    >
+                      <PencilSimple size={12} />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Description */}
             <div style={sectionStyle}>
-              <label style={labelStyle}>Description (Optional)</label>
+              <label style={labelStyle}>Description (optional)</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -337,41 +473,30 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               onClick={handleClose}
               disabled={isCreating}
               onMouseEnter={(e) => {
-                if (!isCreating) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    colors.buttonHover;
-                }
+                if (!isCreating)
+                  (e.target as HTMLElement).style.backgroundColor = colors.buttonHover;
               }}
               onMouseLeave={(e) => {
-                if (!isCreating) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    "transparent";
-                }
+                if (!isCreating)
+                  (e.target as HTMLElement).style.backgroundColor = "transparent";
               }}
             >
               Cancel
             </button>
             <button
-              style={
-                isCreating || !projectName.trim()
-                  ? createButtonDisabledStyle
-                  : createButtonStyle
-              }
+              style={canCreate ? createButtonStyle : createButtonDisabledStyle}
               onClick={handleCreate}
-              disabled={isCreating || !projectName.trim()}
+              disabled={!canCreate}
               onMouseEnter={(e) => {
-                if (!isCreating && projectName.trim()) {
-                  (e.target as HTMLElement).style.backgroundColor = "#0084d1";
-                }
+                if (canCreate)
+                  (e.target as HTMLElement).style.transform = "scale(1.03)";
               }}
               onMouseLeave={(e) => {
-                if (!isCreating && projectName.trim()) {
-                  (e.target as HTMLElement).style.backgroundColor =
-                    colors.accent;
-                }
+                if (canCreate)
+                  (e.target as HTMLElement).style.transform = "scale(1)";
               }}
             >
-              {isCreating ? "Creating..." : "Create Project"}
+              {isCreating ? "Creating..." : "Create project"}
             </button>
           </div>
         </div>
@@ -379,4 +504,3 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     </>
   );
 };
-

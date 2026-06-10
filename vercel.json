@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "functions": {
@@ -11,9 +12,16 @@
     },
     "api/versions.js": {
       "maxDuration": 10
+    },
+    "api/projects.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
+    {
+      "source": "/api/projects",
+      "destination": "/api/projects.js"
+    },
     {
       "source": "/api/versions/active",
       "destination": "/api/versions.js"

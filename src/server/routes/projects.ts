@@ -1,6 +1,7 @@
 import { Router, type Router as RouterType, Request, Response } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import matter from 'gray-matter';
 
 const router: RouterType = Router();
 
@@ -40,14 +41,18 @@ router.get('/', async (req: Request, res: Response) => {
         const projectName = entry.name;
         const projectPath = path.join(pagesDir, projectName);
 
-        // Check if it has an about.json file
-        const aboutPath = path.join(projectPath, 'about.json');
+        // Check if it has an about file (about.md or legacy about.json)
         let hasAbout = false;
         try {
-          await fs.access(aboutPath);
+          await fs.access(path.join(projectPath, 'about.md'));
           hasAbout = true;
         } catch {
-          hasAbout = false;
+          try {
+            await fs.access(path.join(projectPath, 'about.json'));
+            hasAbout = true;
+          } catch {
+            hasAbout = false;
+          }
         }
 
         // Find all version folders (v1.0, v1.1, etc.)
@@ -78,11 +83,26 @@ router.get('/', async (req: Request, res: Response) => {
             return aNum - bNum;
           });
 
-          // Convert kebab-case to Title Case for display name
-          const displayName = projectName
+          // Try to read stored displayName from about.md; fall back to deriving from slug
+          let displayName: string;
+          const slugToDisplayName = (slug: string) => slug
             .split('-')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .map((word: string) => {
+              const trimmed = word.replace(/^_+/, '');
+              if (!trimmed) return '';
+              return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+            })
+            .filter(Boolean)
             .join(' ');
+
+          try {
+            const aboutPath = path.join(projectPath, 'about.md');
+            const raw = await fs.readFile(aboutPath, 'utf-8');
+            const { data } = matter(raw);
+            displayName = data.displayName || slugToDisplayName(projectName);
+          } catch {
+            displayName = slugToDisplayName(projectName);
+          }
 
           projects.push({
             name: projectName,
@@ -115,7 +135,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, templateName } = req.body;
+    const { name, displayName, description, templateName } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({ 
@@ -146,7 +166,7 @@ router.post('/', async (req: Request, res: Response) => {
     const projectDir = path.join(pagesDir, normalizedName);
     const versionDir = path.join(projectDir, 'v1.0');
     const indexPath = path.join(versionDir, 'index.tsx');
-    const aboutPath = path.join(projectDir, 'about.json');
+    const aboutPath = path.join(projectDir, 'about.md');
 
     // Check if project already exists
     try {
@@ -196,13 +216,12 @@ router.post('/', async (req: Request, res: Response) => {
         // Projects: import from '../../../components' (3 levels up from pages/project/v1.0/)
         // Replace relative imports that go up 2 levels with 3 levels
         templateContent = templateContent.replace(
-          /from\s+['"]\.\.\/\.\.\/([^'"]+)/g,
-          (match, importPath) => {
-            // Skip if it's already 3 levels or more, or if it's an absolute path
+          /from\s+(['"])\.\.\/\.\.\/([^'"]+)\1/g,
+          (match, quote, importPath) => {
             if (importPath.startsWith('../')) {
               return match;
             }
-            return `from '../../../${importPath}`;
+            return `from ${quote}../../../${importPath}${quote}`;
           }
         );
         
@@ -225,21 +244,14 @@ router.post('/', async (req: Request, res: Response) => {
               const filePath = path.join(projectComponentsDir, file);
               let fileContent = await fs.readFile(filePath, 'utf-8');
               
-              // Replace ../../../utils with ../../../../utils (one more level up)
+              // Fix relative imports that go up 3 levels (need 4 in the new location)
               fileContent = fileContent.replace(
-                /from\s+['"]\.\.\/\.\.\/\.\.\/utils\//g,
-                "from '../../../../utils/"
-              );
-              
-              // Also fix other relative imports that go up 3 levels
-              fileContent = fileContent.replace(
-                /from\s+['"]\.\.\/\.\.\/\.\.\/([^'"]+)/g,
-                (match, importPath) => {
-                  // Skip if it's already 4 levels or more, or if it's an absolute path
+                /from\s+(['"])\.\.\/\.\.\/\.\.\/([^'"]+)\1/g,
+                (match, quote, importPath) => {
                   if (importPath.startsWith('../')) {
                     return match;
                   }
-                  return `from '../../../../${importPath}`;
+                  return `from ${quote}../../../../${importPath}${quote}`;
                 }
               );
               
@@ -273,22 +285,23 @@ export default ${componentName};
       await fs.writeFile(indexPath, indexContent, 'utf-8');
     }
 
-    // Create about.json metadata file
-    const aboutData = {
-      projectName: normalizedName,
+    // Create about.md metadata file with YAML frontmatter
+    const frontmatter: Record<string, string> = {
+      slug: normalizedName,
       designer: '',
       pm: '',
-      briefDescription: description || '',
       prdLink: '',
       githubIssueLink: '',
       breadcrumb: '',
     };
+    if (displayName && typeof displayName === 'string' && displayName.trim()) {
+      frontmatter.displayName = displayName.trim();
+    }
+    const aboutContent = matter.stringify(description || '', frontmatter);
+    await fs.writeFile(aboutPath, aboutContent, 'utf-8');
 
-    await fs.writeFile(aboutPath, JSON.stringify(aboutData, null, 2), 'utf-8');
-
-    // Create initial comments.json and jobStories.json files
+    // Create initial comments.json file
     const commentsPath = path.join(versionDir, 'comments.json');
-    const jobStoriesPath = path.join(versionDir, 'jobStories.json');
 
     const commentsData = {
       comments: [],
@@ -299,16 +312,7 @@ export default ${componentName};
       },
     };
 
-    const jobStoriesData = {
-      stories: [],
-      metadata: {
-        versionId: '1.0',
-        lastUpdated: new Date().toISOString(),
-      },
-    };
-
     await fs.writeFile(commentsPath, JSON.stringify(commentsData, null, 2), 'utf-8');
-    await fs.writeFile(jobStoriesPath, JSON.stringify(jobStoriesData, null, 2), 'utf-8');
 
     console.log(`Created new project: ${normalizedName}`);
 

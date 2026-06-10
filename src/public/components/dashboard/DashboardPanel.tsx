@@ -223,7 +223,7 @@ export const DashboardPanel: React.FC<DashboardPanelProps> = ({
             padding: ${panelSettings.titlePaddingTop}px ${panelSettings.titlePaddingRight}px ${panelSettings.titlePaddingBottom}px ${panelSettings.titlePaddingLeft}px;
             display: flex;
             align-items: center;
-            height:40px;
+            height: ${panelSettings.titleHeight}px;
             flex-shrink: 0;
           `}
         >

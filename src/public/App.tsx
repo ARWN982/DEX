@@ -1,9 +1,9 @@
 import { EuiProvider } from "@elastic/eui";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   CommentingSystem,
-  JobStoriesFlyout,
+  DesignerToolbar,
   CreateVersionModal,
   AssistantFlyout,
   KibanaHeader,
@@ -11,17 +11,10 @@ import {
 import { useChartTheme } from "./hooks";
 import { Homepage } from "./pages";
 import { useAppStore } from "./store/useAppStore";
+import { useDesignerSurfaceStore } from "./store/useDesignerSurfaceStore";
 import { useVersionStore } from "./store/useVersionStore";
 import { VersionedComponentLoader } from "./utils/componentLoader";
 import { TemplateLoader } from "./utils/templateLoader";
-import RuleDetailsPage from "./pages/detection-rules/v1.0/rule-details";
-import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
-import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules";
-import InboxPage from "./pages/detection-rules/v1.0/inbox";
-import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
-import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
-import AgentsPage from "./pages/agents/AgentsPage";
-import { CoverageOverviewPage } from "../mitre-attack-coverage/coverage_overview/index";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -34,10 +27,30 @@ const App: React.FC = () => {
   const { colorMode, setColorMode } = useAppStore();
   const { currentVersion } = useVersionStore();
   const [isCommentingEnabled, setIsCommentingEnabled] = useState(false);
-  const [isJobStoriesTrackingEnabled, setIsJobStoriesTrackingEnabled] =
-    useState(false);
   const [showCreateVersionModal, setShowCreateVersionModal] = useState(false);
   const [isAssistantFlyoutOpen, setIsAssistantFlyoutOpen] = useState(false);
+
+  const isEmptyVersionPage = useDesignerSurfaceStore(
+    (s) => s.isEmptyPlaceholderPage
+  );
+
+  // Reset empty-page flag when switching project or version (before EmptyState mounts again).
+  useEffect(() => {
+    useDesignerSurfaceStore.getState().setEmptyPlaceholderPage(false);
+    setIsCommentingEnabled(false);
+  }, [location.pathname, currentVersion]);
+
+  useEffect(() => {
+    if (location.pathname === "/" || location.pathname.startsWith("/templates/")) {
+      useDesignerSurfaceStore.getState().setEmptyPlaceholderPage(false);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (isEmptyVersionPage) {
+      setIsCommentingEnabled(false);
+    }
+  }, [isEmptyVersionPage]);
 
   // Load appropriate chart theme CSS based on color mode
   useChartTheme(colorMode);
@@ -81,42 +94,12 @@ const App: React.FC = () => {
         )}
         <div style={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<AutoDexPage />} />
+            <Route path="/" element={<Homepage />} />
             
             {/* Template routes */}
             <Route
               path="/templates/:templateName"
               element={<TemplateLoaderWithParams />}
-            />
-            
-            {/* Inbox / AI Briefing */}
-            <Route path="/inbox" element={<InboxPage />} />
-
-            {/* AutoDEX */}
-            <Route path="/autodex" element={<AutoDexPage />} />
-
-            {/* MITRE ATT&CK Coverage */}
-            <Route path="/mitre-coverage" element={<CoverageOverviewPage />} />
-
-            {/* SIEM Readiness */}
-            <Route path="/siem-readiness" element={<SiemReadinessPage />} />
-
-            {/* Agents */}
-            <Route path="/agents" element={<AgentsPage />} />
-
-
-            {/* Rule details route - must come before the catch-all */}
-            <Route
-              path="/detection-rules/create"
-              element={<RuleCreationPage />}
-            />
-            <Route
-              path="/detection-rules/add"
-              element={<AddElasticRulesPage />}
-            />
-            <Route
-              path="/detection-rules/:ruleId"
-              element={<RuleDetailsPage />}
             />
             
             {/* Dynamic project route - catches all project paths */}
@@ -134,16 +117,28 @@ const App: React.FC = () => {
 
         {/* Universal Comment System Overlay */}
         <CommentingSystem
-          isEnabled={isCommentingEnabled}
+          isEnabled={isCommentingEnabled && !isEmptyVersionPage}
           onExitCommentingMode={() => setIsCommentingEnabled(false)}
         />
 
-
-        {/* Job Stories Flyout */}
-        <JobStoriesFlyout
-          isOpen={isJobStoriesTrackingEnabled}
-          onClose={() => setIsJobStoriesTrackingEnabled(false)}
-        />
+        {/* Designer Toolbar - hidden on homepage */}
+        {location.pathname !== "/" && (
+          <DesignerToolbar
+            isCommentingEnabled={isCommentingEnabled}
+            isCommentingDisabled={isEmptyVersionPage}
+            onToggleCommenting={() => {
+              console.log(
+                "Toggling comment mode from",
+                isCommentingEnabled,
+                "to",
+                !isCommentingEnabled
+              );
+              setIsCommentingEnabled(!isCommentingEnabled);
+            }}
+            onCreateVersion={handleCreateVersion}
+            slug={getProjectNameFromPath(location.pathname) || undefined}
+          />
+        )}
 
         {/* Create Version Modal */}
         <CreateVersionModal

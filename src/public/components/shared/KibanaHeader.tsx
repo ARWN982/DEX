@@ -78,7 +78,7 @@ export const KibanaHeader: React.FC<KibanaHeaderProps> = ({
     // Add project breadcrumb if we're on a project page
     else if (currentProjectName && metadata) {
       const breadcrumbText =
-        metadata.breadcrumb || metadata.projectName || currentProjectName;
+        metadata.breadcrumb || metadata.displayName || metadata.slug || currentProjectName;
       breadcrumbs.push({
         text: breadcrumbText,
       });
@@ -120,6 +120,7 @@ export const KibanaHeader: React.FC<KibanaHeaderProps> = ({
         paddingTop: 0,
         paddingBottom: 0,
         height: "48px",
+        flexShrink: 0,
         ...(display === "new" && {
           backgroundColor: euiTheme.colors.backgroundBaseSubdued,
         }),

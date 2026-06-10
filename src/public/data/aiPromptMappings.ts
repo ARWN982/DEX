@@ -14,6 +14,14 @@ export interface PromptMapping {
 
 export const promptMappings: PromptMapping[] = [
   {
+    id: "message-count-by-log-level",
+    prompt: "show me message count by log.level",
+    query: `FROM logs-*
+| STATS message_count = COUNT(*) BY log.level
+| SORT message_count DESC`,
+    description: "Count messages grouped by log level",
+  },
+  {
     id: "errors-count-by-field",
     prompt: "show me the number of errors by field",
     query: `FROM logs-*
@@ -146,6 +154,20 @@ const substituteQueryPlaceholders = (query: string, userPrompt: string): string 
  */
 export const findMatchingQuery = (userPrompt: string): PromptMapping | null => {
   const normalizedPrompt = userPrompt.toLowerCase().trim();
+
+  // Prefer this over loose keyword match with "errors by field" (same words: show, me, by)
+  const wantsMessageCountByLevel =
+    normalizedPrompt.includes("message") &&
+    normalizedPrompt.includes("count") &&
+    normalizedPrompt.includes("by") &&
+    /\blog[\s._]*level\b/.test(normalizedPrompt);
+
+  if (wantsMessageCountByLevel) {
+    const template = promptMappings.find((m) => m.id === "message-count-by-log-level");
+    if (template) {
+      return { ...template, prompt: userPrompt.trim() };
+    }
+  }
 
   // First, try exact matches
   const exactMatch = promptMappings.find(

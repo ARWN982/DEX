@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useCommentStore } from "../../store/useCommentStore";
 import { useVersionStore } from "../../store/useVersionStore";
 import { CommentPosition } from "../../types/comments";
@@ -38,6 +38,23 @@ export const CommentingSystem: React.FC<CommentingSystemProps> = ({
   } = useCommentStore();
 
   const systemRef = useRef<HTMLDivElement>(null);
+  const [scrollOffset, setScrollOffset] = useState({ x: window.scrollX, y: window.scrollY });
+
+  // Track scroll so comment pins move with the page content
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollOffset({ x: window.scrollX, y: window.scrollY });
+    };
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, []);
+
+  // Convert a stored position to current viewport coordinates.
+  // Handles both old comments (viewport coords + scrollX/Y) and new ones (document-absolute).
+  const toViewport = useCallback((pos: CommentPosition) => ({
+    x: (pos.x + (pos.scrollX || 0)) - scrollOffset.x,
+    y: (pos.y + (pos.scrollY || 0)) - scrollOffset.y,
+  }), [scrollOffset]);
 
   // Sync comments when version changes and reload comments for new version
   useEffect(() => {
@@ -76,12 +93,12 @@ export const CommentingSystem: React.FC<CommentingSystemProps> = ({
         return;
       }
 
-      // Use viewport coordinates directly for universal positioning
+      // Store document-absolute coordinates so pins track with the content
       const position: CommentPosition = {
-        x: e.clientX,
-        y: e.clientY,
-        scrollX: window.scrollX,
-        scrollY: window.scrollY,
+        x: e.clientX + window.scrollX,
+        y: e.clientY + window.scrollY,
+        scrollX: 0,
+        scrollY: 0,
       };
 
       // Close any existing thread and start creating new one
@@ -138,32 +155,25 @@ export const CommentingSystem: React.FC<CommentingSystemProps> = ({
 
   // Calculate position for comment panels to avoid going off-screen
   const getCommentPanelPosition = (position: CommentPosition) => {
-    const panelWidth = 400; // Width for creator (400px) and thread (380px) - use max
-    const panelHeight = 100; // Height for comment creator (much smaller)
+    const panelWidth = 400;
+    const panelHeight = 100;
     const margin = 16;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    // Position closer to click point with minimal offset
-    let x = position.x + 8; // Small offset from click
-    let y = position.y + 8; // Small offset below click
+    const vp = toViewport(position);
+    let x = vp.x + 8;
+    let y = vp.y + 8;
 
-    // Adjust if panel would go off right edge
     if (x + panelWidth > viewportWidth - margin) {
-      x = position.x - panelWidth - 8; // Position to the left instead
+      x = vp.x - panelWidth - 8;
     }
-
-    // Adjust if panel would go off bottom edge
     if (y + panelHeight > viewportHeight - margin) {
-      y = position.y - panelHeight - 8; // Position above click instead
+      y = vp.y - panelHeight - 8;
     }
-
-    // Adjust if panel would go off top edge
     if (y < margin) {
       y = margin;
     }
-
-    // Adjust if panel would go off left edge
     if (x < margin) {
       x = margin;
     }
@@ -205,14 +215,16 @@ export const CommentingSystem: React.FC<CommentingSystemProps> = ({
         }}
       >
         {/* Comment Pins - only show when commenting mode is enabled */}
-        {isEnabled && visibleThreads.map((thread) => (
+        {isEnabled && visibleThreads.map((thread) => {
+          const vp = toViewport(thread.position);
+          return (
           <div
             key={thread.id}
             data-comment-ui
             style={{
               position: "absolute",
-              left: thread.position.x,
-              top: thread.position.y,
+              left: vp.x,
+              top: vp.y,
               pointerEvents: "auto",
             }}
           >
@@ -226,7 +238,8 @@ export const CommentingSystem: React.FC<CommentingSystemProps> = ({
               }}
             />
           </div>
-        ))}
+          );
+        })}
 
         {/* Active Comment Thread - only show when commenting mode is enabled */}
         {isEnabled && activeThreadId && threads[activeThreadId] && (

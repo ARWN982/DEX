@@ -61,7 +61,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   
   // UI state
   currentPage: 0,
-  colorMode: 'light',
+  colorMode: (localStorage.getItem('vibe-kibana-color-mode') as 'light' | 'dark') || 'light',
   
   // Computed property to check if there are pending changes
   hasChanges: () => {
@@ -102,8 +102,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCurrentPage: (page: number) =>
     set({ currentPage: page }),
   
-  setColorMode: (mode: 'light' | 'dark') =>
-    set({ colorMode: mode }),
+  setColorMode: (mode: 'light' | 'dark') => {
+    localStorage.setItem('vibe-kibana-color-mode', mode);
+    set({ colorMode: mode });
+  },
   
   // Apply changes from draft to applied state and reset pagination
   applyChanges: () =>

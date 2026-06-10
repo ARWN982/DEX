@@ -58,10 +58,10 @@ interface CommentsData {
   };
 }
 
-// GET /api/comments?page=discover&version=1.0 - Read comments for a specific page and version
+// GET /api/comments?page=<project>&version=1.0 - Read comments for a specific page and version
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const pageId = req.query.page as string || 'discover';
+    const pageId = req.query.page as string || '';
     const versionId = req.query.version as string || '1.0';
     const commentsPath = getCommentsPath(pageId, versionId);
     
@@ -96,7 +96,7 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/comments?version=1.0 - Update comments for a specific version
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const pageId = req.query.page as string || 'discover';
+    const pageId = req.query.page as string || '';
     const versionId = req.query.version as string || '1.0';
     const comments: CommentThread[] = req.body;
     const commentsPath = getCommentsPath(pageId, versionId);
@@ -108,13 +108,22 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Comments must be an array' });
     }
 
-    // Ensure all comments have the correct versionId and pageId
-    const commentsWithVersionAndPage = comments.map(thread => ({
-      ...thread,
-      versionId,
-      pageId,
-      updatedAt: new Date().toISOString()
-    }));
+    // Deduplicate comments within each thread and set correct metadata
+    const commentsWithVersionAndPage = comments.map(thread => {
+      const seen = new Set<string>();
+      const dedupedComments = (thread.comments || []).filter((c: Comment) => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      });
+      return {
+        ...thread,
+        comments: dedupedComments,
+        versionId,
+        pageId,
+        updatedAt: new Date().toISOString(),
+      };
+    });
 
     // Create updated data
     const updatedData: CommentsData = {

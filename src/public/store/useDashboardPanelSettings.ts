@@ -26,6 +26,7 @@ export interface DashboardPanelSettings {
   // Title settings
   titleFontSize: number;
   titleFontWeight: number;
+  titleHeight: number;
   titlePaddingTop: number;
   titlePaddingRight: number;
   titlePaddingBottom: number;
@@ -48,21 +49,22 @@ const defaultSettings: DashboardPanelSettings = {
   gridGap: 8,
   
   // Border/Shadow settings
-  borderStyle: "shadow",
+  borderStyle: "border",
   borderWidth: 1,
   borderRadius: 4,
-  borderColorKey: "borderBasePlain",
+  borderColorKey: "borderBaseSubdued",
   
   // Title settings
   titleFontSize: 14,
   titleFontWeight: 500,
+  titleHeight: 40,
   titlePaddingTop: 0,
   titlePaddingRight: 12,
   titlePaddingBottom: 0,
-  titlePaddingLeft: 12,
+  titlePaddingLeft: 16,
   
   // Panel content padding
-  panelPaddingTop: 12,
+  panelPaddingTop: 0,
   panelPaddingRight: 16,
   panelPaddingBottom: 12,
   panelPaddingLeft: 16,

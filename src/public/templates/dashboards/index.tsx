@@ -4,9 +4,11 @@ import {
 } from "@elastic/eui";
 import React, { useState, useMemo } from "react";
 import {
-  NewNav,
+  NavBar,
   AppContainer,
   KibanaHeader,
+  UnifiedSearch,
+  AppMenuBar,
   DashboardGrid,
   GridItem,
   MarkdownPanel,
@@ -33,6 +35,81 @@ const generateTimeSeriesData = (hours: number = 24, baseValue: number = 50, vari
       y: Math.floor(baseValue + (Math.random() - 0.5) * variance * 2),
     });
   }
+  return data;
+};
+
+// Generate Document Indexing Rate data (matching the image: Feb 9, 2026, 22:08-22:20)
+const generateDocumentIndexingRateData = () => {
+  // Feb 9, 2026, 22:08:00 UTC
+  const baseTime = new Date(2026, 1, 9, 22, 8, 0).getTime();
+  const data = [];
+  
+  // Generate data points every minute from 22:08 to 22:20 (13 points)
+  for (let i = 0; i <= 12; i++) {
+    const timestamp = baseTime + i * 60000; // Add minutes
+    let value = 0;
+    
+    // Match the image: ~27.5k at 22:10 (i=2), ~32.5k at 22:15 (i=7)
+    if (i === 2) {
+      value = 27500; // 22:10
+    } else if (i === 7) {
+      value = 32500; // 22:15
+    } else if (i < 2) {
+      // Interpolate from 0 to 27.5k
+      value = Math.floor((27500 / 2) * i);
+    } else if (i > 2 && i < 7) {
+      // Interpolate from 27.5k to 32.5k
+      const progress = (i - 2) / 5;
+      value = Math.floor(27500 + (32500 - 27500) * progress);
+    } else {
+      // After 22:15, gradually decrease
+      value = Math.floor(32500 - (i - 7) * 2000);
+    }
+    
+    data.push({
+      x: timestamp,
+      y: Math.max(0, value), // Ensure non-negative
+    });
+  }
+  
+  return data;
+};
+
+// Generate Byte Indexing Rate data (matching the image: Feb 9, 2026, 22:30-22:40)
+const generateByteIndexingRateData = () => {
+  // Feb 9, 2026, 22:30:00 UTC
+  const baseTime = new Date(2026, 1, 9, 22, 30, 0).getTime();
+  const data = [];
+  
+  // Generate data points every minute from 22:30 to 22:40 (11 points)
+  for (let i = 0; i <= 10; i++) {
+    const timestamp = baseTime + i * 60000; // Add minutes
+    let value = 0;
+    
+    // Match the image: ~10 MB/s at 22:30 (i=0), ~11.5 MB/s at 22:38 (i=8)
+    // Convert MB/s to bytes/s: 10 MB/s = 10 * 1024 * 1024 bytes/s = 10485760 bytes/s
+    const mb10 = 10 * 1024 * 1024; // 10 MB/s in bytes/s
+    const mb115 = 11.5 * 1024 * 1024; // 11.5 MB/s in bytes/s
+    
+    if (i === 0) {
+      value = mb10; // 22:30
+    } else if (i === 8) {
+      value = mb115; // 22:38
+    } else if (i < 8) {
+      // Interpolate from 10 MB/s to 11.5 MB/s
+      const progress = i / 8;
+      value = Math.floor(mb10 + (mb115 - mb10) * progress);
+    } else {
+      // After 22:38, maintain or slightly increase
+      value = Math.floor(mb115 + (i - 8) * 50000);
+    }
+    
+    data.push({
+      x: timestamp,
+      y: Math.max(0, value), // Ensure non-negative
+    });
+  }
+  
   return data;
 };
 
@@ -84,17 +161,17 @@ export const Dashboards: React.FC = () => {
       h: 3,
       minW: 8,
       minH: 1,
-      title: "Key Dashboards",
+      title: "Key dashboards",
       showTitle: true,
       panelType: "links",
       content: (
         <LinksPanel
           links={[
-            { id: "1", label: "Cluster Monitoring", href: "#", isActive: true },
-            { id: "2", label: "ES Index Monitoring", href: "#" },
+            { id: "1", label: "Cluster monitoring", href: "#", isActive: true },
+            { id: "2", label: "ES index monitoring", href: "#" },
             { id: "3", label: "SSH logins", href: "#" },
-            { id: "4", label: "Cluster & Node View", href: "#" },
-            { id: "5", label: "Index & Shard View", href: "#" },
+            { id: "4", label: "Cluster & node view", href: "#" },
+            { id: "5", label: "Index & shard view", href: "#" },
           ]}
           direction="horizontal"
           gap={24}
@@ -110,7 +187,7 @@ export const Dashboards: React.FC = () => {
       h: 10,
       minW: 12,
       minH: 6,
-      title: "CPU Usage",
+      title: "CPU usage",
       showTitle: true,
       content: (
         <StackedBarChartPanel
@@ -151,9 +228,9 @@ export const Dashboards: React.FC = () => {
             { id: "status", displayAsText: "Status", dataType: "status" },
             { id: "cpu", displayAsText: "CPU %" },
             { id: "memory", displayAsText: "Memory %" },
-            { id: "os", displayAsText: "Operating System" },
-            { id: "ip", displayAsText: "IP Address" },
-            { id: "lastSeen", displayAsText: "Last Seen" },
+            { id: "os", displayAsText: "Operating system" },
+            { id: "ip", displayAsText: "IP address" },
+            { id: "lastSeen", displayAsText: "Last seen" },
           ]}
           data={[
             { hostname: "gke-prod-cluster-pool-a1b2c3d4-node-001", status: "Online", cpu: "23%", memory: "67%", os: "Container-Optimized OS", ip: "10.128.0.42", lastSeen: "2024-10-31T14:23:18Z" },
@@ -187,7 +264,7 @@ export const Dashboards: React.FC = () => {
       showBorder: true,
       panelType: "control",
       controlConfig: {
-        label: "Source Country",
+        label: "Source country",
         options: [
           { value: "us", label: "US" },
           { value: "uk", label: "UK" },
@@ -235,7 +312,7 @@ export const Dashboards: React.FC = () => {
       showBorder: true,
       panelType: "control",
       controlConfig: {
-        label: "Log Level",
+        label: "Log level",
         options: [
           { value: "error", label: "Error" },
           { value: "warn", label: "Warning" },
@@ -290,12 +367,12 @@ export const Dashboards: React.FC = () => {
       h: 6,
       minW: 4,
       minH: 1,
-      title: "Resource Utilization",
+      title: "Resource utilization",
       showTitle: false,
       noPadding: true,
       content: (
         <MetricPanel 
-          title="Resource Utilization" 
+          title="Resource utilization" 
           value={55.2}
           valuePostfix=" %"
           color="vis2"
@@ -325,12 +402,12 @@ export const Dashboards: React.FC = () => {
       h: 6,
       minW: 4,
       minH: 1,
-      title: "Log Ingestion Rate",
+      title: "Log ingestion rate",
       showTitle: false,
       noPadding: true,
       content: (
         <MetricPanel 
-          title="Log Ingestion Rate" 
+          title="Log ingestion rate" 
           value={55.3}
           valuePostfix=" %"
           color="vis2"
@@ -360,12 +437,12 @@ export const Dashboards: React.FC = () => {
       h: 6,
       minW: 4,
       minH: 1,
-      title: "P95 Latency",
+      title: "P95 latency",
       showTitle: false,
       noPadding: true,
       content: (
         <MetricPanel 
-          title="P95 Latency" 
+          title="P95 latency" 
           value={210}
           valuePostfix=" ms"
           color="vis2"
@@ -399,7 +476,7 @@ export const Dashboards: React.FC = () => {
       h: 10,
       minW: 4,
       minH: 1,
-      title: "Requests Over Time",
+      title: "Requests over time",
       showTitle: true,
       content: <TimeSeriesPanel data={generateTimeSeriesData(24, 150, 50)} title="Requests" chartType="area" xAxisTitle="@timestamp per 1 hour" />,
     },
@@ -411,18 +488,81 @@ export const Dashboards: React.FC = () => {
       h: 10,
       minW: 4,
       minH: 1,
-      title: "Response Time",
+      title: "Response time",
       showTitle: true,
       content: (
         <TimeSeriesPanel 
           series={[
-            { id: "p50", name: "P50 Latency", data: generateTimeSeriesData(24, 150, 50), color: euiTheme.colors.vis.euiColorVis0 },
-            { id: "p95", name: "P95 Latency", data: generateTimeSeriesData(24, 280, 80), color: euiTheme.colors.vis.euiColorVis2 },
+            { id: "p50", name: "P50 latency", data: generateTimeSeriesData(24, 150, 50), color: euiTheme.colors.vis.euiColorVis0 },
+            { id: "p95", name: "P95 latency", data: generateTimeSeriesData(24, 280, 80), color: euiTheme.colors.vis.euiColorVis2 },
           ]}
           title="Latency (ms)" 
           chartType="line" 
           xAxisTitle="@timestamp per 1 hour"
           showLegend={false}
+        />
+      ),
+    },
+    {
+      i: "document-indexing-rate",
+      x: 0,
+      y: 10,
+      w: 24,
+      h: 12,
+      minW: 12,
+      minH: 8,
+      title: "[Bulk] Document indexing rate",
+      showTitle: true,
+      content: (
+        <TimeSeriesPanel 
+          data={generateDocumentIndexingRateData()}
+          title="docs/s"
+          chartType="area"
+          xAxisTitle="@timestamp per 5 minutes"
+          color="#F8719D" // Pink color matching the image
+          showLegend={true}
+          legendPosition="right"
+          seriesName="Indexing rate"
+          valueFormatter={(v) => {
+            if (v >= 1000) {
+              return `${(v / 1000).toFixed(1)}k`;
+            }
+            return v.toString();
+          }}
+        />
+      ),
+    },
+    {
+      i: "byte-indexing-rate",
+      x: 24,
+      y: 10,
+      w: 24,
+      h: 12,
+      minW: 12,
+      minH: 8,
+      title: "[Bulk] Byte indexing rate",
+      showTitle: true,
+      content: (
+        <TimeSeriesPanel 
+          data={generateByteIndexingRateData()}
+          title="bytes/s"
+          chartType="area"
+          xAxisTitle="@timestamp per 5 minutes"
+          color="#F8719D" // Pink color matching the image
+          showLegend={true}
+          legendPosition="right"
+          seriesName="Bytes received"
+          valueFormatter={(v) => {
+            // Format bytes/s: B, KB, MB, GB
+            if (v >= 1024 * 1024 * 1024) {
+              return `${(v / (1024 * 1024 * 1024)).toFixed(2)}GB/s`;
+            } else if (v >= 1024 * 1024) {
+              return `${(v / (1024 * 1024)).toFixed(2)}MB/s`;
+            } else if (v >= 1024) {
+              return `${(v / 1024).toFixed(2)}KB/s`;
+            }
+            return `${v.toFixed(2)}B/s`;
+          }}
         />
       ),
     },
@@ -532,7 +672,7 @@ export const Dashboards: React.FC = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100%" }}>
-      <NewNav activeItem="dashboards" />
+      <NavBar solution="o11y" activeItem="dashboard" />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
         <KibanaHeader
           colorMode={colorMode}
@@ -541,8 +681,21 @@ export const Dashboards: React.FC = () => {
           isHomepage={false}
           display="classic"
         />
-        <div style={{ flex: 1, position: "relative", overflow: "hidden", paddingTop: 0, paddingRight: euiTheme.size.s, paddingBottom: euiTheme.size.s, paddingLeft: 0 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", paddingTop: 0, paddingRight: euiTheme.size.s, paddingBottom: euiTheme.size.s, paddingLeft: 0 }}>
           <AppContainer>
+            <div style={{ flexShrink: 0 }}>
+              <AppMenuBar config="dashboard-view" />
+              <EuiHorizontalRule margin="none" />
+              <UnifiedSearch
+                onSearchChange={(value) => console.log("Search:", value)}
+                onFilterClick={() => console.log("Filter clicked")}
+                onAddClick={() => console.log("Add clicked")}
+                onRefresh={() => console.log("Refresh clicked")}
+                onTimeChange={(start, end) => console.log("Time changed:", start, end)}
+              />
+              <EuiHorizontalRule margin="none" />
+            </div>
+            <div style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
             <div style={{ height: "100%", width: "100%", overflow: "auto" }}>
               {/* Top Grid */}
               <DashboardGrid
@@ -557,7 +710,7 @@ export const Dashboards: React.FC = () => {
               
               {/* Section Header */}
               <div style={{ padding: `0 ${gridGap}px 0 ${gridGap}px` }}>
-                <SectionHeader title="Key Metrics" />
+                <SectionHeader title="Key metrics" />
               </div>
               
               {/* Middle Grid */}
@@ -588,7 +741,8 @@ export const Dashboards: React.FC = () => {
               
 
             </div>
-          </AppContainer>
+          </div>
+        </AppContainer>
         </div>
       </div>
 
