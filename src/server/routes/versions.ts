@@ -201,7 +201,8 @@ router.post('/', async (req: Request, res: Response) => {
     versionsData.metadata.currentVersion = finalVersionId;
     versionsData.metadata.lastUpdated = new Date().toISOString();
 
-    // Save updated versions
+    // Save updated versions (ensure directory exists first)
+    await fs.mkdir(path.dirname(VERSIONS_PATH), { recursive: true });
     await fs.writeFile(VERSIONS_PATH, JSON.stringify(versionsData, null, 2));
 
     // Create version-specific data files
