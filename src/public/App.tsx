@@ -15,6 +15,14 @@ import { useDesignerSurfaceStore } from "./store/useDesignerSurfaceStore";
 import { useVersionStore } from "./store/useVersionStore";
 import { VersionedComponentLoader } from "./utils/componentLoader";
 import { TemplateLoader } from "./utils/templateLoader";
+import RuleDetailsPage from "./pages/detection-rules/v1.0/rule-details";
+import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
+import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules";
+import InboxPage from "./pages/detection-rules/v1.0/inbox";
+import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
+import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
+import AgentsPage from "./pages/agents/AgentsPage";
+import { CoverageOverviewPage } from "../mitre-attack-coverage/coverage_overview/index";
 
 // Wrapper component to extract templateName from URL params
 const TemplateLoaderWithParams: React.FC = () => {
@@ -94,14 +102,34 @@ const App: React.FC = () => {
         )}
         <div style={{ flex: 1 }}>
           <Routes>
-            <Route path="/" element={<Homepage />} />
+            <Route path="/" element={<SiemReadinessPage />} />
             
             {/* Template routes */}
             <Route
               path="/templates/:templateName"
               element={<TemplateLoaderWithParams />}
             />
-            
+
+            {/* Inbox / AI Briefing */}
+            <Route path="/inbox" element={<InboxPage />} />
+
+            {/* AutoDEX */}
+            <Route path="/autodex" element={<AutoDexPage />} />
+
+            {/* MITRE ATT&CK Coverage */}
+            <Route path="/mitre-coverage" element={<CoverageOverviewPage />} />
+
+            {/* SIEM Readiness */}
+            <Route path="/siem-readiness" element={<SiemReadinessPage />} />
+
+            {/* Agents */}
+            <Route path="/agents" element={<AgentsPage />} />
+
+            {/* Rule sub-routes — must come before the catch-all */}
+            <Route path="/detection-rules/create" element={<RuleCreationPage />} />
+            <Route path="/detection-rules/add" element={<AddElasticRulesPage />} />
+            <Route path="/detection-rules/:ruleId" element={<RuleDetailsPage />} />
+
             {/* Dynamic project route - catches all project paths */}
             <Route
               path="/:projectName"
