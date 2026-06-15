@@ -3740,17 +3740,17 @@ const SiemReadinessPage: React.FC = () => {
             {/* Main content panel */}
             <EuiFlexItem style={{ minWidth: 0 }}>
               <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'auto', minHeight: 'calc(100vh - 64px)' }}>
-                <div style={{ padding: '32px 120px 48px' }}>
+                <div style={{ padding: '32px 165px 48px' }}>
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <EuiTitle size="l"><h1 style={{ marginBottom: 8 }}>SIEM readiness</h1></EuiTitle>
+              <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 10, color: '#111C2C', lineHeight: '52px' }}>SIEM readiness</h1>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
-                <EuiText size="s" style={{ color: '#111C2C' }}>
+                <span style={{ fontSize: 17, color: '#111C2C' }}>
                   You have <strong>{allActionItems.filter(a => a.severity === 'critical').length}</strong> critical issues and{' '}
                   <strong>{allActionItems.filter(a => a.severity === 'warning').length}</strong> in warning state
-                </EuiText>
+                </span>
               </div>
             </div>
 
