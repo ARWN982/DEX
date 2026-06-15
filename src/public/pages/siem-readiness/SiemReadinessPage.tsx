@@ -60,7 +60,6 @@ import {
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import SecurityHeader from '../../../components/SecurityHeader';
 import SecuritySideNav from '../../../components/SecuritySideNav';
-import SiemReadinessPageB from './SiemReadinessPageB';
 import { AssistantFlyout } from '../../components/shared/AssistantFlyout';
 import type { SiemReadinessAgentContext } from './SiemReadinessAgentCard';
 
@@ -3728,8 +3727,159 @@ const SiemReadinessPage: React.FC = () => {
       <SecuritySideNav />
 
       {siemView === 'b' ? (
-        <div style={{ marginTop: 48, marginLeft: 80, height: 'calc(100vh - 48px)' }}>
-          <SiemReadinessPageB />
+        /* ── Option B layout ─────────────────────────────────────── */
+        <div style={{ marginTop: 48, marginLeft: 80, minHeight: 'calc(100vh - 48px)', background: '#F6F9FC', padding: '32px 24px 48px' }}>
+          <div style={{ maxWidth: 900, margin: '0 auto' }}>
+
+            {/* Page title + status */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <EuiTitle size="l"><h1 style={{ marginBottom: 8 }}>SIEM readiness</h1></EuiTitle>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
+                <EuiText size="s" style={{ color: '#111C2C' }}>
+                  You have <strong>{allActionItems.filter(a => a.severity === 'critical').length}</strong> critical issues and{' '}
+                  <strong>{allActionItems.filter(a => a.severity === 'warning').length}</strong> in warning state
+                </EuiText>
+              </div>
+            </div>
+
+            {/* Tab bar — filled segmented style */}
+            <EuiButtonGroup
+              legend="Health group"
+              idSelected={selectedTab}
+              options={[
+                { id: 'data-health', label: 'Visibility health' },
+                { id: 'detection-health', label: 'Detection health' },
+              ]}
+              onChange={(id) => { setSelectedTab(id as SiemTab); setTypeFilter(undefined); setSeverityFilter(undefined); }}
+              isFullWidth
+              buttonSize="m"
+              color="primary"
+              style={{ marginBottom: 24 }}
+            />
+
+            {/* Health metrics card */}
+            {(() => {
+              const card = selectedTab === 'data-health' ? healthGroupCards.dataHealth : healthGroupCards.detectionHealth;
+              const healthStatus = selectedTab === 'data-health' ? dataHealthStatus : detectionHealthStatus;
+              const isCritical = card.severity === 'Critical';
+              return (
+                <div style={{ background: 'white', border: '1px solid #E3E8F2', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <EuiText style={{ fontSize: 16, fontWeight: 600 }}>{card.label}</EuiText>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: isCritical ? '#FDDDD8' : '#FDE9B5', color: isCritical ? '#A71627' : '#825803' }}>{card.severity}</span>
+                    </div>
+                    {card.totalRulesAffected != null && card.totalRulesAffected > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: 20, border: '1px solid #CAD3E2', fontSize: 12, fontWeight: 500, color: '#1D2A3E' }}>
+                        <EuiIcon type="crosshairs" size="s" />{card.totalRulesAffected} total rules affected
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {card.metrics.map(metric => {
+                      const isActive = typeFilter === metric.pillar;
+                      return (
+                        <div key={metric.label} onClick={() => handleMetricClick(metric.pillar)} style={{ flex: 1, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', background: isActive ? '#E6F1FA' : 'transparent' }}>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: card.numColor, lineHeight: '24px' }}>{metric.value}</div>
+                          <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', fontWeight: isActive ? 600 : 400 }}>{metric.label}</EuiText>
+                          <EuiText size="s" style={{ color: '#1d2a3e', fontWeight: 600 }}>{metric.sectionLabel ?? CATEGORY_LABELS[metric.pillar]}</EuiText>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Actions section */}
+            <div style={{ background: 'white', border: '1px solid #E3E8F2', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
+              <EuiTitle size="s"><h2 style={{ marginBottom: 16 }}>Actions</h2></EuiTitle>
+              {(() => {
+                const allowedPillars = selectedTab === 'data-health' ? DATA_HEALTH_PILLARS : DETECTION_HEALTH_PILLARS;
+                const tabActions = allActionItems
+                  .filter(a => allowedPillars.includes(a.pillar))
+                  .filter(a => !typeFilter || a.pillar === typeFilter)
+                  .filter(a => !severityFilter || a.severity === severityFilter);
+                const pageSize = 5;
+                const [bPageIdx, setBPageIdx] = React.useState(0);
+                const paged = tabActions.slice(bPageIdx * pageSize, (bPageIdx + 1) * pageSize);
+                const PILLAR_COLORS: Record<string, { bg: string; color: string }> = {
+                  coverage:    { bg: '#FFF3E0', color: '#A6570F' },
+                  detections:  { bg: '#EEF2FF', color: '#3D4AB8' },
+                  continuity:  { bg: '#E6F9F7', color: '#017D73' },
+                  retention:   { bg: '#E8F5E9', color: '#017D73' },
+                  quality:     { bg: '#EEF2FF', color: '#3D4AB8' },
+                };
+                return (
+                  <>
+                    {paged.length === 0 ? (
+                      <EuiText size="s" color="subdued" style={{ textAlign: 'center', padding: 24 }}>No actions for this tab.</EuiText>
+                    ) : (
+                      <div style={{ border: '1px solid #CAD3E2', borderRadius: 6, overflow: 'hidden' }}>
+                        {paged.map((action: ActionItem, idx: number) => {
+                          const colonIdx = action.title.indexOf(':');
+                          const pc = PILLAR_COLORS[action.pillar] ?? { bg: '#F6F9FC', color: '#516381' };
+                          return (
+                            <div key={action.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'white', borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
+                              <EuiIcon type="arrowRight" size="s" color="subdued" />
+                              <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 7px', borderRadius: 10, background: pc.bg, color: pc.color, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                {CATEGORY_LABELS[action.pillar].toUpperCase()}
+                              </span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0', color: action.severity === 'critical' ? '#A71627' : '#836500', flexShrink: 0 }}>
+                                {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
+                              </span>
+                              <EuiText size="s" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {colonIdx > -1 ? <><strong>{action.title.slice(0, colonIdx)}:</strong>{' '}{action.title.slice(colonIdx + 1).trim()}</> : <strong>{action.title}</strong>}
+                              </EuiText>
+                              <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Apr 15 @ 14:22:07</EuiText>
+                              <EuiBadge color="hollow" iconType="crosshairs" style={{ flexShrink: 0 }}>{action.rulesAffected} rules affected</EuiBadge>
+                              <div style={{ width: 1, height: 20, background: '#CAD3E2', flexShrink: 0 }} />
+                              <EuiButtonEmpty size="xs" iconType="popout" iconSide="left" color="primary" style={{ flexShrink: 0 }}>Action here</EuiButtonEmpty>
+                              <EuiButtonIcon size="xs" iconType="boxesVertical" color="primary" aria-label="More" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {tabActions.length > pageSize && (
+                      <EuiTablePagination
+                        pageCount={Math.ceil(tabActions.length / pageSize)}
+                        activePage={bPageIdx}
+                        onChangePage={setBPageIdx}
+                        itemsPerPage={pageSize}
+                        itemsPerPageOptions={[5, 10]}
+                        onChangeItemsPerPage={() => {}}
+                      />
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Data section */}
+            <div style={{ background: 'white', border: '1px solid #E3E8F2', borderRadius: 6, padding: '16px 20px' }}>
+              <EuiTitle size="s"><h2 style={{ marginBottom: 20 }}>Data</h2></EuiTitle>
+              {selectedTab === 'data-health' ? (
+                <>
+                  <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
+                  <EuiSpacer size="xl" />
+                  <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={handleAddToChat} />
+                  <EuiSpacer size="xl" />
+                  <QualityTab categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />
+                  <EuiSpacer size="xl" />
+                  <RetentionTab categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />
+                </>
+              ) : (
+                <>
+                  <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
+                  <EuiSpacer size="xl" />
+                  <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
+                </>
+              )}
+            </div>
+
+          </div>
         </div>
       ) : (
       <div style={{
