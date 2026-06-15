@@ -3783,7 +3783,7 @@ const SiemReadinessPage: React.FC = () => {
                       ) as unknown as string,
                     },
                   ]}
-                  onChange={(id) => { setSelectedTab(id as SiemTab); setTypeFilter(undefined); setSeverityFilter(undefined); }}
+                  onChange={(id) => { setSelectedTab(id as SiemTab); setTypeFilter(undefined); setSeverityFilter(undefined); setBPageIdx(0); }}
                   isFullWidth
                   buttonSize="m"
                   color="primary"
@@ -3868,8 +3868,7 @@ const SiemReadinessPage: React.FC = () => {
                         })}
                       </div>
                     )}
-                    {tabActions.length > pageSize && (
-                      <EuiTablePagination
+                    <EuiTablePagination
                         pageCount={Math.ceil(tabActions.length / pageSize)}
                         activePage={bPageIdx}
                         onChangePage={setBPageIdx}
@@ -3877,7 +3876,6 @@ const SiemReadinessPage: React.FC = () => {
                         itemsPerPageOptions={[5, 10]}
                         onChangeItemsPerPage={() => {}}
                       />
-                    )}
                   </>
                 );
               })()}
