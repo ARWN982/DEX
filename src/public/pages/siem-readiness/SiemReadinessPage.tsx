@@ -3421,6 +3421,7 @@ const SiemReadinessPage: React.FC = () => {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState('');
   const [siemView, setSiemView] = useState<'a' | 'b'>('a');
+  const [bPageIdx, setBPageIdx] = useState(0);
   const [assistantSession, setAssistantSession] = useState(0);
 
   const openAssistant = (prompt = '') => {
@@ -3802,8 +3803,7 @@ const SiemReadinessPage: React.FC = () => {
                   .filter(a => !typeFilter || a.pillar === typeFilter)
                   .filter(a => !severityFilter || a.severity === severityFilter);
                 const pageSize = 5;
-                const [bPageIdx, setBPageIdx] = React.useState(0);
-                const paged = tabActions.slice(bPageIdx * pageSize, (bPageIdx + 1) * pageSize);
+                  const paged = tabActions.slice(bPageIdx * pageSize, (bPageIdx + 1) * pageSize);
                 const PILLAR_COLORS: Record<string, { bg: string; color: string }> = {
                   coverage:    { bg: '#FFF3E0', color: '#A6570F' },
                   detections:  { bg: '#EEF2FF', color: '#3D4AB8' },
