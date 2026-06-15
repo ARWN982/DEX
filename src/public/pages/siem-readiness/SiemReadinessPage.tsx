@@ -3740,7 +3740,7 @@ const SiemReadinessPage: React.FC = () => {
             {/* Main content panel */}
             <EuiFlexItem style={{ minWidth: 0 }}>
               <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'auto', minHeight: 'calc(100vh - 64px)' }}>
-                <div style={{ padding: '32px 40px 48px' }}>
+                <div style={{ padding: '32px 120px 48px' }}>
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -3803,8 +3803,10 @@ const SiemReadinessPage: React.FC = () => {
               );
             })()}
 
-            {/* Actions section */}
-            <div style={{ background: 'white', border: '1px solid #E3E8F2', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
+            {/* Combined Actions + Data — single grey card */}
+            <div style={{ background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 8, padding: '24px' }}>
+
+              {/* Actions */}
               <EuiTitle size="s"><h2 style={{ marginBottom: 16 }}>Actions</h2></EuiTitle>
               {(() => {
                 const allowedPillars = selectedTab === 'data-health' ? DATA_HEALTH_PILLARS : DETECTION_HEALTH_PILLARS;
@@ -3813,7 +3815,7 @@ const SiemReadinessPage: React.FC = () => {
                   .filter(a => !typeFilter || a.pillar === typeFilter)
                   .filter(a => !severityFilter || a.severity === severityFilter);
                 const pageSize = 5;
-                  const paged = tabActions.slice(bPageIdx * pageSize, (bPageIdx + 1) * pageSize);
+                const paged = tabActions.slice(bPageIdx * pageSize, (bPageIdx + 1) * pageSize);
                 const PILLAR_COLORS: Record<string, { bg: string; color: string }> = {
                   coverage:    { bg: '#FFF3E0', color: '#A6570F' },
                   detections:  { bg: '#EEF2FF', color: '#3D4AB8' },
@@ -3865,10 +3867,10 @@ const SiemReadinessPage: React.FC = () => {
                   </>
                 );
               })()}
-            </div>
 
-            {/* Data section */}
-            <div style={{ background: 'white', border: '1px solid #E3E8F2', borderRadius: 6, padding: '16px 20px' }}>
+              <EuiSpacer size="xl" />
+
+              {/* Data */}
               <EuiTitle size="s"><h2 style={{ marginBottom: 20 }}>Data</h2></EuiTitle>
               {selectedTab === 'data-health' ? (
                 <>
@@ -3887,6 +3889,7 @@ const SiemReadinessPage: React.FC = () => {
                   <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
                 </>
               )}
+
             </div>
 
                 </div>
