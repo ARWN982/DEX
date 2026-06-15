@@ -3755,19 +3755,41 @@ const SiemReadinessPage: React.FC = () => {
             </div>
 
             {/* Tab bar — filled segmented style */}
-            <EuiButtonGroup
-              legend="Health group"
-              idSelected={selectedTab}
-              options={[
-                { id: 'data-health', label: 'Visibility health' },
-                { id: 'detection-health', label: 'Detection health' },
-              ]}
-              onChange={(id) => { setSelectedTab(id as SiemTab); setTypeFilter(undefined); setSeverityFilter(undefined); }}
-              isFullWidth
-              buttonSize="m"
-              color="primary"
-              style={{ marginBottom: 24 }}
-            />
+            {(() => {
+              const visCount = allActionItems.filter(a => DATA_HEALTH_PILLARS.includes(a.pillar)).length;
+              const detCount = allActionItems.filter(a => DETECTION_HEALTH_PILLARS.includes(a.pillar)).length;
+              return (
+                <EuiButtonGroup
+                  legend="Health group"
+                  idSelected={selectedTab}
+                  options={[
+                    {
+                      id: 'data-health',
+                      label: (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          Visibility health
+                          <EuiNotificationBadge size="s" color="accent">{visCount}</EuiNotificationBadge>
+                        </span>
+                      ) as unknown as string,
+                    },
+                    {
+                      id: 'detection-health',
+                      label: (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          Detection health
+                          <EuiNotificationBadge size="s" color="accent">{detCount}</EuiNotificationBadge>
+                        </span>
+                      ) as unknown as string,
+                    },
+                  ]}
+                  onChange={(id) => { setSelectedTab(id as SiemTab); setTypeFilter(undefined); setSeverityFilter(undefined); }}
+                  isFullWidth
+                  buttonSize="m"
+                  color="primary"
+                  style={{ marginBottom: 24 }}
+                />
+              );
+            })()}
 
             {/* Health metrics card */}
             {(() => {
