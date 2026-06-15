@@ -3728,9 +3728,19 @@ const SiemReadinessPage: React.FC = () => {
       <SecuritySideNav />
 
       {siemView === 'b' ? (
-        /* ── Option B layout ─────────────────────────────────────── */
-        <div style={{ marginTop: 48, marginLeft: 80, minHeight: 'calc(100vh - 48px)', background: '#F6F9FC', padding: '32px 24px 48px' }}>
-          <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        /* ── Option B layout — same outer shell as Option A ────────── */
+        <div style={{ backgroundColor: '#F6F9FC', minHeight: '100vh', marginTop: 48, marginLeft: 80, paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
+          <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart">
+            {/* Secondary nav */}
+            <EuiFlexItem grow={false} style={{ position: 'sticky', top: 56, alignSelf: 'flex-start', height: 'calc(100vh - 64px)' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'hidden', height: '100%' }}>
+                <SiemSecondaryNav />
+              </EuiPanel>
+            </EuiFlexItem>
+            {/* Main content panel */}
+            <EuiFlexItem style={{ minWidth: 0 }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'auto', minHeight: 'calc(100vh - 64px)' }}>
+                <div style={{ padding: '32px 40px 48px' }}>
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -3879,7 +3889,10 @@ const SiemReadinessPage: React.FC = () => {
               )}
             </div>
 
-          </div>
+                </div>
+              </EuiPanel>
+            </EuiFlexItem>
+          </EuiFlexGroup>
         </div>
       ) : (
       <div style={{
