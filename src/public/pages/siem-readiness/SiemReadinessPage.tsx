@@ -3816,13 +3816,6 @@ const SiemReadinessPage: React.FC = () => {
                   .filter(a => !severityFilter || a.severity === severityFilter);
                 const pageSize = 5;
                 const paged = tabActions.slice(bPageIdx * pageSize, (bPageIdx + 1) * pageSize);
-                const PILLAR_COLORS: Record<string, { bg: string; color: string }> = {
-                  coverage:    { bg: '#FFF3E0', color: '#A6570F' },
-                  detections:  { bg: '#EEF2FF', color: '#3D4AB8' },
-                  continuity:  { bg: '#E6F9F7', color: '#017D73' },
-                  retention:   { bg: '#E8F5E9', color: '#017D73' },
-                  quality:     { bg: '#EEF2FF', color: '#3D4AB8' },
-                };
                 return (
                   <>
                     {paged.length === 0 ? (
@@ -3831,16 +3824,14 @@ const SiemReadinessPage: React.FC = () => {
                       <div style={{ border: '1px solid #CAD3E2', borderRadius: 6, overflow: 'hidden' }}>
                         {paged.map((action: ActionItem, idx: number) => {
                           const colonIdx = action.title.indexOf(':');
-                          const pc = PILLAR_COLORS[action.pillar] ?? { bg: '#F6F9FC', color: '#516381' };
                           return (
-                            <div key={action.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'white', borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
-                              <EuiIcon type="arrowRight" size="s" color="subdued" />
-                              <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 7px', borderRadius: 10, background: pc.bg, color: pc.color, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                {CATEGORY_LABELS[action.pillar].toUpperCase()}
-                              </span>
+                            <div key={action.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'white', borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
+                              <EuiIcon type="arrowRight" size="s" color="subdued" style={{ flexShrink: 0 }} />
+                              {/* Severity badge */}
                               <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0', color: action.severity === 'critical' ? '#A71627' : '#836500', flexShrink: 0 }}>
                                 {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
                               </span>
+                              {/* Title: bold prefix + regular detail */}
                               <EuiText size="s" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {colonIdx > -1 ? <><strong>{action.title.slice(0, colonIdx)}:</strong>{' '}{action.title.slice(colonIdx + 1).trim()}</> : <strong>{action.title}</strong>}
                               </EuiText>
@@ -3870,8 +3861,8 @@ const SiemReadinessPage: React.FC = () => {
 
               <EuiSpacer size="xl" />
 
-              {/* Data */}
-              <EuiTitle size="s"><h2 style={{ marginBottom: 20 }}>Data</h2></EuiTitle>
+              {/* Watching */}
+              <EuiTitle size="s"><h2 style={{ marginBottom: 20 }}>Watching</h2></EuiTitle>
               {selectedTab === 'data-health' ? (
                 <>
                   <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
