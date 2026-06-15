@@ -2929,11 +2929,11 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
             <EuiSpacer size="m" />
             <EuiBasicTable
               items={ruleFieldIssues}
-              tableLayout="fixed"
+              tableLayout="auto"
               columns={[
                 { field: 'ruleName', name: 'Rule', render: (name: string) => <EuiLink href="/app/security/rules">{name}</EuiLink> },
                 {
-                  field: 'field', name: 'Field', width: '280px',
+                  field: 'field', name: 'Field', width: '180px',
                   render: (f: string) => <EuiCode>{f}</EuiCode>,
                 },
                 {
@@ -2944,16 +2944,16 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
                   },
                 },
                 {
-                  field: 'indexPattern', name: 'Index pattern', width: '385px',
+                  field: 'indexPattern', name: 'Index pattern', width: '220px',
                   render: (idx: string) => <EuiCode>{idx}</EuiCode>,
                 },
                 {
-                  name: 'Platform', width: '240px',
+                  name: 'Platform', width: '120px',
                   render: (row: RuleFieldIssue) => <PlatformBadge platform={getPlatformFromIndex(row.indexPattern)} />,
                 },
                 {
                   name: 'Action',
-                  width: '150px',
+                  width: '140px',
                   align: 'right',
                   render: (row: RuleFieldIssue) => renderRightAlignedTableAction(
                     <EuiButtonEmpty size="s" color="primary" flush="right" data-test-subj={`siemReadiness-detectionsViewDataQuality-${row.id}`}>View Data quality</EuiButtonEmpty>
@@ -3300,8 +3300,9 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
         <>
           <EuiBasicTable
             items={retentionFindings}
+            tableLayout="auto"
             columns={[
-              { field: 'category', name: 'Log category' },
+              { field: 'category', name: 'Log category', width: '120px' },
               {
                 field: 'status', name: 'Status', width: '140px',
                 render: (status: string) => (
@@ -3323,7 +3324,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
               },
               {
                 name: 'Benchmark source',
-                width: '221px',
+                width: '160px',
                 render: (row: RetentionFinding) => {
                   const sourceMap: Record<string, string> = {
                     'Network':          'NIST 800-53, ISO 27001',
@@ -3366,7 +3367,7 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
               },
               {
                 name: 'Action',
-                width: '188px',
+                width: '140px',
                 align: 'right',
                 render: (row: RetentionFinding) => renderRightAlignedTableAction(
                   actionItemIds.has('retention-benchmark')
@@ -3740,7 +3741,7 @@ const SiemReadinessPage: React.FC = () => {
             {/* Main content panel */}
             <EuiFlexItem style={{ minWidth: 0 }}>
               <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'auto', minHeight: 'calc(100vh - 64px)' }}>
-                <div style={{ padding: '32px 165px 48px' }}>
+                <div style={{ padding: '32px 80px 48px' }}>
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
