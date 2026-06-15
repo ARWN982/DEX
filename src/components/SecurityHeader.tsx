@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   EuiHeader,
   EuiHeaderSection,
@@ -11,14 +11,38 @@ import {
   EuiFlexItem,
   EuiBreadcrumbs,
   EuiIcon,
+  EuiPopover,
+  EuiSelectable,
+  EuiText,
 } from '@elastic/eui';
 
-const SecurityHeader: React.FC<{ onMenuClick?: () => void; onAgentClick?: () => void }> = ({ onAgentClick }) => {
+interface ViewOption {
+  value: string;
+  label: string;
+}
+
+const SecurityHeader: React.FC<{
+  onMenuClick?: () => void;
+  onAgentClick?: () => void;
+  viewOptions?: ViewOption[];
+  currentView?: string;
+  onViewChange?: (view: string) => void;
+}> = ({ onAgentClick, viewOptions, currentView, onViewChange }) => {
+  const [viewPopoverOpen, setViewPopoverOpen] = useState(false);
+
   const breadcrumbs = [
     { text: 'My Security project', href: '#' },
     { text: 'Launchpad',           href: '#' },
     { text: 'SIEM Readiness',      href: '#' },
   ];
+
+  const selectedLabel = viewOptions?.find(o => o.value === currentView)?.label ?? viewOptions?.[0]?.label;
+
+  const selectableOptions = (viewOptions ?? []).map(o => ({
+    label: o.label,
+    data: { value: o.value },
+    checked: o.value === currentView ? ('on' as const) : undefined,
+  }));
 
   return (
     <EuiHeader position="fixed" style={{ zIndex: 1000, backgroundColor: '#F6F9FC', border: 'none', boxShadow: 'none' }}>
@@ -37,6 +61,49 @@ const SecurityHeader: React.FC<{ onMenuClick?: () => void; onAgentClick?: () => 
       <EuiHeaderSection side="right">
         <EuiHeaderSectionItem>
           <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+
+            {/* View selector — shown only when viewOptions are provided */}
+            {viewOptions && viewOptions.length > 0 && (
+              <EuiFlexItem grow={false}>
+                <EuiPopover
+                  button={
+                    <button
+                      onClick={() => setViewPopoverOpen(o => !o)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        height: 28, padding: '0 8px', borderRadius: 4,
+                        border: '1px solid #D3DAE6', background: '#fff',
+                        cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                        color: '#1d2a3e', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {selectedLabel}
+                      <EuiIcon type="chevronSingleDown" size="s" color="subdued" />
+                    </button>
+                  }
+                  isOpen={viewPopoverOpen}
+                  closePopover={() => setViewPopoverOpen(false)}
+                  panelPaddingSize="none"
+                  anchorPosition="downRight"
+                >
+                  <EuiSelectable
+                    aria-label="Select view"
+                    options={selectableOptions}
+                    singleSelection
+                    onChange={(newOptions) => {
+                      const picked = newOptions.find(o => o.checked === 'on');
+                      if (picked && onViewChange) {
+                        onViewChange((picked as typeof selectableOptions[0]).data.value);
+                        setViewPopoverOpen(false);
+                      }
+                    }}
+                  >
+                    {(list) => <div style={{ width: 180 }}>{list}</div>}
+                  </EuiSelectable>
+                </EuiPopover>
+              </EuiFlexItem>
+            )}
+
             <EuiFlexItem grow={false}>
               <EuiButtonIcon iconType="search"  aria-label="Search"      color="text" size="s" />
             </EuiFlexItem>

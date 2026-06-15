@@ -60,6 +60,7 @@ import {
 import type { EuiBasicTableColumn } from '@elastic/eui';
 import SecurityHeader from '../../../components/SecurityHeader';
 import SecuritySideNav from '../../../components/SecuritySideNav';
+import SiemReadinessPageB from './SiemReadinessPageB';
 import { AssistantFlyout } from '../../components/shared/AssistantFlyout';
 import type { SiemReadinessAgentContext } from './SiemReadinessAgentCard';
 
@@ -3420,6 +3421,7 @@ const SiemReadinessPage: React.FC = () => {
   const actionsPanelRef = useRef<HTMLDivElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState('');
+  const [siemView, setSiemView] = useState<'a' | 'b'>('a');
   const [assistantSession, setAssistantSession] = useState(0);
 
   const openAssistant = (prompt = '') => {
@@ -3713,9 +3715,23 @@ const SiemReadinessPage: React.FC = () => {
 
   return (
     <>
-      <SecurityHeader onMenuClick={() => {}} onAgentClick={() => openAssistant()} />
+      <SecurityHeader
+        onMenuClick={() => {}}
+        onAgentClick={() => openAssistant()}
+        viewOptions={[
+          { value: 'a', label: 'Option A' },
+          { value: 'b', label: 'Option B' },
+        ]}
+        currentView={siemView}
+        onViewChange={(v) => setSiemView(v as 'a' | 'b')}
+      />
       <SecuritySideNav />
 
+      {siemView === 'b' ? (
+        <div style={{ marginTop: 48, marginLeft: 80, height: 'calc(100vh - 48px)' }}>
+          <SiemReadinessPageB />
+        </div>
+      ) : (
       <div style={{
         backgroundColor: '#F6F9FC',
         minHeight: '100vh',
@@ -3927,6 +3943,7 @@ const SiemReadinessPage: React.FC = () => {
 
         </EuiFlexGroup>
       </div>
+      )}
 
       {/* ── Configuration modal ── */}
       {configOpen && (
