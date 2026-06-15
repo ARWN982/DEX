@@ -3783,7 +3783,7 @@ const SiemReadinessPage: React.FC = () => {
                         <div key={metric.label} onClick={() => handleMetricClick(metric.pillar)} style={{ flex: 1, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', background: isActive ? '#E6F1FA' : 'transparent' }}>
                           <div style={{ fontSize: 20, fontWeight: 700, color: card.numColor, lineHeight: '24px' }}>{metric.value}</div>
                           <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', fontWeight: isActive ? 600 : 400 }}>{metric.label}</EuiText>
-                          <EuiText size="s" style={{ color: '#1d2a3e', fontWeight: 600 }}>{metric.sectionLabel ?? CATEGORY_LABELS[metric.pillar]}</EuiText>
+                          <EuiText size="s" style={{ color: '#1d2a3e', fontWeight: 600 }}>{(metric as any).sectionLabel ?? CATEGORY_LABELS[metric.pillar]}</EuiText>
                         </div>
                       );
                     })}
