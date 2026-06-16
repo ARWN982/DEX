@@ -3742,7 +3742,7 @@ const SiemReadinessPage: React.FC = () => {
             <EuiFlexItem style={{ minWidth: 0 }}>
               <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, overflow: 'auto', minHeight: 'calc(100vh - 64px)' }}>
                 <div style={{ padding: '32px 40px 48px' }}>
-                  <div style={{ maxWidth: 700, margin: '0 auto' }}>
+                  <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
