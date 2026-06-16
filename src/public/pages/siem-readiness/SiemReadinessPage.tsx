@@ -3417,6 +3417,8 @@ const SiemReadinessPage: React.FC = () => {
   const [bPageIdx, setBPageIdx] = useState(0);
   const [bOpenPopoverId, setBOpenPopoverId] = useState<string | null>(null);
   const [bExpandedIds, setBExpandedIds] = useState<Set<string>>(new Set());
+  const [bWatchingExpanded, setBWatchingExpanded] = useState(true);
+  const [bDotsOpen, setBDotsOpen] = useState(false);
   const toggleBExpanded = (id: string) => setBExpandedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const [assistantSession, setAssistantSession] = useState(0);
 
@@ -3739,6 +3741,30 @@ const SiemReadinessPage: React.FC = () => {
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
+            {/* Top-right buttons row */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: '#343741', fontWeight: 500 }}>
+                Configuration
+              </EuiButtonEmpty>
+              <EuiButtonEmpty size="s" color="text" style={{ color: '#343741', fontWeight: 500 }}>
+                View all cases&nbsp;<EuiBadge color="hollow">{allActionItems.length}</EuiBadge>
+              </EuiButtonEmpty>
+              <EuiPopover
+                isOpen={bDotsOpen}
+                closePopover={() => setBDotsOpen(false)}
+                panelPaddingSize="s"
+                anchorPosition="downRight"
+                button={
+                  <EuiButtonIcon iconType="boxesVertical" color="text" size="s" aria-label="More options" onClick={() => setBDotsOpen(o => !o)} />
+                }
+              >
+                <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                  <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => { setBDotsOpen(false); handleAddToChat(SIEM_READINESS_SUMMARY_PROMPT); }} />
+                  <EuiListGroupItem iconType="exportAction" label="Export" size="s" onClick={() => setBDotsOpen(false)} />
+                </EuiListGroup>
+              </EuiPopover>
+            </div>
+
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 10, color: '#111C2C', lineHeight: '52px' }}>SIEM readiness</h1>
@@ -3822,11 +3848,13 @@ const SiemReadinessPage: React.FC = () => {
               );
             })()}
 
-            {/* Combined Actions + Data — single grey card */}
-            <div style={{ background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 8, padding: '24px' }}>
+            {/* Combined Actions + Data — single grey card, rows fill card */}
+            <div style={{ background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 8, overflow: 'hidden' }}>
 
-              {/* Actions */}
-              <EuiTitle size="s"><h2 style={{ marginBottom: 16 }}>Actions</h2></EuiTitle>
+              {/* Actions heading */}
+              <div style={{ padding: '16px 24px 12px' }}>
+                <EuiTitle size="s"><h2>Actions</h2></EuiTitle>
+              </div>
               {(() => {
                 const allowedPillars = selectedTab === 'data-health' ? DATA_HEALTH_PILLARS : DETECTION_HEALTH_PILLARS;
                 const tabActions = allActionItems
@@ -3840,13 +3868,12 @@ const SiemReadinessPage: React.FC = () => {
                     {paged.length === 0 ? (
                       <EuiText size="s" color="subdued" style={{ textAlign: 'center', padding: 24 }}>No actions for this tab.</EuiText>
                     ) : (
-                      <div style={{ border: '1px solid #CAD3E2', borderRadius: 6, overflow: 'hidden' }}>
+                      <div>
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
-                            <div key={action.id} style={{ background: 'white', padding: 12, borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
-                              {/* Row */}
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            <div key={action.id} style={{ background: 'white', borderTop: '1px solid #E3E8F2' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                                   <EuiButtonIcon
                                     iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
@@ -3893,7 +3920,7 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <div style={{ margin: '8px 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+                                <div style={{ margin: '0 24px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
                                   <div style={{ marginBottom: 10 }}>
                                     <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
                                     <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
@@ -3909,6 +3936,7 @@ const SiemReadinessPage: React.FC = () => {
                         })}
                       </div>
                     )}
+                    <div style={{ padding: '0 24px' }}>
                     <EuiTablePagination
                         pageCount={Math.ceil(tabActions.length / pageSize)}
                         activePage={bPageIdx}
@@ -3917,31 +3945,47 @@ const SiemReadinessPage: React.FC = () => {
                         itemsPerPageOptions={[5, 10]}
                         onChangeItemsPerPage={() => {}}
                       />
+                    </div>
                   </>
                 );
               })()}
 
-              <EuiSpacer size="xl" />
+              {/* Divider */}
+              <EuiHorizontalRule margin="none" />
 
-              {/* Watching */}
-              <EuiTitle size="s"><h2 style={{ marginBottom: 20 }}>Watching</h2></EuiTitle>
-              {selectedTab === 'data-health' ? (
-                <>
-                  <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
-                  <EuiSpacer size="xl" />
-                  <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={handleAddToChat} />
-                  <EuiSpacer size="xl" />
-                  <QualityTab categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />
-                  <EuiSpacer size="xl" />
-                  <RetentionTab categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />
-                </>
-              ) : (
-                <>
-                  <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
-                  <EuiSpacer size="xl" />
-                  <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
-                </>
-              )}
+              {/* Watching — accordion */}
+              <div style={{ padding: '16px 24px' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: bWatchingExpanded ? 20 : 0 }}
+                  onClick={() => setBWatchingExpanded(e => !e)}
+                >
+                  <EuiButtonIcon
+                    iconType={bWatchingExpanded ? 'arrowDown' : 'arrowRight'}
+                    aria-label={bWatchingExpanded ? 'Collapse Watching' : 'Expand Watching'}
+                    size="xs" color="text"
+                  />
+                  <EuiTitle size="s"><h2 style={{ margin: 0 }}>Watching</h2></EuiTitle>
+                </div>
+                {bWatchingExpanded && (
+                  selectedTab === 'data-health' ? (
+                    <>
+                      <DataCoveragePanel categories={filteredCategories} coverage={coverage} pillarStatus={summary.pillars.coverage.status} />
+                      <EuiSpacer size="xl" />
+                      <ContinuityTab categories={filteredCategories} pipelines={pipelines} loading={loading} actionItemIds={actionItemIds} onAskAI={handleAddToChat} />
+                      <EuiSpacer size="xl" />
+                      <QualityTab categories={filteredCategories} qualityResults={qualityResults} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.quality.status} />
+                      <EuiSpacer size="xl" />
+                      <RetentionTab categories={filteredCategories} retentionItems={retentionItems} loading={loading} actionItemIds={actionItemIds} />
+                    </>
+                  ) : (
+                    <>
+                      <CoverageTab coverage={coverage} categories={filteredCategories} integrations={integrations} loading={loading} actionItemIds={actionItemIds} pillarStatus={summary.pillars.coverage.status} ruleSubTab={ruleSubTab} onRuleSubTabChange={setRuleSubTab} onAskAI={handleAddToChat} />
+                      <EuiSpacer size="xl" />
+                      <DetectionsTab ruleFieldIssues={ruleFieldIssues} loading={loading} pillarStatus={summary.pillars.detections.status} />
+                    </>
+                  )
+                )}
+              </div>
 
             </div>
 
