@@ -3423,6 +3423,9 @@ const SiemReadinessPage: React.FC = () => {
   const [assistantPrompt, setAssistantPrompt] = useState('');
   const [siemView, setSiemView] = useState<'a' | 'b'>('a');
   const [bPageIdx, setBPageIdx] = useState(0);
+  const [bOpenPopoverId, setBOpenPopoverId] = useState<string | null>(null);
+  const [bExpandedIds, setBExpandedIds] = useState<Set<string>>(new Set());
+  const toggleBExpanded = (id: string) => setBExpandedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const [assistantSession, setAssistantSession] = useState(0);
 
   const openAssistant = (prompt = '') => {
@@ -3847,23 +3850,64 @@ const SiemReadinessPage: React.FC = () => {
                     ) : (
                       <div style={{ border: '1px solid #CAD3E2', borderRadius: 6, overflow: 'hidden' }}>
                         {paged.map((action: ActionItem, idx: number) => {
+                          const isExpanded = bExpandedIds.has(action.id);
                           const colonIdx = action.title.indexOf(':');
                           return (
-                            <div key={action.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'white', borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
-                              <EuiIcon type="arrowRight" size="s" color="subdued" style={{ flexShrink: 0 }} />
-                              {/* Severity badge */}
-                              <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0', color: action.severity === 'critical' ? '#A71627' : '#836500', flexShrink: 0 }}>
-                                {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
-                              </span>
-                              {/* Title: bold prefix + regular detail */}
-                              <EuiText size="s" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {colonIdx > -1 ? <><strong>{action.title.slice(0, colonIdx)}:</strong>{' '}{action.title.slice(colonIdx + 1).trim()}</> : <strong>{action.title}</strong>}
-                              </EuiText>
-                              <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Apr 15 @ 14:22:07</EuiText>
-                              <EuiBadge color="hollow" iconType="crosshairs" style={{ flexShrink: 0 }}>{action.rulesAffected} rules affected</EuiBadge>
-                              <div style={{ width: 1, height: 20, background: '#CAD3E2', flexShrink: 0 }} />
-                              <EuiButtonEmpty size="xs" iconType="popout" iconSide="left" color="primary" style={{ flexShrink: 0 }}>Action here</EuiButtonEmpty>
-                              <EuiButtonIcon size="xs" iconType="boxesVertical" color="primary" aria-label="More" />
+                            <div key={action.id} style={{ background: 'white', padding: 12, borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
+                              {/* Row */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                                  <EuiButtonIcon
+                                    iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
+                                    aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                                    size="xs" color="text"
+                                    onClick={() => toggleBExpanded(action.id)}
+                                  />
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0', color: action.severity === 'critical' ? '#A71627' : '#836500', flexShrink: 0 }}>
+                                    {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
+                                  </span>
+                                  <EuiText size="s" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {colonIdx > -1 ? <><strong>{action.title.slice(0, colonIdx)}:</strong>{' '}{action.title.slice(colonIdx + 1).trim()}</> : <strong>{action.title}</strong>}
+                                  </EuiText>
+                                  <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Apr 15 @ 14:22:07</EuiText>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                                  <EuiBadge color="hollow" iconType="crosshairs">{action.rulesAffected} rules affected</EuiBadge>
+                                  <div style={{ width: 1, height: 23, background: '#CAD3E2', flexShrink: 0 }} />
+                                  <EuiButtonEmpty size="xs" iconType={action.actionIcon ?? 'popout'} iconSide="left" color="primary" href={action.fixLink ? '#' : undefined}>
+                                    Action here
+                                  </EuiButtonEmpty>
+                                  <EuiPopover
+                                    isOpen={bOpenPopoverId === action.id}
+                                    closePopover={() => setBOpenPopoverId(null)}
+                                    panelPaddingSize="s"
+                                    anchorPosition="downRight"
+                                    button={
+                                      <EuiButtonIcon
+                                        size="xs" iconType="boxesVertical" color="primary"
+                                        aria-label="More actions"
+                                        onClick={() => setBOpenPopoverId(bOpenPopoverId === action.id ? null : action.id)}
+                                      />
+                                    }
+                                  >
+                                    <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                                      <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => { setBOpenPopoverId(null); handleAddToChat(getActionChatPrompt(action)); }} />
+                                      <EuiListGroupItem iconType="folderClosed" label="Create a case" size="s" onClick={() => setBOpenPopoverId(null)} />
+                                    </EuiListGroup>
+                                  </EuiPopover>
+                                </div>
+                              </div>
+                              {/* Expanded detail */}
+                              {isExpanded && (
+                                <>
+                                  <EuiSpacer size="s" />
+                                  <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
+                                    <EuiText size="xs"><p style={{ margin: 0 }}><strong>Issue:</strong> {action.description}</p></EuiText>
+                                    <EuiSpacer size="xs" />
+                                    <EuiText size="xs"><p style={{ margin: 0 }}><strong>Action:</strong> {action.fixRecommendation}</p></EuiText>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           );
                         })}
