@@ -3413,7 +3413,7 @@ const SiemReadinessPage: React.FC = () => {
   const actionsPanelRef = useRef<HTMLDivElement>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrompt, setAssistantPrompt] = useState('');
-  const [siemView, setSiemView] = useState<'a' | 'b'>('a');
+  const [siemView, setSiemView] = useState<'a' | 'b'>('b');
   const [bPageIdx, setBPageIdx] = useState(0);
   const [bOpenPopoverId, setBOpenPopoverId] = useState<string | null>(null);
   const [bExpandedIds, setBExpandedIds] = useState<Set<string>>(new Set());
@@ -3717,8 +3717,8 @@ const SiemReadinessPage: React.FC = () => {
         onMenuClick={() => {}}
         onAgentClick={() => openAssistant()}
         viewOptions={[
-          { value: 'a', label: 'Option A' },
-          { value: 'b', label: 'Option B' },
+          { value: 'b', label: 'Option A' },
+          { value: 'a', label: 'Option B' },
         ]}
         currentView={siemView}
         onViewChange={(v) => setSiemView(v as 'a' | 'b')}
