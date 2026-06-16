@@ -74,24 +74,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
   });
 
   return (
-    <div
-      data-test-subj="autodex-approvalsRequiredPanel"
-      style={{
-        background: '#F6F9FC',
-        border: '1px solid #E3E8F2',
-        borderRadius: 6,
-        padding: '16px 24px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-        <h2 style={{ margin: 0, fontSize: 16, lineHeight: '24px', fontWeight: 600, color: '#111C2C' }}>
-          Actions for you
-        </h2>
-      </div>
-
+    <div data-test-subj="autodex-approvalsRequiredPanel">
       {pendingItems.length === 0 ? (
         <div style={{ padding: 24, width: '100%' }}>
           <EuiEmptyPrompt

@@ -235,7 +235,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   const [fullReasoningLogId, setFullReasoningLogId] = useState<string | null>(null);
 
   const PAGE_SIZE_OPTIONS = [5, 10, 25];
-  const [pageSize, setPageSize] = useState(activityMode || completedOnly ? 10 : 5);
+  const [pageSize, setPageSize] = useState(5);
   const [pageIndex, setPageIndex] = useState(0);
 
   // When the parent activates a locked filter, programmatically select the type filter chips.

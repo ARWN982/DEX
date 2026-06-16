@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  EuiAvatar,
   EuiBadge,
   EuiButtonEmpty,
   EuiButtonIcon,
@@ -11,12 +12,10 @@ import {
   EuiHorizontalRule,
   EuiListGroup,
   EuiListGroupItem,
-  EuiNotificationBadge,
   EuiPanel,
   EuiPopover,
   EuiPopoverTitle,
   EuiSelectable,
-  EuiSpacer,
   EuiText,
   EuiTitle,
 } from '@elastic/eui';
@@ -37,14 +36,7 @@ const AutoDexPage: React.FC = () => {
   const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
   const [activityExpanded, setActivityExpanded] = useState(true);
   const [dotsOpen, setDotsOpen] = useState(false);
-  const [typeOptions, setTypeOptions] = useState<{ label: string; checked?: 'on' }[]>([
-    { label: 'Execution failure',      checked: 'on' },
-    { label: 'Tuned false positives',  checked: 'on' },
-    { label: 'Fixed execution failure' },
-    { label: 'Installed rule' },
-    { label: 'Updated rule' },
-  ]);
-  const [typePopoverOpen, setTypePopoverOpen] = useState(false);
+  const [actionsSearch, setActionsSearch] = useState('');
 
   const isPendingItem = (log: typeof MOCK_AUTODEX_LOGS[0]) =>
     (log.needsApproval || log.isSuggestion) && !approvalDecisions[log.id];
@@ -113,7 +105,7 @@ const AutoDexPage: React.FC = () => {
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
                       <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 8, color: '#111C2C', lineHeight: '52px' }}>AutoDEX</h1>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                        <EuiBadge color="success" style={{ fontSize: 13 }}>Running</EuiBadge>
+                        <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
                         <span style={{ fontSize: 17, color: '#111C2C' }}>
                           You have <strong>{pendingCount}</strong> actions required
                         </span>
@@ -152,11 +144,22 @@ const AutoDexPage: React.FC = () => {
                     {/* Combined Actions + Activity log grey card */}
                     <div style={{ background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 8, overflow: 'hidden' }}>
 
-                      {/* Actions heading */}
+                      {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <EuiTitle size="s"><h2 style={{ margin: 0 }}>Actions</h2></EuiTitle>
-                          <EuiNotificationBadge size="m" color="accent">{pendingCount}</EuiNotificationBadge>
+                        <EuiTitle size="s"><h2 style={{ marginBottom: 12 }}>Actions</h2></EuiTitle>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <EuiFieldSearch placeholder="Search actions" value={actionsSearch} onChange={e => setActionsSearch(e.target.value)} isClearable fullWidth />
+                          <EuiFilterGroup style={{ flexShrink: 0 }}>
+                            <EuiFilterButton
+                              iconType="arrowDown"
+                              numFilters={typeOptions.length}
+                              hasActiveFilters={typeOptions.some(o => o.checked === 'on')}
+                              numActiveFilters={typeOptions.filter(o => o.checked === 'on').length}
+                              style={{ minWidth: 80, whiteSpace: 'nowrap' }}
+                            >
+                              Type
+                            </EuiFilterButton>
+                          </EuiFilterGroup>
                         </div>
                       </div>
 
@@ -187,49 +190,6 @@ const AutoDexPage: React.FC = () => {
 
                         {activityExpanded && (
                           <>
-                            {/* Search + Type filter */}
-                            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                              <EuiFieldSearch
-                                placeholder="Search activities"
-                                isClearable
-                                fullWidth
-                              />
-                              <EuiFilterGroup style={{ flexShrink: 0 }}>
-                                <EuiPopover
-                                  button={
-                                    <EuiFilterButton
-                                      iconType="arrowDown"
-                                      onClick={() => setTypePopoverOpen(!typePopoverOpen)}
-                                      isSelected={typePopoverOpen}
-                                      numFilters={typeOptions.length}
-                                      hasActiveFilters={typeOptions.some(o => o.checked === 'on')}
-                                      numActiveFilters={typeOptions.filter(o => o.checked === 'on').length}
-                                      style={{ minWidth: 80, whiteSpace: 'nowrap' }}
-                                    >
-                                      Type
-                                    </EuiFilterButton>
-                                  }
-                                  isOpen={typePopoverOpen}
-                                  closePopover={() => setTypePopoverOpen(false)}
-                                  panelPaddingSize="none"
-                                >
-                                  <EuiSelectable
-                                    searchable
-                                    searchProps={{ placeholder: 'Filter list', compressed: true }}
-                                    options={typeOptions}
-                                    onChange={opts => setTypeOptions(opts as { label: string; checked?: 'on' }[])}
-                                  >
-                                    {(list, search) => (
-                                      <div style={{ width: 260 }}>
-                                        <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
-                                        {list}
-                                      </div>
-                                    )}
-                                  </EuiSelectable>
-                                </EuiPopover>
-                              </EuiFilterGroup>
-                            </div>
-
                             <AutoDexActivityLog
                               onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
                               requiresApproval={false}
