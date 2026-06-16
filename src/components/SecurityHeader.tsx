@@ -45,7 +45,7 @@ const SecurityHeader: React.FC<{
   }));
 
   return (
-    <EuiHeader position="fixed" style={{ zIndex: 1000, backgroundColor: 'var(--euiColorBody)', border: 'none', boxShadow: 'none' }}>
+    <EuiHeader position="fixed" style={{ zIndex: 1000, backgroundColor: 'var(--euiPageBackgroundColor)', border: 'none', boxShadow: 'none' }}>
       <EuiHeaderSection grow={false}>
         <EuiHeaderSectionItem>
           <EuiHeaderLogo iconType="logoElastic" href="#" aria-label="Elastic" />
@@ -72,7 +72,7 @@ const SecurityHeader: React.FC<{
                       style={{
                         display: 'flex', alignItems: 'center', gap: 4,
                         height: 28, padding: '0 8px', borderRadius: 4,
-                        border: '1px solid var(--euiBorderColor)', background: '#fff',
+                        border: '1px solid var(--euiColorBorderBasePlain)', background: '#fff',
                         cursor: 'pointer', fontSize: 13, fontWeight: 500,
                         color: 'var(--euiTextColor)', whiteSpace: 'nowrap',
                       }}

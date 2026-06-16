@@ -28,7 +28,7 @@ import AutoDexConfigureModal from './components/AutoDexConfigureModal';
 import { MOCK_AUTODEX_LOGS } from './components/autoDexMockData';
 
 const SUMMARY_DIVIDER = (
-  <div style={{ width: 1, background: 'var(--euiColorLightShade)', alignSelf: 'stretch', margin: '12px 0' }} />
+  <div style={{ width: 1, background: 'var(--euiColorBorderBaseSubdued)', alignSelf: 'stretch', margin: '12px 0' }} />
 );
 
 const AutoDexPage: React.FC = () => {
@@ -63,7 +63,7 @@ const AutoDexPage: React.FC = () => {
         <SecuritySideNav />
 
         {/* Grey outer wrapper */}
-        <div style={{ backgroundColor: 'var(--euiColorBody)', position: 'absolute', top: 48, left: 80, right: 0, bottom: 0, padding: 8, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--euiPageBackgroundColor)', position: 'absolute', top: 48, left: 80, right: 0, bottom: 0, padding: 8, overflow: 'hidden' }}>
           <div style={{ display: 'flex', height: '100%', gap: 8 }}>
 
             {/* Secondary nav */}
@@ -142,7 +142,7 @@ const AutoDexPage: React.FC = () => {
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: 'var(--euiColorBody)', border: '1px solid var(--euiBorderColor)', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--euiPageBackgroundColor)', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 8, overflow: 'hidden' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>

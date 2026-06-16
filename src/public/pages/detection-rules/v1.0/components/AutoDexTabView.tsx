@@ -375,7 +375,7 @@ const RuleAccordionCard: React.FC<{
           <EuiText size="xs" color="subdued" style={{ marginBottom: 4 }}>Query</EuiText>
           <div
             style={{
-              background: '#F7F9FF', border: '1px solid var(--euiBorderColor)', borderRadius: 4,
+              background: '#F7F9FF', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4,
               padding: '10px 12px', fontFamily: 'monospace', fontSize: 12,
               color: 'var(--euiTextColor)', whiteSpace: 'pre', overflowX: 'auto', marginBottom: 10,
             }}

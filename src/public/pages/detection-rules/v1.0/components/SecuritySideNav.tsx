@@ -88,7 +88,7 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
         bottom: 0,
         paddingTop: '8px',
         paddingBottom: '16px',
-        backgroundColor: 'var(--euiColorBody)',
+        backgroundColor: 'var(--euiPageBackgroundColor)',
         borderRight: '1px solid var(--euiBorderColor)',
         zIndex: 999,
       }}
