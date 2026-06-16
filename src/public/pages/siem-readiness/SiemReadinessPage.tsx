@@ -3872,7 +3872,7 @@ const SiemReadinessPage: React.FC = () => {
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
-                            <div key={action.id} style={{ background: 'var(--euiColorEmptyShade)', borderTop: idx === 0 ? 'none' : '1px solid #E3E8F2', paddingBottom: isExpanded ? 12 : 0 }}>
+                            <div key={action.id} style={{ background: 'white', borderTop: idx === 0 ? 'none' : '1px solid #E3E8F2', paddingBottom: isExpanded ? 12 : 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                                   <EuiButtonIcon
