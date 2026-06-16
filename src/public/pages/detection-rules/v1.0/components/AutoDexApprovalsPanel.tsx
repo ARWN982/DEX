@@ -321,7 +321,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
             })}
           </div>
 
-          <div style={{ paddingTop: 4, width: '100%' }}>
+          <div style={{ paddingTop: 4, paddingLeft: 24, paddingRight: 24 }}>
             <EuiTablePagination
               pageCount={Math.max(1, Math.ceil(pendingItems.length / pageSize))}
               activePage={pageIndex}
