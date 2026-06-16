@@ -152,9 +152,6 @@ const AutoDexPage: React.FC = () => {
                           <EuiFilterGroup style={{ flexShrink: 0 }}>
                             <EuiFilterButton
                               iconType="arrowDown"
-                              numFilters={typeOptions.length}
-                              hasActiveFilters={typeOptions.some(o => o.checked === 'on')}
-                              numActiveFilters={typeOptions.filter(o => o.checked === 'on').length}
                               style={{ minWidth: 80, whiteSpace: 'nowrap' }}
                             >
                               Type
