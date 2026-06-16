@@ -3820,7 +3820,7 @@ const SiemReadinessPage: React.FC = () => {
               const healthStatus = selectedTab === 'data-health' ? dataHealthStatus : detectionHealthStatus;
               const isCritical = card.severity === 'Critical';
               return (
-                <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiBorderColor)', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
+                <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid #CAD3E2', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <EuiText style={{ fontSize: 16, fontWeight: 600 }}>{card.label}</EuiText>
@@ -3849,7 +3849,7 @@ const SiemReadinessPage: React.FC = () => {
             })()}
 
             {/* Combined Actions + Data — single grey card, rows fill card */}
-            <div style={{ background: '#F6F9FC', border: '1px solid var(--euiBorderColor)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
 
               {/* Actions heading */}
               <div style={{ padding: '16px 24px 12px' }}>
@@ -3868,11 +3868,11 @@ const SiemReadinessPage: React.FC = () => {
                     {paged.length === 0 ? (
                       <EuiText size="s" color="subdued" style={{ textAlign: 'center', padding: 24 }}>No actions for this tab.</EuiText>
                     ) : (
-                      <div>
+                      <div style={{ margin: '0 16px 12px', border: '1px solid #CAD3E2', borderRadius: 4, overflow: 'hidden' }}>
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
-                            <div key={action.id} style={{ background: 'var(--euiColorEmptyShade)', borderTop: '1px solid var(--euiBorderColor)', paddingBottom: isExpanded ? 12 : 0 }}>
+                            <div key={action.id} style={{ background: 'var(--euiColorEmptyShade)', borderTop: idx === 0 ? 'none' : '1px solid #E3E8F2', paddingBottom: isExpanded ? 12 : 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                                   <EuiButtonIcon
