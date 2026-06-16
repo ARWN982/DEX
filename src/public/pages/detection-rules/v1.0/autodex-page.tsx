@@ -28,7 +28,7 @@ import AutoDexConfigureModal from './components/AutoDexConfigureModal';
 import { MOCK_AUTODEX_LOGS } from './components/autoDexMockData';
 
 const SUMMARY_DIVIDER = (
-  <div style={{ width: 1, background: '#E3E8F2', alignSelf: 'stretch', margin: '12px 0' }} />
+  <div style={{ width: 1, background: 'var(--euiColorLightShade)', alignSelf: 'stretch', margin: '12px 0' }} />
 );
 
 const AutoDexPage: React.FC = () => {
@@ -63,7 +63,7 @@ const AutoDexPage: React.FC = () => {
         <SecuritySideNav />
 
         {/* Grey outer wrapper */}
-        <div style={{ backgroundColor: '#F6F9FC', position: 'absolute', top: 48, left: 80, right: 0, bottom: 0, padding: 8, overflow: 'hidden' }}>
+        <div style={{ backgroundColor: 'var(--euiColorBody)', position: 'absolute', top: 48, left: 80, right: 0, bottom: 0, padding: 8, overflow: 'hidden' }}>
           <div style={{ display: 'flex', height: '100%', gap: 8 }}>
 
             {/* Secondary nav */}
@@ -75,16 +75,16 @@ const AutoDexPage: React.FC = () => {
 
             {/* Main white panel */}
             <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }}>
-              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'white', minHeight: '100%' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'var(--euiColorEmptyShade)', minHeight: '100%' }}>
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
                     {/* Top-right buttons */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: '#343741', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
+                      <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
                         Configuration
                       </EuiButtonEmpty>
-                      <EuiButtonEmpty size="s" color="text" style={{ color: '#343741', fontWeight: 500 }}>
+                      <EuiButtonEmpty size="s" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
                         View all cases&nbsp;<EuiBadge color="hollow">0</EuiBadge>
                       </EuiButtonEmpty>
                       <EuiPopover
@@ -103,10 +103,10 @@ const AutoDexPage: React.FC = () => {
 
                     {/* Title + status */}
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 8, color: '#111C2C', lineHeight: '52px' }}>AutoDEX</h1>
+                      <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 8, color: 'var(--euiTitleColor)', lineHeight: '52px' }}>AutoDEX</h1>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
-                        <span style={{ fontSize: 17, color: '#111C2C' }}>
+                        <span style={{ fontSize: 17, color: 'var(--euiTitleColor)' }}>
                           You have <strong>{pendingCount}</strong> actions required
                         </span>
                       </div>
@@ -129,20 +129,20 @@ const AutoDexPage: React.FC = () => {
                         {SUMMARY_DIVIDER}
                         <div style={{ flex: 1, padding: '16px 20px' }}>
                           <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Approval rate</EuiText>
-                          <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>91%</p>
+                          <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--euiTextColor)', margin: '0 0 2px', lineHeight: 1.1 }}>91%</p>
                           <EuiText size="xs" color="subdued">compared to previous</EuiText>
                         </div>
                         {SUMMARY_DIVIDER}
                         <div style={{ flex: 1, padding: '16px 20px' }}>
                           <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Total tokens used</EuiText>
-                          <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>1.24M</p>
+                          <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--euiTextColor)', margin: '0 0 2px', lineHeight: 1.1 }}>1.24M</p>
                           <EuiText size="xs" color="subdued">this month</EuiText>
                         </div>
                       </div>
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--euiColorBody)', border: '1px solid var(--euiBorderColor)', borderRadius: 8, overflow: 'hidden' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>

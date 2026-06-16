@@ -284,7 +284,7 @@ const AgentsPage: React.FC = () => {
               alignItems: 'center', justifyContent: 'center',
               padding: '40px 24px',
             }}>
-              <EuiTitle size="l"><h2 style={{ fontWeight: 500, color: '#1d2a3e' }}>How can I help you?</h2></EuiTitle>
+              <EuiTitle size="l"><h2 style={{ fontWeight: 500, color: 'var(--euiTextColor)' }}>How can I help you?</h2></EuiTitle>
               <EuiSpacer size="xl" />
               {InputBox}
             </div>
@@ -309,7 +309,7 @@ const AgentsPage: React.FC = () => {
                           padding: '10px 16px',
                           width: '100%',
                         }}>
-                          <EuiText size="s" style={{ color: '#1d2a3e' }}>{msg.content}</EuiText>
+                          <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{msg.content}</EuiText>
                         </div>
                       ) : (
                         /* AI response */

@@ -57,7 +57,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, custom
             fontSize: '11px',
             fontWeight: 500,
             lineHeight: '16px',
-            color: '#1d2a3e'
+            color: 'var(--euiTextColor)'
           }}
         >
           {label}
@@ -88,8 +88,8 @@ const SecuritySideNav: React.FC<SecuritySideNavProps> = () => {
         bottom: 0,
         paddingTop: '8px',
         paddingBottom: '16px',
-        backgroundColor: '#F6F9FC',
-        borderRight: 'none',
+        backgroundColor: 'var(--euiColorBody)',
+        borderRight: '1px solid var(--euiBorderColor)',
         zIndex: 999,
       }}
     >

@@ -283,7 +283,7 @@ const SiemSecondaryNav: React.FC = () => {
   const sectionTitleStyle: React.CSSProperties = {
     fontSize: 13,
     fontWeight: 600,
-    color: '#1d2a3e',
+    color: 'var(--euiTextColor)',
     paddingLeft: 4,
     marginBottom: 4,
     marginTop: 8,
@@ -295,14 +295,14 @@ const SiemSecondaryNav: React.FC = () => {
       <p style={sectionTitleStyle}>Launchpad</p>
 
       <EuiListGroup flush gutterSize="none" style={{ marginBottom: 4 }}>
-        <EuiListGroupItem label={<span style={{ fontSize: 13, color: '#1d2a3e' }}>Get started</span>} onClick={() => {}} style={itemStyle} />
+        <EuiListGroupItem label={<span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>Get started</span>} onClick={() => {}} style={itemStyle} />
         <EuiListGroupItem
           label={<span style={{ fontSize: 13, color: isActive('/siem-readiness') ? '#1750BA' : '#1d2a3e', fontWeight: isActive('/siem-readiness') ? 600 : 400 }}>SIEM Readiness</span>}
           onClick={() => navigate('/siem-readiness')}
           isActive={isActive('/siem-readiness')}
           style={itemStyle}
         />
-        <EuiListGroupItem label={<span style={{ fontSize: 13, color: '#1d2a3e' }}>Value report</span>} onClick={() => {}} style={itemStyle} />
+        <EuiListGroupItem label={<span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>Value report</span>} onClick={() => {}} style={itemStyle} />
       </EuiListGroup>
 
       <EuiSpacer size="s" />
@@ -310,9 +310,9 @@ const SiemSecondaryNav: React.FC = () => {
       <p style={{ ...sectionTitleStyle, marginTop: 12 }}>Migrations</p>
 
       <EuiListGroup flush gutterSize="none">
-        <EuiListGroupItem label={<span style={{ fontSize: 13, color: '#1d2a3e' }}>Manage automatic migrations</span>} onClick={() => {}} style={{ ...itemStyle, height: 'auto', paddingTop: 6, paddingBottom: 6 }} />
-        <EuiListGroupItem label={<span style={{ fontSize: 13, color: '#1d2a3e' }}>Translated rules</span>} onClick={() => {}} style={itemStyle} />
-        <EuiListGroupItem label={<span style={{ fontSize: 13, color: '#1d2a3e' }}>Translated dashboards</span>} onClick={() => {}} style={itemStyle} />
+        <EuiListGroupItem label={<span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>Manage automatic migrations</span>} onClick={() => {}} style={{ ...itemStyle, height: 'auto', paddingTop: 6, paddingBottom: 6 }} />
+        <EuiListGroupItem label={<span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>Translated rules</span>} onClick={() => {}} style={itemStyle} />
+        <EuiListGroupItem label={<span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>Translated dashboards</span>} onClick={() => {}} style={itemStyle} />
       </EuiListGroup>
     </div>
   );
@@ -434,7 +434,7 @@ const STATUS_HERO_CONFIG: Record<ReadinessStatus, {
 const PAGE_CONTENT_PADDING = 24;
 
 const HEADER_ACTION_BUTTON_STYLE: React.CSSProperties = {
-  color: '#111C2C',
+  color: 'var(--euiTitleColor)',
   whiteSpace: 'nowrap',
   flexShrink: 0,
   minWidth: 'max-content',
@@ -1068,9 +1068,9 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
   return (
     <div
       style={{
-        border: '1px solid #E3E8F2',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
-        background: '#FFFFFF',
+        background: 'var(--euiColorEmptyShade)',
         overflow: 'hidden',
       }}
       data-test-subj={`siemReadiness-expandableCard-${id}`}
@@ -1093,7 +1093,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
           {totalRulesAffected !== null && totalRulesAffected > 0 && (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px',
-              borderRadius: 20, border: '1px solid #CAD3E2', fontSize: 12, fontWeight: 500, color: '#1D2A3E',
+              borderRadius: 20, border: '1px solid var(--euiBorderColor)', fontSize: 12, fontWeight: 500, color: 'var(--euiTextColor)',
             }}>
               <EuiIcon type="crosshairs" size="s" />
               {totalRulesAffected} total rules affected
@@ -1115,10 +1115,10 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
                 <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
                   {metric.value}
                 </span>
-                <EuiText size="s" style={{ color: '#516381', lineHeight: '20px' }}>
+                <EuiText size="s" style={{ color: 'var(--euiColorDarkShade)', lineHeight: '20px' }}>
                   {metric.label}
                 </EuiText>
-                <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '20px', fontWeight: 600 }}>
+                <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '20px', fontWeight: 600 }}>
                   {metric.sectionLabel ?? CATEGORY_LABELS[metric.pillar]}
                 </EuiText>
               </div>
@@ -1131,7 +1131,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
       {children && (
         <div
           style={{
-            background: '#F6F9FC', padding: '8px 20px', borderTop: '1px solid #E3E8F2',
+            background: 'var(--euiColorBody)', padding: '8px 20px', borderTop: '1px solid var(--euiBorderColor)',
             display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 6,
             userSelect: 'none',
           }}
@@ -1144,7 +1144,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
 
       {/* Expanded content */}
       {children && expanded && (
-        <div style={{ padding: '24px 20px', borderTop: '1px solid #E3E8F2' }}>
+        <div style={{ padding: '24px 20px', borderTop: '1px solid var(--euiBorderColor)' }}>
           {children}
         </div>
       )}
@@ -1221,8 +1221,8 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
     <div
       data-test-subj="siemReadiness-actionsRequiredPanel"
       style={{
-        background: '#F6F9FC',
-        border: '1px solid #E3E8F2',
+        background: 'var(--euiColorBody)',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         padding: '16px 24px 16px',
         display: 'flex',
@@ -1233,7 +1233,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
       {/* Take action heading + search + filters */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <EuiText style={{ fontSize: 15, fontWeight: 600, color: '#111C2C', margin: 0 }}>Take action</EuiText>
+          <EuiText style={{ fontSize: 15, fontWeight: 600, color: 'var(--euiTitleColor)', margin: 0 }}>Take action</EuiText>
           <EuiNotificationBadge size="m" color="accent">{actions.length}</EuiNotificationBadge>
         </div>
       </div>
@@ -1283,8 +1283,8 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                 <div
                   key={action.id}
                   style={{
-                    background: 'white',
-                    border: '1px solid #CAD3E2',
+                    background: 'var(--euiColorEmptyShade)',
+                    border: '1px solid var(--euiBorderColor)',
                     padding: 12,
                     marginBottom: index < pagedActions.length - 1 ? -1 : 0,
                     borderRadius: isFirstRow && isLastRow ? 6 : isFirstRow ? '6px 6px 0 0' : isLastRow ? '0 0 6px 6px' : undefined,
@@ -1303,7 +1303,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                         onClick={() => toggleExpanded(action.id)}
                       />
                       {/* Pillar label */}
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#516381', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>
                         {CATEGORY_LABELS[action.pillar].toUpperCase()}
                       </span>
                       {/* Severity badge */}
@@ -1331,7 +1331,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                       <EuiBadge color="hollow" iconType="crosshairs">
                         {action.rulesAffected} rules affected
                       </EuiBadge>
-                      <div style={{ width: 1, height: 23, background: '#CAD3E2', flexShrink: 0 }} />
+                      <div style={{ width: 1, height: 23, background: 'var(--euiBorderColor)', flexShrink: 0 }} />
                       <EuiButtonEmpty
                         size="xs"
                         iconType={action.actionIcon ?? 'popout'}
@@ -1366,14 +1366,14 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   </div>
 
                   {isExpanded && (
-                    <div style={{ margin: '8px 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+                    <div style={{ margin: '8px 12px 12px 12px', background: 'var(--euiColorBody)', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '12px 16px' }}>
                       <div style={{ marginBottom: 10 }}>
-                        <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
-                        <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
+                        <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: 'var(--euiTextColor)', marginBottom: 4 }}>Issue summary:</div>
+                        <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{action.description}</EuiText>
                       </div>
                       <div>
-                        <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Action to remediate:</div>
-                        <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
+                        <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: 'var(--euiTextColor)', marginBottom: 4 }}>Action to remediate:</div>
+                        <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{action.fixRecommendation}</EuiText>
                       </div>
                     </div>
                   )}
@@ -1464,10 +1464,10 @@ const RuleCoverageBar: React.FC<RuleCoverageBarProps> = ({ covered, uncovered })
     <div style={{ paddingLeft: 24, minWidth: 200 }}>
       {/* Stat */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, lineHeight: 1 }}>
-        <span style={{ fontSize: 36, fontWeight: 700, color: '#1d2a3e', lineHeight: 1 }}>
+        <span style={{ fontSize: 36, fontWeight: 700, color: 'var(--euiTextColor)', lineHeight: 1 }}>
           {uncovered}
         </span>
-        <span style={{ fontSize: 36, fontWeight: 700, color: '#1d2a3e', lineHeight: 1 }}>
+        <span style={{ fontSize: 36, fontWeight: 700, color: 'var(--euiTextColor)', lineHeight: 1 }}>
           /{total}
         </span>
       </div>
@@ -1801,7 +1801,7 @@ const RulesAffectedPopover: React.FC<RulesAffectedPopoverProps> = ({
             height: 20,
             padding: '0 8px',
             borderRadius: 24,
-            background: '#FFFFFF',
+            background: 'var(--euiColorEmptyShade)',
             fontSize: 12,
             lineHeight: '18px',
             color: '#07101F',
@@ -1899,13 +1899,13 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
   return (
     <div
       style={{
-        border: '1px solid #E3E8F2',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         overflow: 'hidden',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        background: '#FFFFFF',
+        background: 'var(--euiColorEmptyShade)',
       }}
       data-test-subj={`siemReadiness-healthCard-${id}`}
     >
@@ -1940,12 +1940,12 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
                 height: 20,
                 padding: '0 8px',
                 borderRadius: 20,
-                border: '1px solid #CAD3E2',
-                background: '#FFFFFF',
+                border: '1px solid var(--euiBorderColor)',
+                background: 'var(--euiColorEmptyShade)',
                 fontSize: 12,
                 fontWeight: 500,
                 lineHeight: '16px',
-                color: '#1D2A3E',
+                color: 'var(--euiTextColor)',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
               }}
@@ -2096,7 +2096,7 @@ const DataCoveragePanel: React.FC<DataCoveragePanelProps> = ({ categories, cover
                       <>
                         <EuiFlexItem grow={false} style={{ margin: '0 6px' }}>{div}</EuiFlexItem>
                         <EuiFlexItem grow={false}>
-                          <EuiText size="xs" color="subdued">Platforms: <strong style={{ color: '#1d2a3e' }}>{platforms.length}</strong></EuiText>
+                          <EuiText size="xs" color="subdued">Platforms: <strong style={{ color: 'var(--euiTextColor)' }}>{platforms.length}</strong></EuiText>
                         </EuiFlexItem>
                       </>
                     )}
@@ -2853,11 +2853,11 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
                           <EuiFlexItem grow={false} style={{ marginLeft: 4 }}>{categoryStatusBadge(incompatFields)}</EuiFlexItem>
                           <EuiFlexItem grow={false} style={{ margin: '0 8px' }}>{metaDivider}</EuiFlexItem>
                           <EuiFlexItem grow={false}>
-                            <EuiText size="xs" color="subdued">Incompatible Fields: <strong style={{ color: '#1d2a3e' }}>{incompatFields}</strong></EuiText>
+                            <EuiText size="xs" color="subdued">Incompatible Fields: <strong style={{ color: 'var(--euiTextColor)' }}>{incompatFields}</strong></EuiText>
                           </EuiFlexItem>
                           <EuiFlexItem grow={false} style={{ margin: '0 8px' }}>{metaDivider}</EuiFlexItem>
                           <EuiFlexItem grow={false}>
-                            <EuiText size="xs" color="subdued">Affected indices: <strong style={{ color: '#1d2a3e' }}>{affected}/{cat.items.length}</strong></EuiText>
+                            <EuiText size="xs" color="subdued">Affected indices: <strong style={{ color: 'var(--euiTextColor)' }}>{affected}/{cat.items.length}</strong></EuiText>
                           </EuiFlexItem>
                         </EuiFlexGroup>
                       </EuiFlexItem>
@@ -3727,7 +3727,7 @@ const SiemReadinessPage: React.FC = () => {
 
       {siemView === 'b' ? (
         /* ── Option B layout — same outer shell as Option A ────────── */
-        <div style={{ backgroundColor: '#F6F9FC', minHeight: '100vh', marginTop: 48, marginLeft: 80, paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
+        <div style={{ backgroundColor: 'var(--euiColorBody)', minHeight: '100vh', marginTop: 48, marginLeft: 80, paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
           <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart">
             {/* Secondary nav */}
             <EuiFlexItem grow={false} style={{ position: 'sticky', top: 56, alignSelf: 'flex-start', height: 'calc(100vh - 64px)' }}>
@@ -3743,10 +3743,10 @@ const SiemReadinessPage: React.FC = () => {
 
             {/* Top-right buttons row */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: '#343741', fontWeight: 500 }}>
+              <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
                 Configuration
               </EuiButtonEmpty>
-              <EuiButtonEmpty size="s" color="text" style={{ color: '#343741', fontWeight: 500 }}>
+              <EuiButtonEmpty size="s" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
                 View all cases&nbsp;<EuiBadge color="hollow">{allActionItems.length}</EuiBadge>
               </EuiButtonEmpty>
               <EuiPopover
@@ -3767,10 +3767,10 @@ const SiemReadinessPage: React.FC = () => {
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 10, color: '#111C2C', lineHeight: '52px' }}>SIEM readiness</h1>
+              <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 10, color: 'var(--euiTitleColor)', lineHeight: '52px' }}>SIEM readiness</h1>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
-                <span style={{ fontSize: 17, color: '#111C2C' }}>
+                <span style={{ fontSize: 17, color: 'var(--euiTitleColor)' }}>
                   You have <strong>{allActionItems.filter(a => a.severity === 'critical').length}</strong> critical issues and{' '}
                   <strong>{allActionItems.filter(a => a.severity === 'warning').length}</strong> in warning state
                 </span>
@@ -3820,14 +3820,14 @@ const SiemReadinessPage: React.FC = () => {
               const healthStatus = selectedTab === 'data-health' ? dataHealthStatus : detectionHealthStatus;
               const isCritical = card.severity === 'Critical';
               return (
-                <div style={{ background: 'white', border: '1px solid #E3E8F2', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
+                <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiBorderColor)', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <EuiText style={{ fontSize: 16, fontWeight: 600 }}>{card.label}</EuiText>
                       <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: isCritical ? '#FDDDD8' : '#FDE9B5', color: isCritical ? '#A71627' : '#825803' }}>{card.severity}</span>
                     </div>
                     {card.totalRulesAffected != null && card.totalRulesAffected > 0 && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: 20, border: '1px solid #CAD3E2', fontSize: 12, fontWeight: 500, color: '#1D2A3E' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: 20, border: '1px solid var(--euiBorderColor)', fontSize: 12, fontWeight: 500, color: 'var(--euiTextColor)' }}>
                         <EuiIcon type="crosshairs" size="s" />{card.totalRulesAffected} total rules affected
                       </span>
                     )}
@@ -3839,7 +3839,7 @@ const SiemReadinessPage: React.FC = () => {
                         <div key={metric.label} style={{ flex: 1, padding: '6px 8px', borderRadius: 4 }}>
                           <div style={{ fontSize: 20, fontWeight: 700, color: card.numColor, lineHeight: '24px' }}>{metric.value}</div>
                           <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', fontWeight: isActive ? 600 : 400 }}>{metric.label}</EuiText>
-                          <EuiText size="s" style={{ color: '#1d2a3e', fontWeight: 600 }}>{(metric as any).sectionLabel ?? CATEGORY_LABELS[metric.pillar]}</EuiText>
+                          <EuiText size="s" style={{ color: 'var(--euiTextColor)', fontWeight: 600 }}>{(metric as any).sectionLabel ?? CATEGORY_LABELS[metric.pillar]}</EuiText>
                         </div>
                       );
                     })}
@@ -3849,7 +3849,7 @@ const SiemReadinessPage: React.FC = () => {
             })()}
 
             {/* Combined Actions + Data — single grey card, rows fill card */}
-            <div style={{ background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--euiColorBody)', border: '1px solid var(--euiBorderColor)', borderRadius: 8, overflow: 'hidden' }}>
 
               {/* Actions heading */}
               <div style={{ padding: '16px 24px 12px' }}>
@@ -3872,7 +3872,7 @@ const SiemReadinessPage: React.FC = () => {
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
-                            <div key={action.id} style={{ background: 'white', borderTop: '1px solid #E3E8F2', paddingBottom: isExpanded ? 12 : 0 }}>
+                            <div key={action.id} style={{ background: 'var(--euiColorEmptyShade)', borderTop: '1px solid var(--euiBorderColor)', paddingBottom: isExpanded ? 12 : 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                                   <EuiButtonIcon
@@ -3881,7 +3881,7 @@ const SiemReadinessPage: React.FC = () => {
                                     size="xs" color="text"
                                     onClick={() => toggleBExpanded(action.id)}
                                   />
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#516381', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>
                                     {CATEGORY_LABELS[action.pillar].toUpperCase()}
                                   </span>
                                   <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0', color: action.severity === 'critical' ? '#A71627' : '#836500', flexShrink: 0 }}>
@@ -3894,7 +3894,7 @@ const SiemReadinessPage: React.FC = () => {
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
                                   <EuiBadge color="hollow" iconType="crosshairs">{action.rulesAffected} rules affected</EuiBadge>
-                                  <div style={{ width: 1, height: 23, background: '#CAD3E2', flexShrink: 0 }} />
+                                  <div style={{ width: 1, height: 23, background: 'var(--euiBorderColor)', flexShrink: 0 }} />
                                   <EuiButtonEmpty size="xs" iconType={action.actionIcon ?? 'popout'} iconSide="left" color="primary" href={action.fixLink ? '#' : undefined}>
                                     Action here
                                   </EuiButtonEmpty>
@@ -3920,14 +3920,14 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <div style={{ margin: '0 24px 0', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+                                <div style={{ margin: '0 24px 0', background: 'var(--euiColorBody)', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '12px 16px' }}>
                                   <div style={{ marginBottom: 10 }}>
-                                    <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
-                                    <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
+                                    <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: 'var(--euiTextColor)', marginBottom: 4 }}>Issue summary:</div>
+                                    <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{action.description}</EuiText>
                                   </div>
                                   <div>
-                                    <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Action to remediate:</div>
-                                    <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
+                                    <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: 'var(--euiTextColor)', marginBottom: 4 }}>Action to remediate:</div>
+                                    <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{action.fixRecommendation}</EuiText>
                                   </div>
                                 </div>
                               )}
@@ -3997,7 +3997,7 @@ const SiemReadinessPage: React.FC = () => {
         </div>
       ) : (
       <div style={{
-        backgroundColor: '#F6F9FC',
+        backgroundColor: 'var(--euiColorBody)',
         minHeight: '100vh',
         marginTop: 48,
         marginLeft: 80,

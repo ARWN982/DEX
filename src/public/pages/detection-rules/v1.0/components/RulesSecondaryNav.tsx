@@ -16,7 +16,7 @@ const RulesSecondaryNav: React.FC = () => {
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
-    <div style={{ width: 240, padding: '8px 12px', borderRight: 'none', height: '100%' }}>
+    <div style={{ width: 240, padding: '8px 12px', borderRight: '1px solid var(--euiBorderColor)', height: '100%' }}>
 
       {/* Header */}
       <div style={{ padding: '4px', marginBottom: '12px' }}>
@@ -30,7 +30,7 @@ const RulesSecondaryNav: React.FC = () => {
       {/* Management section */}
       <div style={{ marginBottom: 2 }}>
         <div style={{ padding: '6px 4px', height: 32 }}>
-          <EuiText size="xs" style={{ fontSize: 12, color: '#516381', fontWeight: 500 }}>
+          <EuiText size="xs" style={{ fontSize: 12, color: 'var(--euiColorDarkShade)', fontWeight: 500 }}>
             Management
           </EuiText>
         </div>
@@ -63,7 +63,7 @@ const RulesSecondaryNav: React.FC = () => {
 
           <EuiListGroupItem
             label={
-              <span style={{ color: '#1d2a3e' }}>
+              <span style={{ color: 'var(--euiTextColor)' }}>
                 Benchmarks
               </span>
             }
@@ -73,7 +73,7 @@ const RulesSecondaryNav: React.FC = () => {
 
           <EuiListGroupItem
             label={
-              <span style={{ color: '#1d2a3e' }}>
+              <span style={{ color: 'var(--euiTextColor)' }}>
                 Shared exception lists
               </span>
             }
@@ -88,7 +88,7 @@ const RulesSecondaryNav: React.FC = () => {
       {/* Discover section */}
       <div style={{ marginBottom: 2 }}>
         <div style={{ padding: '6px 4px', height: 32 }}>
-          <EuiText size="xs" style={{ fontSize: 12, color: '#516381', fontWeight: 500 }}>
+          <EuiText size="xs" style={{ fontSize: 12, color: 'var(--euiColorDarkShade)', fontWeight: 500 }}>
             Discover
           </EuiText>
         </div>

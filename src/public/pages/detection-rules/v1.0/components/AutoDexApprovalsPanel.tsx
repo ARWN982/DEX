@@ -98,8 +98,8 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                 <div
                   key={log.id}
                   style={{
-                    background: 'white',
-                    border: '1px solid #CAD3E2',
+                    background: 'var(--euiColorEmptyShade)',
+                    border: '1px solid var(--euiBorderColor)',
                     padding: 12,
                     marginBottom: index < pagedItems.length - 1 ? -1 : 0,
                   }}
@@ -118,7 +118,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           />
                         </EuiFlexItem>
                         <EuiFlexItem grow={false} style={{ width: 150 }}>
-                          <EuiText size="xs" style={{ fontWeight: 600, color: '#516381', letterSpacing: '0.02em' }}>
+                          <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.02em' }}>
                             {getCategoryLabel(log.action)}
                           </EuiText>
                         </EuiFlexItem>
@@ -241,7 +241,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           {/* DIAGNOSIS */}
                           <div style={{ marginBottom: 16 }}>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                            <p style={{ margin: 0, fontSize: 13, color: '#343741', lineHeight: '20px' }}>{log.reasoning}</p>
+                            <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
                           </div>
 
                           {/* ACTIONS REQUIRED */}
@@ -250,7 +250,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                               <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
                               <ol style={{ margin: 0, paddingLeft: 20 }}>
                                 {log.manualFixSteps.map((step, idx) => (
-                                  <li key={idx} style={{ fontSize: 13, color: '#343741', lineHeight: '20px', marginBottom: 6 }}>{step}</li>
+                                  <li key={idx} style={{ fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px', marginBottom: 6 }}>{step}</li>
                                 ))}
                               </ol>
                             </div>
@@ -262,7 +262,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           <div style={{ marginBottom: 16 }}>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
                             {log.fullReasoning.diagnosis.map((para, idx) => (
-                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
+                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
                             ))}
                           </div>
 
@@ -270,14 +270,14 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           <div style={{ marginBottom: 16 }}>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
                             {log.fullReasoning.decision.map((para, idx) => (
-                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
+                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
                             ))}
                           </div>
 
                           {/* CHANGES SUGGESTED */}
                           <div>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes suggested</p>
-                            <div style={{ border: '1px solid #D3DAE6', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, overflow: 'hidden' }}>
                               {log.fullReasoning.changesMade.map((change, idx) => {
                                 const isLast = idx === log.fullReasoning!.changesMade.length - 1;
                                 const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
@@ -303,8 +303,8 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           </div>
                         </>
                       ) : (
-                        <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px' }}>
-                          <p style={{ margin: 0, fontSize: 13, color: '#343741' }}>{log.reasoning}</p>
+                        <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '8px 12px' }}>
+                          <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)' }}>{log.reasoning}</p>
                         </div>
                       )}
                     </div>

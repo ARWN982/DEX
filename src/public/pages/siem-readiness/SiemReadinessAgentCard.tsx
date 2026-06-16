@@ -56,7 +56,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
           <EuiIcon type="sparkles" size="s" style={{ color: '#7B61FF' }} />
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiText size="s" style={{ fontWeight: 600, color: '#1D2A3E' }}>SIEM readiness status</EuiText>
+          <EuiText size="s" style={{ fontWeight: 600, color: 'var(--euiTextColor)' }}>SIEM readiness status</EuiText>
         </EuiFlexItem>
       </EuiFlexGroup>
 
@@ -76,8 +76,8 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
       </div>
 
       <div style={{
-        background: '#F6F9FC',
-        border: '1px solid #E3E8F2',
+        background: 'var(--euiColorBody)',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         overflow: 'hidden',
       }}>
@@ -99,7 +99,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
                 <EuiFlexItem style={{ minWidth: 0 }}>
                   <EuiFlexGroup alignItems="center" gutterSize="xs" wrap responsive={false}>
                     <EuiFlexItem grow={false}>
-                      <EuiText size="xs" style={{ fontWeight: 600, color: '#516381', letterSpacing: '0.02em' }}>
+                      <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.02em' }}>
                         {action.pillar.toUpperCase()}
                       </EuiText>
                     </EuiFlexItem>
@@ -120,7 +120,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
                       </span>
                     </EuiFlexItem>
                   </EuiFlexGroup>
-                  <EuiText size="xs" style={{ fontWeight: 600, color: '#111C2C', marginTop: 4, lineHeight: '16px' }}>
+                  <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiTitleColor)', marginTop: 4, lineHeight: '16px' }}>
                     {action.title}
                   </EuiText>
                   <EuiText size="xs" color="subdued" style={{ marginTop: 2 }}>{action.timestamp}</EuiText>
@@ -133,7 +133,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
                       padding: '0 8px',
                       borderRadius: 20,
                       background: '#fff',
-                      border: '1px solid #CAD3E2',
+                      border: '1px solid var(--euiBorderColor)',
                       fontSize: 11,
                       color: '#07101F',
                     }}>
@@ -149,13 +149,13 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
       </div>
 
       <div>
-        <EuiText size="xs" style={{ fontWeight: 600, color: '#1D2A3E', marginBottom: 8 }}>Health status</EuiText>
+        <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiTextColor)', marginBottom: 8 }}>Health status</EuiText>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pillars.map((pillar) => {
             const pill = severityPill(pillar.severity);
             return (
               <div key={pillar.id} style={{
-                borderBottom: '1px solid #E3E8F2',
+                borderBottom: '1px solid var(--euiBorderColor)',
                 paddingBottom: 10,
               }}>
                 <EuiFlexGroup alignItems="flexStart" justifyContent="spaceBetween" responsive={false} gutterSize="s">
@@ -200,13 +200,13 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
       </div>
 
       <div>
-        <EuiText size="xs" style={{ fontWeight: 600, color: '#1D2A3E', marginBottom: 6 }}>Next steps you could take:</EuiText>
-        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, lineHeight: '18px', color: '#1D2A3E' }}>
+        <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiTextColor)', marginBottom: 6 }}>Next steps you could take:</EuiText>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, lineHeight: '18px', color: 'var(--euiTextColor)' }}>
           <li>Resolve data continuity issues such as silent streams, volume drops, and retention gaps.</li>
           <li>Install missing integrations and enable detection rules for integrations missing rules.</li>
           <li>Review ECS field compatibility and rule field issues flagged under Detection health.</li>
         </ul>
-        <EuiText size="xs" style={{ marginTop: 10, lineHeight: '18px', color: '#1D2A3E' }}>
+        <EuiText size="xs" style={{ marginTop: 10, lineHeight: '18px', color: 'var(--euiTextColor)' }}>
           I can help generate a query or dashboard to dig deeper if you&apos;d like.
         </EuiText>
       </div>

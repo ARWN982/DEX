@@ -262,7 +262,7 @@ const GapDonutChart: React.FC = () => {
               textAlign: 'center', pointerEvents: 'none',
             }}
           >
-            <div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2, color: '#343741' }}>
+            <div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2, color: 'var(--euiTextColor)' }}>
               {totalMins} mins
             </div>
             <div style={{ fontSize: 11, color: '#69707D', lineHeight: 1.3 }}>Total duration</div>
@@ -277,7 +277,7 @@ const GapDonutChart: React.FC = () => {
                   key={h}
                   style={{
                     textAlign: 'left', fontSize: 12, fontWeight: 700,
-                    color: '#343741', paddingBottom: 8,
+                    color: 'var(--euiTextColor)', paddingBottom: 8,
                     paddingRight: h === 'Gap fill status' ? 24 : 16,
                     borderBottom: '1px solid #D3DAE6',
                   }}
@@ -299,10 +299,10 @@ const GapDonutChart: React.FC = () => {
                   />
                   {seg.label}
                 </td>
-                <td style={{ padding: '7px 16px 7px 0', fontSize: 13, color: '#343741', borderBottom: '1px solid #EEF0F3' }}>
+                <td style={{ padding: '7px 16px 7px 0', fontSize: 13, color: 'var(--euiTextColor)', borderBottom: '1px solid #EEF0F3' }}>
                   {seg.rules}
                 </td>
-                <td style={{ padding: '7px 0', fontSize: 13, color: '#343741', borderBottom: '1px solid #EEF0F3' }}>
+                <td style={{ padding: '7px 0', fontSize: 13, color: 'var(--euiTextColor)', borderBottom: '1px solid #EEF0F3' }}>
                   {seg.mins} mins
                 </td>
               </tr>
@@ -327,7 +327,7 @@ const RuleAccordionCard: React.FC<{
     borderBottom: '1px solid #EEF0F3', whiteSpace: 'nowrap', verticalAlign: 'top',
   };
   const tdValue: React.CSSProperties = {
-    padding: '7px 0', fontSize: 13, color: '#343741',
+    padding: '7px 0', fontSize: 13, color: 'var(--euiTextColor)',
     borderBottom: '1px solid #EEF0F3', verticalAlign: 'top',
   };
 
@@ -352,7 +352,7 @@ const RuleAccordionCard: React.FC<{
           <path d="M4 2l6 5-6 5" fill="none" stroke="#69707D" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: '#343741', lineHeight: 1.3 }}>{rule.name}</div>
+          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: 1.3 }}>{rule.name}</div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
             <EuiBadge color={severityColor(rule.severity)}>{rule.severity}</EuiBadge>
             <EuiBadge color="hollow" style={{ fontFamily: 'monospace', fontSize: 11 }}>{rule.mitre}</EuiBadge>
@@ -375,9 +375,9 @@ const RuleAccordionCard: React.FC<{
           <EuiText size="xs" color="subdued" style={{ marginBottom: 4 }}>Query</EuiText>
           <div
             style={{
-              background: '#F7F9FF', border: '1px solid #D3DAE6', borderRadius: 4,
+              background: '#F7F9FF', border: '1px solid var(--euiBorderColor)', borderRadius: 4,
               padding: '10px 12px', fontFamily: 'monospace', fontSize: 12,
-              color: '#343741', whiteSpace: 'pre', overflowX: 'auto', marginBottom: 10,
+              color: 'var(--euiTextColor)', whiteSpace: 'pre', overflowX: 'auto', marginBottom: 10,
             }}
           >
             {rule.query}
@@ -454,7 +454,7 @@ const RuleAccordionCard: React.FC<{
             {rule.requiredFields.map((f) => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ color: '#69707D', fontSize: 12, fontFamily: 'monospace' }}>F</span>
-                <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#343741' }}>{f}</span>
+                <span style={{ fontSize: 13, fontFamily: 'monospace', color: 'var(--euiTextColor)' }}>{f}</span>
               </div>
             ))}
           </div>
@@ -717,7 +717,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
 
           <div style={{ flex: 1, padding: '16px 20px' }}>
             <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Approval rate</EuiText>
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--euiTextColor)', margin: '0 0 2px', lineHeight: 1.1 }}>
               91%
             </p>
             <EuiText size="xs" color="subdued">compared to previous</EuiText>
@@ -727,7 +727,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
 
           <div style={{ flex: 1, padding: '16px 20px' }}>
             <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Total tokens used</EuiText>
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#1d2a3e', margin: '0 0 2px', lineHeight: 1.1 }}>
+            <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--euiTextColor)', margin: '0 0 2px', lineHeight: 1.1 }}>
               1.24M
             </p>
             <EuiText size="xs" color="subdued">this month</EuiText>
@@ -747,7 +747,7 @@ const AutoDexTabView: React.FC<AutoDexTabViewProps> = ({ onOpenAIAssistant }) =>
       <EuiSpacer size="s" />
 
       {/* ── Completed activity log ── */}
-      <h2 style={{ fontSize: 16, fontWeight: 600, color: '#111C2C', margin: '8px 0 6px' }}>Completed activity log</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--euiTitleColor)', margin: '8px 0 6px' }}>Completed activity log</h2>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <EuiFieldSearch

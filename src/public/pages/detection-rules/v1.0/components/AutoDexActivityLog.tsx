@@ -71,7 +71,7 @@ const TopGroupAccordion: React.FC<{
             iconType="arrowDown"
             iconSide="right"
             color="text"
-            style={{ border: '1px solid #D3DAE6', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
+            style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
           >
             Take action
           </EuiButtonEmpty>
@@ -146,7 +146,7 @@ const LogGroupCard: React.FC<{
             iconType="arrowDown"
             iconSide="right"
             color="text"
-            style={{ border: '1px solid #D3DAE6', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
+            style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
           >
             Take action
           </EuiButtonEmpty>
@@ -364,8 +364,8 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         <div
           key={log.id}
           style={{
-            background: 'white',
-            border: '1px solid #CAD3E2',
+            background: 'var(--euiColorEmptyShade)',
+            border: '1px solid var(--euiBorderColor)',
             padding: 12,
             marginBottom: i < logsArr.length - 1 ? -1 : 0,
             borderRadius: isFirstRow && isLastRow ? 6 : isFirstRow ? '6px 6px 0 0' : isLastRow ? '0 0 6px 6px' : undefined,
@@ -384,7 +384,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   />
                 </EuiFlexItem>
                 <EuiFlexItem grow={false} style={{ width: 150 }}>
-                  <EuiText size="xs" style={{ fontWeight: 600, color: '#516381', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                  <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                     {log.action}
                   </EuiText>
                 </EuiFlexItem>
@@ -434,18 +434,18 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   <div style={{ marginBottom: 14 }}>
                     <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
                     {log.fullReasoning.diagnosis.map((para, idx) => (
-                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
+                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
                     ))}
                   </div>
                   <div style={{ marginBottom: 14 }}>
                     <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
                     {log.fullReasoning.decision.map((para, idx) => (
-                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: '#343741', lineHeight: '20px' }}>{para}</p>
+                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
                     ))}
                   </div>
                   <div>
                     <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes made</p>
-                    <div style={{ border: '1px solid #D3DAE6', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, overflow: 'hidden' }}>
                       {log.fullReasoning.changesMade.map((change, idx) => {
                         const isLast = idx === log.fullReasoning!.changesMade.length - 1;
                         const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
@@ -471,7 +471,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   </div>
                 </>
               ) : (
-                <p style={{ margin: 0, fontSize: 13, color: '#343741', lineHeight: '20px' }}>{log.reasoning}</p>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
               )}
             </div>
           )}
@@ -489,9 +489,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
       <div
         key={log.id}
         style={{
-          background: 'white',
+          background: 'var(--euiColorEmptyShade)',
           borderLeft: `4px solid ${leftBorderColor}`,
-          border: '1px solid #D3DAE6',
+          border: '1px solid var(--euiBorderColor)',
           borderLeftWidth: 4,
           borderLeftColor: leftBorderColor,
           borderRadius: 4,
@@ -504,7 +504,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
           <EuiFlexItem>
             <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
               <EuiFlexItem grow={false}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#516381', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                   {log.action}
                 </span>
               </EuiFlexItem>
@@ -549,13 +549,13 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         </EuiFlexGroup>
 
         <div style={{ marginTop: 10 }}>
-          <div style={{ background: '#F6F9FC', border: '1px solid #d6c0ff', borderRadius: 4, padding: '8px 8px 8px 12px' }}>
+          <div style={{ background: 'var(--euiColorBody)', border: '1px solid #d6c0ff', borderRadius: 4, padding: '8px 8px 8px 12px' }}>
             <button type="button" onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}>
               <EuiIcon type={isReasoningOpen ? 'chevronSingleDown' : 'chevronSingleRight'} size="s" color="subdued" />
-              <EuiText size="s" style={{ fontWeight: 600, color: '#1d2a3e' }}>Reasoning</EuiText>
+              <EuiText size="s" style={{ fontWeight: 600, color: 'var(--euiTextColor)' }}>Reasoning</EuiText>
             </button>
-            <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '24px' }}>{log.reasoning}</EuiText>
+            <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
           </div>
         </div>
       </div>

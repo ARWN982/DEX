@@ -24,14 +24,14 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive = false, custom
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 32, height: 32, borderRadius: 4,
-          backgroundColor: isActive ? '#e6f1fa' : 'transparent',
+                  backgroundColor: isActive ? 'var(--euiColorPrimary)' : 'transparent',
         }}
       >
         {customIcon || <EuiIcon type={icon!} size="m" color={isActive ? 'primary' : 'text'} />}
       </div>
     </EuiFlexItem>
     <EuiFlexItem grow={false}>
-      <EuiText size="xs" textAlign="center" style={{ fontSize: 11, fontWeight: 500, lineHeight: '16px', color: '#1d2a3e' }}>
+      <EuiText size="xs" textAlign="center" style={{ fontSize: 11, fontWeight: 500, lineHeight: '16px', color: 'var(--euiTextColor)' }}>
         {label}
       </EuiText>
     </EuiFlexItem>
@@ -51,7 +51,7 @@ const SecuritySideNav: React.FC = () => {
     <div style={{
       width: 80, position: 'fixed', top: 48, left: 0, bottom: 0,
       paddingTop: 8, paddingBottom: 16,
-      backgroundColor: '#F6F9FC', zIndex: 999,
+      backgroundColor: 'var(--euiColorBody)', zIndex: 999,
     }}>
       <EuiFlexGroup
         direction="column" gutterSize="none" responsive={false}
