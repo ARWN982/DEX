@@ -102,13 +102,6 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                     border: '1px solid #CAD3E2',
                     padding: 12,
                     marginBottom: index < pagedItems.length - 1 ? -1 : 0,
-                    borderRadius: isFirstRow && isLastRow
-                      ? 6
-                      : isFirstRow
-                        ? '6px 6px 0 0'
-                        : isLastRow
-                          ? '0 0 6px 6px'
-                          : undefined,
                   }}
                   data-test-subj={`autodex-approvalItem-${log.id}`}
                 >

@@ -142,7 +142,7 @@ const AutoDexPage: React.FC = () => {
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>
