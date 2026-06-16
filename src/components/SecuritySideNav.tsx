@@ -51,7 +51,7 @@ const SecuritySideNav: React.FC = () => {
     <div style={{
       width: 80, position: 'fixed', top: 48, left: 0, bottom: 0,
       paddingTop: 8, paddingBottom: 16,
-      backgroundColor: 'var(--euiPageBackgroundColor)', zIndex: 999,
+      backgroundColor: '#F6F9FC', zIndex: 999,
     }}>
       <EuiFlexGroup
         direction="column" gutterSize="none" responsive={false}

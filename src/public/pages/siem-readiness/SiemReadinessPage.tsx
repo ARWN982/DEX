@@ -1068,7 +1068,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
   return (
     <div
       style={{
-        border: '1px solid var(--euiColorBorderBasePlain)',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         background: 'var(--euiColorEmptyShade)',
         overflow: 'hidden',
@@ -1093,7 +1093,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
           {totalRulesAffected !== null && totalRulesAffected > 0 && (
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px',
-              borderRadius: 20, border: '1px solid var(--euiColorBorderBasePlain)', fontSize: 12, fontWeight: 500, color: 'var(--euiTextColor)',
+              borderRadius: 20, border: '1px solid var(--euiBorderColor)', fontSize: 12, fontWeight: 500, color: 'var(--euiTextColor)',
             }}>
               <EuiIcon type="crosshairs" size="s" />
               {totalRulesAffected} total rules affected
@@ -1131,7 +1131,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
       {children && (
         <div
           style={{
-            background: 'var(--euiPageBackgroundColor)', padding: '8px 20px', borderTop: '1px solid var(--euiColorBorderBaseSubdued)',
+            background: '#F6F9FC', padding: '8px 20px', borderTop: '1px solid var(--euiBorderColor)',
             display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 6,
             userSelect: 'none',
           }}
@@ -1144,7 +1144,7 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
 
       {/* Expanded content */}
       {children && expanded && (
-        <div style={{ padding: '24px 20px', borderTop: '1px solid var(--euiColorBorderBaseSubdued)' }}>
+        <div style={{ padding: '24px 20px', borderTop: '1px solid var(--euiBorderColor)' }}>
           {children}
         </div>
       )}
@@ -1221,8 +1221,8 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
     <div
       data-test-subj="siemReadiness-actionsRequiredPanel"
       style={{
-        background: 'var(--euiPageBackgroundColor)',
-        border: '1px solid var(--euiColorBorderBasePlain)',
+        background: '#F6F9FC',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         padding: '16px 24px 16px',
         display: 'flex',
@@ -1284,7 +1284,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   key={action.id}
                   style={{
                     background: 'var(--euiColorEmptyShade)',
-                    border: '1px solid var(--euiColorBorderBasePlain)',
+                    border: '1px solid var(--euiBorderColor)',
                     padding: 12,
                     marginBottom: index < pagedActions.length - 1 ? -1 : 0,
                     borderRadius: isFirstRow && isLastRow ? 6 : isFirstRow ? '6px 6px 0 0' : isLastRow ? '0 0 6px 6px' : undefined,
@@ -1331,7 +1331,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                       <EuiBadge color="hollow" iconType="crosshairs">
                         {action.rulesAffected} rules affected
                       </EuiBadge>
-                      <div style={{ width: 1, height: 23, background: 'var(--euiColorBorderBasePlain)', flexShrink: 0 }} />
+                      <div style={{ width: 1, height: 23, background: 'var(--euiBorderColor)', flexShrink: 0 }} />
                       <EuiButtonEmpty
                         size="xs"
                         iconType={action.actionIcon ?? 'popout'}
@@ -1366,7 +1366,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   </div>
 
                   {isExpanded && (
-                    <div style={{ margin: '8px 12px 12px 12px', background: 'var(--euiPageBackgroundColor)', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, padding: '12px 16px' }}>
+                    <div style={{ margin: '8px 12px 12px 12px', background: '#F6F9FC', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '12px 16px' }}>
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: 'var(--euiTextColor)', marginBottom: 4 }}>Issue summary:</div>
                         <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{action.description}</EuiText>
@@ -1899,7 +1899,7 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
   return (
     <div
       style={{
-        border: '1px solid var(--euiColorBorderBasePlain)',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         overflow: 'hidden',
         height: '100%',
@@ -1940,7 +1940,7 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
                 height: 20,
                 padding: '0 8px',
                 borderRadius: 20,
-                border: '1px solid var(--euiColorBorderBasePlain)',
+                border: '1px solid var(--euiBorderColor)',
                 background: 'var(--euiColorEmptyShade)',
                 fontSize: 12,
                 fontWeight: 500,
@@ -3727,7 +3727,7 @@ const SiemReadinessPage: React.FC = () => {
 
       {siemView === 'b' ? (
         /* ── Option B layout — same outer shell as Option A ────────── */
-        <div style={{ backgroundColor: 'var(--euiPageBackgroundColor)', minHeight: '100vh', marginTop: 48, marginLeft: 80, paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
+        <div style={{ backgroundColor: '#F6F9FC', minHeight: '100vh', marginTop: 48, marginLeft: 80, paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}>
           <EuiFlexGroup gutterSize="s" responsive={false} alignItems="flexStart">
             {/* Secondary nav */}
             <EuiFlexItem grow={false} style={{ position: 'sticky', top: 56, alignSelf: 'flex-start', height: 'calc(100vh - 64px)' }}>
@@ -3820,14 +3820,14 @@ const SiemReadinessPage: React.FC = () => {
               const healthStatus = selectedTab === 'data-health' ? dataHealthStatus : detectionHealthStatus;
               const isCritical = card.severity === 'Critical';
               return (
-                <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
+                <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiBorderColor)', borderRadius: 6, padding: '16px 20px', marginBottom: 24 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <EuiText style={{ fontSize: 16, fontWeight: 600 }}>{card.label}</EuiText>
                       <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: isCritical ? '#FDDDD8' : '#FDE9B5', color: isCritical ? '#A71627' : '#825803' }}>{card.severity}</span>
                     </div>
                     {card.totalRulesAffected != null && card.totalRulesAffected > 0 && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: 20, border: '1px solid var(--euiColorBorderBasePlain)', fontSize: 12, fontWeight: 500, color: 'var(--euiTextColor)' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 20, padding: '0 8px', borderRadius: 20, border: '1px solid var(--euiBorderColor)', fontSize: 12, fontWeight: 500, color: 'var(--euiTextColor)' }}>
                         <EuiIcon type="crosshairs" size="s" />{card.totalRulesAffected} total rules affected
                       </span>
                     )}
@@ -3849,7 +3849,7 @@ const SiemReadinessPage: React.FC = () => {
             })()}
 
             {/* Combined Actions + Data — single grey card, rows fill card */}
-            <div style={{ background: 'var(--euiPageBackgroundColor)', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ background: '#F6F9FC', border: '1px solid var(--euiBorderColor)', borderRadius: 8, overflow: 'hidden' }}>
 
               {/* Actions heading */}
               <div style={{ padding: '16px 24px 12px' }}>
@@ -3872,7 +3872,7 @@ const SiemReadinessPage: React.FC = () => {
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
-                            <div key={action.id} style={{ background: 'var(--euiColorEmptyShade)', borderTop: '1px solid var(--euiColorBorderBaseSubdued)', paddingBottom: isExpanded ? 12 : 0 }}>
+                            <div key={action.id} style={{ background: 'var(--euiColorEmptyShade)', borderTop: '1px solid var(--euiBorderColor)', paddingBottom: isExpanded ? 12 : 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                                   <EuiButtonIcon
@@ -3894,7 +3894,7 @@ const SiemReadinessPage: React.FC = () => {
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
                                   <EuiBadge color="hollow" iconType="crosshairs">{action.rulesAffected} rules affected</EuiBadge>
-                                  <div style={{ width: 1, height: 23, background: 'var(--euiColorBorderBasePlain)', flexShrink: 0 }} />
+                                  <div style={{ width: 1, height: 23, background: 'var(--euiBorderColor)', flexShrink: 0 }} />
                                   <EuiButtonEmpty size="xs" iconType={action.actionIcon ?? 'popout'} iconSide="left" color="primary" href={action.fixLink ? '#' : undefined}>
                                     Action here
                                   </EuiButtonEmpty>
@@ -3920,7 +3920,7 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <div style={{ margin: '0 24px 0', background: 'var(--euiPageBackgroundColor)', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, padding: '12px 16px' }}>
+                                <div style={{ margin: '0 24px 0', background: '#F6F9FC', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '12px 16px' }}>
                                   <div style={{ marginBottom: 10 }}>
                                     <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: 'var(--euiTextColor)', marginBottom: 4 }}>Issue summary:</div>
                                     <EuiText size="s" style={{ color: 'var(--euiTextColor)' }}>{action.description}</EuiText>
@@ -3997,7 +3997,7 @@ const SiemReadinessPage: React.FC = () => {
         </div>
       ) : (
       <div style={{
-        backgroundColor: 'var(--euiPageBackgroundColor)',
+        backgroundColor: '#F6F9FC',
         minHeight: '100vh',
         marginTop: 48,
         marginLeft: 80,

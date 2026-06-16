@@ -99,7 +99,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                   key={log.id}
                   style={{
                     background: 'var(--euiColorEmptyShade)',
-                    border: '1px solid var(--euiColorBorderBasePlain)',
+                    border: '1px solid var(--euiBorderColor)',
                     padding: 12,
                     marginBottom: index < pagedItems.length - 1 ? -1 : 0,
                   }}
@@ -277,7 +277,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           {/* CHANGES SUGGESTED */}
                           <div>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes suggested</p>
-                            <div style={{ border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, overflow: 'hidden' }}>
                               {log.fullReasoning.changesMade.map((change, idx) => {
                                 const isLast = idx === log.fullReasoning!.changesMade.length - 1;
                                 const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
@@ -303,7 +303,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           </div>
                         </>
                       ) : (
-                        <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, padding: '8px 12px' }}>
+                        <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '8px 12px' }}>
                           <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)' }}>{log.reasoning}</p>
                         </div>
                       )}

@@ -71,7 +71,7 @@ const TopGroupAccordion: React.FC<{
             iconType="arrowDown"
             iconSide="right"
             color="text"
-            style={{ border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
+            style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
           >
             Take action
           </EuiButtonEmpty>
@@ -146,7 +146,7 @@ const LogGroupCard: React.FC<{
             iconType="arrowDown"
             iconSide="right"
             color="text"
-            style={{ border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
+            style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, paddingLeft: 8, paddingRight: 4, height: 28 }}
           >
             Take action
           </EuiButtonEmpty>
@@ -365,7 +365,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
           key={log.id}
           style={{
             background: 'var(--euiColorEmptyShade)',
-            border: '1px solid var(--euiColorBorderBasePlain)',
+            border: '1px solid var(--euiBorderColor)',
             padding: 12,
             marginBottom: i < logsArr.length - 1 ? -1 : 0,
             borderRadius: isFirstRow && isLastRow ? 6 : isFirstRow ? '6px 6px 0 0' : isLastRow ? '0 0 6px 6px' : undefined,
@@ -445,7 +445,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   </div>
                   <div>
                     <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes made</p>
-                    <div style={{ border: '1px solid var(--euiColorBorderBasePlain)', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, overflow: 'hidden' }}>
                       {log.fullReasoning.changesMade.map((change, idx) => {
                         const isLast = idx === log.fullReasoning!.changesMade.length - 1;
                         const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
@@ -491,7 +491,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         style={{
           background: 'var(--euiColorEmptyShade)',
           borderLeft: `4px solid ${leftBorderColor}`,
-          border: '1px solid var(--euiColorBorderBasePlain)',
+          border: '1px solid var(--euiBorderColor)',
           borderLeftWidth: 4,
           borderLeftColor: leftBorderColor,
           borderRadius: 4,
@@ -549,7 +549,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         </EuiFlexGroup>
 
         <div style={{ marginTop: 10 }}>
-          <div style={{ background: 'var(--euiPageBackgroundColor)', border: '1px solid #d6c0ff', borderRadius: 4, padding: '8px 8px 8px 12px' }}>
+          <div style={{ background: '#F6F9FC', border: '1px solid #d6c0ff', borderRadius: 4, padding: '8px 8px 8px 12px' }}>
             <button type="button" onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}>
               <EuiIcon type={isReasoningOpen ? 'chevronSingleDown' : 'chevronSingleRight'} size="s" color="subdued" />

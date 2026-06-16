@@ -76,8 +76,8 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
       </div>
 
       <div style={{
-        background: 'var(--euiPageBackgroundColor)',
-        border: '1px solid var(--euiColorBorderBasePlain)',
+        background: '#F6F9FC',
+        border: '1px solid var(--euiBorderColor)',
         borderRadius: 6,
         overflow: 'hidden',
       }}>
@@ -133,7 +133,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
                       padding: '0 8px',
                       borderRadius: 20,
                       background: '#fff',
-                      border: '1px solid var(--euiColorBorderBasePlain)',
+                      border: '1px solid var(--euiBorderColor)',
                       fontSize: 11,
                       color: '#07101F',
                     }}>
@@ -155,7 +155,7 @@ export const SiemReadinessAgentCard: React.FC<SiemReadinessAgentCardProps> = ({ 
             const pill = severityPill(pillar.severity);
             return (
               <div key={pillar.id} style={{
-                borderBottom: '1px solid var(--euiColorBorderBaseSubdued)',
+                borderBottom: '1px solid var(--euiBorderColor)',
                 paddingBottom: 10,
               }}>
                 <EuiFlexGroup alignItems="flexStart" justifyContent="spaceBetween" responsive={false} gutterSize="s">
