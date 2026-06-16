@@ -1366,14 +1366,14 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   </div>
 
                   {isExpanded && (
-                    <div style={{ padding: '12px 16px 12px 44px', borderTop: '1px solid #F0F4F8' }}>
+                    <div style={{ margin: '0 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
                       <div style={{ marginBottom: 10 }}>
-                        <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Issue summary:</span>
-                        <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.description}</EuiText>
+                        <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
+                        <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
                       </div>
                       <div>
-                        <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Action to remediate:</span>
-                        <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
+                        <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Action to remediate:</div>
+                        <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
                       </div>
                     </div>
                   )}
@@ -3893,14 +3893,14 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <div style={{ padding: '12px 16px 12px 44px', borderTop: '1px solid #F0F4F8' }}>
+                                <div style={{ margin: '0 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
                                   <div style={{ marginBottom: 10 }}>
-                                    <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Issue summary:</span>
-                                    <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.description}</EuiText>
+                                    <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
+                                    <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
                                   </div>
                                   <div>
-                                    <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Action to remediate:</span>
-                                    <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
+                                    <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Action to remediate:</div>
+                                    <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
                                   </div>
                                 </div>
                               )}
