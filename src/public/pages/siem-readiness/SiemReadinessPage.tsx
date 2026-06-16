@@ -3868,7 +3868,7 @@ const SiemReadinessPage: React.FC = () => {
                     {paged.length === 0 ? (
                       <EuiText size="s" color="subdued" style={{ textAlign: 'center', padding: 24 }}>No actions for this tab.</EuiText>
                     ) : (
-                      <div style={{ margin: '0 16px 12px', border: '1px solid #CAD3E2', borderRadius: 4, overflow: 'hidden' }}>
+                      <div>
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
