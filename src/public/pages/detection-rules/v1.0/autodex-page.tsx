@@ -75,7 +75,7 @@ const AutoDexPage: React.FC = () => {
 
             {/* Main white panel */}
             <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }}>
-              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'var(--euiColorEmptyShade)', minHeight: '100%' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'white', minHeight: '100%' }}>
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
