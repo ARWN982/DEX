@@ -1366,7 +1366,7 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   </div>
 
                   {isExpanded && (
-                    <div style={{ margin: '0 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+                    <div style={{ margin: '8px 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
                         <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
@@ -3893,7 +3893,7 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <div style={{ margin: '0 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+                                <div style={{ margin: '8px 12px 12px 12px', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
                                   <div style={{ marginBottom: 10 }}>
                                     <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
                                     <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
