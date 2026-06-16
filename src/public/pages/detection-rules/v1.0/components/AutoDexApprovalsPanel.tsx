@@ -90,18 +90,15 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             {pagedItems.map((log, index) => {
               const isExpanded = expandedIds.has(log.id);
-              const isFirstRow = index === 0;
-              const isLastRow = index === pagedItems.length - 1;
               const rulesAffected = getRulesAffected(log);
 
               return (
                 <div
                   key={log.id}
                   style={{
-                    background: 'var(--euiColorEmptyShade)',
-                    border: '1px solid var(--euiBorderColor)',
+                    background: 'white',
+                    borderTop: index === 0 ? 'none' : '1px solid #E3E8F2',
                     padding: 12,
-                    marginBottom: index < pagedItems.length - 1 ? -1 : 0,
                   }}
                   data-test-subj={`autodex-approvalItem-${log.id}`}
                 >
