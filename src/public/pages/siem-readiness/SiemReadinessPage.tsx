@@ -1107,17 +1107,15 @@ const ExpandableHealthCard: React.FC<ExpandableHealthCardProps> = ({
             return (
               <div
                 key={metric.label}
-                onClick={() => onMetricClick?.(metric.pillar)}
                 style={{
                   display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0,
-                  cursor: 'pointer', padding: '6px 8px', borderRadius: 4,
-                  background: isActive ? '#E6F1FA' : 'transparent', transition: 'background 0.15s',
+                  padding: '6px 8px', borderRadius: 4,
                 }}
               >
                 <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
                   {metric.value}
                 </span>
-                <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', lineHeight: '20px', fontWeight: isActive ? 600 : 400 }}>
+                <EuiText size="s" style={{ color: '#516381', lineHeight: '20px' }}>
                   {metric.label}
                 </EuiText>
                 <EuiText size="s" style={{ color: '#1d2a3e', lineHeight: '20px', fontWeight: 600 }}>
@@ -1293,9 +1291,9 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   }}
                   data-test-subj={`siemReadiness-actionItem-${action.id}`}
                 >
-                  {/* Collapsed row — Figma 1938:31465 / 31485 / 31505 */}
+                  {/* Collapsed row */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                    {/* Left: expand + health badge + severity + title + timestamp */}
+                    {/* Left: expand + pillar label + severity + title + timestamp */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                       <EuiButtonIcon
                         iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
@@ -1304,6 +1302,10 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                         color="text"
                         onClick={() => toggleExpanded(action.id)}
                       />
+                      {/* Pillar label */}
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#516381', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        {CATEGORY_LABELS[action.pillar].toUpperCase()}
+                      </span>
                       {/* Severity badge */}
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px',
@@ -1314,19 +1316,11 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                       }}>
                         {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
                       </span>
-                      {/* Title: bold category + regular detail */}
+                      {/* Title — only show up to the colon, drop detail suffix */}
                       <EuiText size="s" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {(() => {
                           const colonIdx = action.title.indexOf(':');
-                          if (colonIdx > -1) {
-                            return (
-                              <>
-                                <strong>{action.title.slice(0, colonIdx)}:</strong>
-                                {' '}{action.title.slice(colonIdx + 1).trim()}
-                              </>
-                            );
-                          }
-                          return <strong>{action.title}</strong>;
+                          return <strong>{colonIdx > -1 ? action.title.slice(0, colonIdx) : action.title}</strong>;
                         })()}
                       </EuiText>
                       <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{timestamp}</EuiText>
@@ -1975,18 +1969,14 @@ const PillarSummaryCard: React.FC<PillarSummaryCardProps> = ({
             return (
               <div
                 key={metric.label}
-                onClick={() => onMetricClick?.(metric.pillar)}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 4,
                   flex: 1,
                   minWidth: 0,
-                  cursor: 'pointer',
                   padding: '6px 8px',
                   borderRadius: 4,
-                  background: isActive ? '#E6F1FA' : 'transparent',
-                  transition: 'background 0.15s',
                 }}
               >
                 <span style={{ fontSize: 20, fontWeight: 600, lineHeight: '24px', color: numColor }}>
@@ -3818,7 +3808,7 @@ const SiemReadinessPage: React.FC = () => {
                     {card.metrics.map(metric => {
                       const isActive = typeFilter === metric.pillar;
                       return (
-                        <div key={metric.label} onClick={() => handleMetricClick(metric.pillar)} style={{ flex: 1, padding: '6px 8px', borderRadius: 4, cursor: 'pointer', background: isActive ? '#E6F1FA' : 'transparent' }}>
+                        <div key={metric.label} style={{ flex: 1, padding: '6px 8px', borderRadius: 4 }}>
                           <div style={{ fontSize: 20, fontWeight: 700, color: card.numColor, lineHeight: '24px' }}>{metric.value}</div>
                           <EuiText size="s" style={{ color: isActive ? '#1750BA' : '#516381', fontWeight: isActive ? 600 : 400 }}>{metric.label}</EuiText>
                           <EuiText size="s" style={{ color: '#1d2a3e', fontWeight: 600 }}>{(metric as any).sectionLabel ?? CATEGORY_LABELS[metric.pillar]}</EuiText>
@@ -3851,7 +3841,6 @@ const SiemReadinessPage: React.FC = () => {
                       <div style={{ border: '1px solid #CAD3E2', borderRadius: 6, overflow: 'hidden' }}>
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
-                          const colonIdx = action.title.indexOf(':');
                           return (
                             <div key={action.id} style={{ background: 'white', padding: 12, borderBottom: idx < paged.length - 1 ? '1px solid #E3E8F2' : 'none' }}>
                               {/* Row */}
@@ -3863,11 +3852,14 @@ const SiemReadinessPage: React.FC = () => {
                                     size="xs" color="text"
                                     onClick={() => toggleBExpanded(action.id)}
                                   />
+                                  <span style={{ fontSize: 11, fontWeight: 600, color: '#516381', letterSpacing: '0.05em', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                                    {CATEGORY_LABELS[action.pillar].toUpperCase()}
+                                  </span>
                                   <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: action.severity === 'critical' ? '#FDDDD8' : '#FFF3D0', color: action.severity === 'critical' ? '#A71627' : '#836500', flexShrink: 0 }}>
                                     {action.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
                                   </span>
                                   <EuiText size="s" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {colonIdx > -1 ? <><strong>{action.title.slice(0, colonIdx)}:</strong>{' '}{action.title.slice(colonIdx + 1).trim()}</> : <strong>{action.title}</strong>}
+                                    <strong>{(() => { const c = action.title.indexOf(':'); return c > -1 ? action.title.slice(0, c) : action.title; })()}</strong>
                                   </EuiText>
                                   <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>Apr 15 @ 14:22:07</EuiText>
                                 </div>
