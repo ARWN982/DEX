@@ -3872,7 +3872,7 @@ const SiemReadinessPage: React.FC = () => {
                         {paged.map((action: ActionItem, idx: number) => {
                           const isExpanded = bExpandedIds.has(action.id);
                           return (
-                            <div key={action.id} style={{ background: 'white', borderTop: '1px solid #E3E8F2' }}>
+                            <div key={action.id} style={{ background: 'white', borderTop: '1px solid #E3E8F2', paddingBottom: isExpanded ? 12 : 0 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 24px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
                                   <EuiButtonIcon
@@ -3920,7 +3920,7 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <div style={{ margin: '0 24px 12px', background: 'white', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+                                <div style={{ margin: '0 24px 0', background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
                                   <div style={{ marginBottom: 10 }}>
                                     <div style={{ fontStyle: 'italic', fontWeight: 600, fontSize: 14, color: '#343741', marginBottom: 4 }}>Issue summary:</div>
                                     <EuiText size="s" style={{ color: '#1d2a3e' }}>{action.description}</EuiText>
