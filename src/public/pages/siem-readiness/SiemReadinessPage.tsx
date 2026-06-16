@@ -1366,14 +1366,16 @@ const ActionsRequiredPanel: React.FC<ActionsRequiredPanelProps> = ({
                   </div>
 
                   {isExpanded && (
-                    <>
-                      <EuiSpacer size="s" />
-                      <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
-                        <EuiText size="xs"><p style={{ margin: 0 }}><strong>Issue:</strong> {action.description}</p></EuiText>
-                        <EuiSpacer size="xs" />
-                        <EuiText size="xs"><p style={{ margin: 0 }}><strong>Action:</strong> {action.fixRecommendation}</p></EuiText>
+                    <div style={{ padding: '12px 16px 12px 44px', borderTop: '1px solid #F0F4F8' }}>
+                      <div style={{ marginBottom: 10 }}>
+                        <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Issue summary:</span>
+                        <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.description}</EuiText>
                       </div>
-                    </>
+                      <div>
+                        <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Action to remediate:</span>
+                        <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
@@ -3891,14 +3893,16 @@ const SiemReadinessPage: React.FC = () => {
                               </div>
                               {/* Expanded detail */}
                               {isExpanded && (
-                                <>
-                                  <EuiSpacer size="s" />
-                                  <div style={{ background: '#FFFFFF', border: '1px solid #D3DAE6', borderRadius: 4, padding: '8px 12px', marginLeft: 28 }}>
-                                    <EuiText size="xs"><p style={{ margin: 0 }}><strong>Issue:</strong> {action.description}</p></EuiText>
-                                    <EuiSpacer size="xs" />
-                                    <EuiText size="xs"><p style={{ margin: 0 }}><strong>Action:</strong> {action.fixRecommendation}</p></EuiText>
+                                <div style={{ padding: '12px 16px 12px 44px', borderTop: '1px solid #F0F4F8' }}>
+                                  <div style={{ marginBottom: 10 }}>
+                                    <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Issue summary:</span>
+                                    <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.description}</EuiText>
                                   </div>
-                                </>
+                                  <div>
+                                    <span style={{ color: '#1750BA', fontStyle: 'italic', fontWeight: 500, fontSize: 14 }}>Action to remediate:</span>
+                                    <EuiText size="s" style={{ marginTop: 2, color: '#1d2a3e' }}>{action.fixRecommendation}</EuiText>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           );
