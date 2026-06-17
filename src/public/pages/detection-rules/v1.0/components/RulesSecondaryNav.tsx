@@ -20,11 +20,7 @@ const RulesSecondaryNav: React.FC = () => {
 
       {/* Header */}
       <div style={{ padding: '4px', marginBottom: '12px' }}>
-        <EuiTitle size="s">
-          <h4 style={{ fontWeight: 600, fontSize: 16, color: '#111c2c', margin: 0 }}>
-            Rules
-          </h4>
-        </EuiTitle>
+        <span style={{ fontWeight: 600, fontSize: 13, color: '#111c2c' }}>Rules</span>
       </div>
 
       {/* Management section */}
@@ -40,45 +36,45 @@ const RulesSecondaryNav: React.FC = () => {
           {/* AutoDEX — above Detection rules */}
           <EuiListGroupItem
             label={
-              <span style={{ color: isActive('/autodex') ? '#1750BA' : '#1d2a3e' }}>
+              <span style={{ fontSize: 13, color: isActive('/autodex') ? '#1750BA' : '#1d2a3e' }}>
                 AutoDEX
               </span>
             }
             onClick={() => navigate('/autodex')}
             isActive={isActive('/autodex')}
-            style={{ height: 32, padding: '6px 4px', borderRadius: 4, fontSize: 13, fontWeight: 400 }}
+            style={{ height: 32, padding: '6px 4px', borderRadius: 4 }}
           />
 
           {/* Detection rules (SIEM) */}
           <EuiListGroupItem
             label={
-              <span style={{ color: isActive('/detection-rules') ? '#1750BA' : '#1d2a3e' }}>
+              <span style={{ fontSize: 13, color: isActive('/detection-rules') ? '#1750BA' : '#1d2a3e' }}>
                 Detection rules (SIEM)
               </span>
             }
             onClick={() => navigate('/detection-rules')}
             isActive={isActive('/detection-rules')}
-            style={{ height: 32, padding: '6px 4px', borderRadius: 4, fontSize: 13, fontWeight: 400 }}
+            style={{ height: 32, padding: '6px 4px', borderRadius: 4 }}
           />
 
           <EuiListGroupItem
             label={
-              <span style={{ color: 'var(--euiTextColor)' }}>
+              <span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>
                 Benchmarks
               </span>
             }
             onClick={() => {}}
-            style={{ height: 32, padding: '6px 4px', borderRadius: 4, fontSize: 13, fontWeight: 400 }}
+            style={{ height: 32, padding: '6px 4px', borderRadius: 4 }}
           />
 
           <EuiListGroupItem
             label={
-              <span style={{ color: 'var(--euiTextColor)' }}>
+              <span style={{ fontSize: 13, color: 'var(--euiTextColor)' }}>
                 Shared exception lists
               </span>
             }
             onClick={() => {}}
-            style={{ height: 32, padding: '6px 4px', borderRadius: 4, fontSize: 13, fontWeight: 400 }}
+            style={{ height: 32, padding: '6px 4px', borderRadius: 4 }}
           />
         </EuiListGroup>
       </div>
@@ -96,13 +92,13 @@ const RulesSecondaryNav: React.FC = () => {
         <EuiListGroup flush gutterSize="none">
           <EuiListGroupItem
             label={
-              <span style={{ color: isActive('/mitre-coverage') ? '#1750BA' : '#1d2a3e' }}>
+              <span style={{ fontSize: 13, color: isActive('/mitre-coverage') ? '#1750BA' : '#1d2a3e' }}>
                 MITRE ATT&amp;CK® Coverage
               </span>
             }
             onClick={() => navigate('/mitre-coverage')}
             isActive={isActive('/mitre-coverage')}
-            style={{ height: 32, padding: '6px 4px', borderRadius: 4, fontSize: 13, fontWeight: 400 }}
+            style={{ height: 32, padding: '6px 4px', borderRadius: 4 }}
           />
         </EuiListGroup>
       </div>
