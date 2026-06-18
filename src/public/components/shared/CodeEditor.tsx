@@ -899,7 +899,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       },
       ".cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]": {
         backgroundColor: euiTheme.colors.primary,
-        color: #FFFFFF,
+        color: '#FFFFFF',
       },
       // Hide any default CodeMirror completion icons
       ".cm-tooltip.cm-tooltip-autocomplete .cm-completionIcon": {
@@ -941,7 +941,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       },
       ".cm-tooltip.cm-tooltip-autocomplete li[aria-selected] .cm-completionDetail":
         {
-          color: #FFFFFF,
+          color: '#FFFFFF',
           opacity: 0.9,
           display: "block", // Show only when selected
         },
