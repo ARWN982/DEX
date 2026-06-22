@@ -490,9 +490,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
       <div
         key={log.id}
         style={{
-          background: 'var(--euiColorEmptyShade)',
+          background: 'white',
           borderLeft: `4px solid ${leftBorderColor}`,
-          border: '1px solid var(--euiBorderColor)',
+          border: '1px solid #CAD3E2',
           borderLeftWidth: 4,
           borderLeftColor: leftBorderColor,
           borderRadius: 4,
@@ -550,13 +550,55 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         </EuiFlexGroup>
 
         <div style={{ marginTop: 10 }}>
-          <div style={{ background: '#F6F9FC', border: '1px solid #d6c0ff', borderRadius: 4, padding: '8px 8px 8px 12px' }}>
+          <div style={{ background: 'white', border: '1px solid #CAD3E2', borderRadius: 4, padding: '8px 12px' }}>
             <button type="button" onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}>
-              <EuiIcon type={isReasoningOpen ? 'chevronSingleDown' : 'chevronSingleRight'} size="s" color="subdued" />
+              <EuiIcon type={isReasoningOpen ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" />
               <EuiText size="s" style={{ fontWeight: 600, color: 'var(--euiTextColor)' }}>Reasoning</EuiText>
             </button>
-            <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
+            {!isReasoningOpen && (
+              <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
+            )}
+            {isReasoningOpen && (
+              <div>
+                {log.fullReasoning ? (
+                  <>
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+                      {log.fullReasoning.diagnosis.map((para, idx) => (
+                        <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
+                      ))}
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
+                      {log.fullReasoning.decision.map((para, idx) => (
+                        <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
+                      ))}
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes made</p>
+                      <div style={{ border: '1px solid #CAD3E2', borderRadius: 4, overflow: 'hidden' }}>
+                        {log.fullReasoning.changesMade.map((change, idx) => {
+                          const isLast = idx === log.fullReasoning!.changesMade.length - 1;
+                          const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
+                          if (typeof change === 'string') {
+                            return <div key={idx} style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change}</div>;
+                          }
+                          return (
+                            <React.Fragment key={idx}>
+                              <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '6px 12px', borderBottom: '1px solid #D3DAE6' }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#BD271E' }}>-</span>{change.before}</div>
+                              <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}</div>
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
