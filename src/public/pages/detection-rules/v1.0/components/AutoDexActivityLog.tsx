@@ -491,14 +491,8 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         key={log.id}
         style={{
           background: 'white',
-          borderLeft: `4px solid ${leftBorderColor}`,
-          border: '1px solid #CAD3E2',
-          borderLeftWidth: 4,
-          borderLeftColor: leftBorderColor,
-          borderRadius: 4,
-          padding: '10px 10px 10px 16px',
-          marginBottom: 10,
-          boxShadow: '0 1px 2px rgba(43,57,79,0.06), 0 2px 4px rgba(43,57,79,0.05)',
+          borderTop: i === 0 ? 'none' : '1px solid #E3E8F2',
+          padding: 12,
         }}
       >
         <EuiFlexGroup alignItems="center" gutterSize="none" responsive={false}>
