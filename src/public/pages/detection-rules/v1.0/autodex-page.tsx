@@ -113,7 +113,7 @@ const AutoDexPage: React.FC = () => {
                     </div>
 
                     {/* Stat card */}
-                    <EuiPanel hasBorder hasShadow={false} paddingSize="none" style={{ marginBottom: 24 }}>
+                    <EuiPanel hasShadow={false} paddingSize="none" style={{ marginBottom: 24, border: '1px solid #CAD3E2', borderRadius: 6 }}>
                       <div style={{ display: 'flex' }}>
                         <div style={{ flex: 1, padding: '16px 20px' }}>
                           <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Actions required</EuiText>
@@ -122,9 +122,9 @@ const AutoDexPage: React.FC = () => {
                         </div>
                         {SUMMARY_DIVIDER}
                         <div style={{ flex: 1, padding: '16px 20px' }}>
-                          <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Activities today</EuiText>
-                          <p style={{ fontSize: 28, fontWeight: 700, color: '#017D73', margin: '0 0 2px', lineHeight: 1.1 }}>{totalCount}</p>
-                          <EuiBadge color="success" iconType="sortUp" style={{ fontSize: 11 }}>+2 from last week</EuiBadge>
+                          <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Minutes saved</EuiText>
+                          <p style={{ fontSize: 28, fontWeight: 700, color: '#017D73', margin: '0 0 2px', lineHeight: 1.1 }}>47 min</p>
+                          <EuiText size="xs" color="subdued">2% from last week</EuiText>
                         </div>
                         {SUMMARY_DIVIDER}
                         <div style={{ flex: 1, padding: '16px 20px' }}>

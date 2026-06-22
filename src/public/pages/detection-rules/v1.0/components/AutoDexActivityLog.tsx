@@ -428,7 +428,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
           {/* Expanded reasoning */}
           {isExpanded && (
-            <div style={{ marginTop: 10, marginLeft: 28 }}>
+            <div style={{ marginTop: 10, marginLeft: 28, background: 'white', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
               {log.fullReasoning ? (
                 <>
                   <div style={{ marginBottom: 14 }}>
@@ -475,6 +475,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
               )}
             </div>
           )}
+
         </div>
       );
     }
