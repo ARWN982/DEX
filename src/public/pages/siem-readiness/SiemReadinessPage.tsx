@@ -3770,7 +3770,7 @@ const SiemReadinessPage: React.FC = () => {
               <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 10, color: 'var(--euiTitleColor)', lineHeight: '52px' }}>SIEM readiness</h1>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
-                <span style={{ fontSize: 17, color: 'var(--euiTitleColor)' }}>
+                <span style={{ fontSize: 21, color: 'var(--euiTitleColor)' }}>
                   You have <strong>{allActionItems.filter(a => a.severity === 'critical').length}</strong> critical issues and{' '}
                   <strong>{allActionItems.filter(a => a.severity === 'warning').length}</strong> in warning state
                 </span>
