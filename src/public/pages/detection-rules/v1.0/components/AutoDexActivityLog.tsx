@@ -524,6 +524,9 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                 <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
+                <EuiBadge color="success" iconType="eye">Approved</EuiBadge>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
                 <EuiText size="s" color="subdued">{log.timestamp.replace(', 2026', '')}</EuiText>
               </EuiFlexItem>
             </EuiFlexGroup>
