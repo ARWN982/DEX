@@ -171,10 +171,10 @@ const AutoDexPage: React.FC = () => {
                       {/* Divider */}
                       <EuiHorizontalRule margin="none" />
 
-                      {/* Activity log — accordion */}
-                      <div style={{ padding: '16px 24px' }}>
+                      {/* Activity log — accordion header */}
+                      <div style={{ padding: '16px 24px 12px' }}>
                         <div
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: activityExpanded ? 16 : 0 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
                           onClick={() => setActivityExpanded(e => !e)}
                         >
                           <EuiButtonIcon
@@ -184,17 +184,18 @@ const AutoDexPage: React.FC = () => {
                           />
                           <EuiTitle size="s"><h2 style={{ margin: 0 }}>Activity log</h2></EuiTitle>
                         </div>
-
-                        {activityExpanded && (
-                          <>
-                            <AutoDexActivityLog
-                              onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
-                              requiresApproval={false}
-                              completedOnly
-                            />
-                          </>
-                        )}
                       </div>
+
+                      {/* Activity log rows — edge-to-edge, no wrapper padding */}
+                      {activityExpanded && (
+                        <div style={{ paddingBottom: 16 }}>
+                          <AutoDexActivityLog
+                            onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
+                            requiresApproval={false}
+                            completedOnly
+                          />
+                        </div>
+                      )}
 
                     </div>
 

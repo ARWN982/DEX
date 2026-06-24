@@ -495,35 +495,53 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
           paddingBottom: isReasoningOpen ? 12 : 0,
         }}
       >
-        {/* Row header — matches action row layout */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-            <EuiButtonIcon
-              iconType={isReasoningOpen ? 'arrowDown' : 'arrowRight'}
-              aria-label={isReasoningOpen ? 'Collapse' : 'Expand'}
-              size="xs"
-              color="text"
-              onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
-            />
-            <span style={{ fontSize: 11, fontWeight: 600, color: '#516381', letterSpacing: '0.05em', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {log.action.toUpperCase()}
-            </span>
-            {decision && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: decision === 'approved' ? '#D4EFDF' : '#F6F9FC', color: decision === 'approved' ? '#09724D' : '#516381', flexShrink: 0 }}>
-                {decision === 'approved' ? 'Approved' : 'Dismissed'}
-              </span>
-            )}
-            <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.rule}</EuiText>
-            <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{log.timestamp.replace(', 2026', '')}</EuiText>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <EuiButtonEmpty size="xs" iconType="popout" iconSide="left" color="primary"
-              onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}>
-              Take action
-            </EuiButtonEmpty>
-            <EuiButtonIcon size="xs" iconType="boxesVertical" color="primary" aria-label="More options" />
-          </div>
-        </div>
+        {/* Row header — identical structure to ApprovalsPanel */}
+        <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="none" style={{ padding: '8px 12px' }}>
+          <EuiFlexItem>
+            <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiButtonIcon
+                  iconType={isReasoningOpen ? 'arrowDown' : 'arrowRight'}
+                  aria-label={isReasoningOpen ? 'Collapse' : 'Expand'}
+                  size="s"
+                  color="text"
+                  onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
+                />
+              </EuiFlexItem>
+              <EuiFlexItem grow={false} style={{ width: 150 }}>
+                <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.02em' }}>
+                  {log.action.toUpperCase()}
+                </EuiText>
+              </EuiFlexItem>
+              {decision && (
+                <EuiFlexItem grow={false}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: decision === 'approved' ? '#D4EFDF' : '#F6F9FC', color: decision === 'approved' ? '#09724D' : '#516381' }}>
+                    {decision === 'approved' ? 'Approved' : 'Dismissed'}
+                  </span>
+                </EuiFlexItem>
+              )}
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiText size="s" color="subdued">{log.timestamp.replace(', 2026', '')}</EuiText>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+              <EuiFlexItem grow={false}>
+                <EuiButtonEmpty size="s" iconType="popout" iconSide="left" color="primary" flush="right"
+                  onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}>
+                  Take action
+                </EuiButtonEmpty>
+              </EuiFlexItem>
+              <EuiFlexItem grow={false}>
+                <EuiButtonIcon size="xs" iconType="boxesVertical" color="primary" aria-label="More options" />
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
+        </EuiFlexGroup>
 
         {/* Expanded reasoning */}
         {isReasoningOpen && (
@@ -660,7 +678,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
   return (
     <div>
-      {toolbar}
+      {toolbar && <div style={{ padding: '0 24px 12px' }}>{toolbar}</div>}
       {displayLogs.length === 0 ? (
         <EuiText textAlign="center" color="subdued">
           <p>No activities match your filters.</p>
@@ -668,7 +686,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
       ) : (
         <>
           {pagedLogs.map((log, i) => renderLog(log, i, pagedLogs, false, activityMode))}
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: 12, padding: '0 24px' }}>
             <EuiTablePagination
               activePage={pageIndex}
               pageCount={pageCount}
