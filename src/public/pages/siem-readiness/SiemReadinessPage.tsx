@@ -2054,8 +2054,6 @@ const DataCoveragePanel: React.FC<DataCoveragePanelProps> = ({ categories, cover
         </EuiFlexItem>
       </EuiFlexGroup>
 
-      <EuiSpacer size="s" />
-      <EuiCallOut color={calloutColor} size="s" title={<>Some log categories are missing integrations, limiting visibility and detection coverage. <EuiLink href="#">Learn more</EuiLink></>} />
       <EuiSpacer size="m" />
       <EuiText size="s" color="subdued" style={{ marginBottom: 12 }}>
         Expand each log category to view platform-level coverage. Click a rules count to see affected rules.
@@ -2552,14 +2550,6 @@ const CoverageTab: React.FC<CoverageTabProps> = ({
 
       <EuiSpacer size="s" />
 
-      {noRules ? (
-        <EuiCallOut color={calloutColor} size="s" title={<>No rules are currently enabled — get started by installing and enabling rules in <EuiLink href="#">detection rules</EuiLink>.</>} />
-      ) : (coverage?.uncoveredRules.length ?? 0) > 0 ? (
-        <EuiCallOut color={calloutColor} size="s" title={<>76 rules have missing or disabled integrations. <EuiLink href="#">Learn more</EuiLink></>} />
-      ) : (
-        <EuiCallOut color="success" size="s" title="All enabled rules have required integrations." />
-      )}
-
       <EuiSpacer size="m" />
 
       {/* Rule sub-tabs */}
@@ -2757,12 +2747,6 @@ const QualityTab: React.FC<QualityTabProps> = ({ categories, qualityResults, loa
             <EuiTitle size="s"><h3>Quality</h3></EuiTitle>
             <EuiSpacer size="s" />
 
-            {totalIncompatible > 0 && (
-              <>
-                <EuiCallOut color={calloutColor} size="s" title={<>{totalIncompatible} {totalIncompatible === 1 ? 'index has' : 'indices have'} ECS compatibility issues that may stop rules, dashboards, and correlations from working. <EuiLink href="#">Learn more</EuiLink></>} />
-                <EuiSpacer size="s" />
-              </>
-            )}
 
             {/* All indices checked bar */}
             <div style={{ background: '#E6F9F7', border: '1px solid #00BFB3', borderRadius: 4, padding: '6px 12px', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -2917,8 +2901,7 @@ const DetectionsTab: React.FC<DetectionsTabProps> = ({ ruleFieldIssues, loading,
         <EuiSpacer size="s" />
         {ruleFieldIssues.length > 0 ? (
           <>
-            <EuiCallOut color={calloutColor} iconType="inspect" size="s" title="Some enabled rules reference fields that are missing or incompatible — they may execute but will never match. Review and fix the issues below." />
-            <EuiSpacer size="m" />
+            <EuiSpacer size="s" />
             <EuiBasicTable
               items={ruleFieldIssues}
               tableLayout="auto"
@@ -3120,12 +3103,6 @@ const ContinuityTab: React.FC<ContinuityTabProps> = ({ pipelines, loading, actio
           See which data streams have stopped sending data, dropped in volume, or exceeded latency SLAs. Detection rules that depend on these streams may be running but not matching anything.
         </EuiText>
         <EuiSpacer size="m" />
-        {callout && (
-          <>
-            <EuiCallOut title={`${callout.title} ${callout.body}`} color={callout.color} iconType={callout.iconType} size="s" />
-            <EuiSpacer size="m" />
-          </>
-        )}
 
       <EuiBasicTable
         items={findings}
@@ -3274,12 +3251,6 @@ const RetentionTab: React.FC<RetentionTabProps> = ({ categories, retentionItems,
         Compare log category retention against compliance benchmarks. Categories below benchmark may lack the historical data your rules and investigations need.
       </EuiText>
       <EuiSpacer size="m" />
-      {belowCount > 0 && (
-        <>
-          <EuiCallOut color="warning" iconType="clock" size="s" title={<>Some log categories are not meeting retention benchmarks — review and update your ILM policies in <EuiLink href="#">Stack Management</EuiLink>.</>} />
-          <EuiSpacer size="m" />
-        </>
-      )}
       {belowCount === 0 ? (
         <EuiEmptyPrompt
           iconType="checkInCircleFilled"
@@ -3417,7 +3388,7 @@ const SiemReadinessPage: React.FC = () => {
   const [bPageIdx, setBPageIdx] = useState(0);
   const [bOpenPopoverId, setBOpenPopoverId] = useState<string | null>(null);
   const [bExpandedIds, setBExpandedIds] = useState<Set<string>>(new Set());
-  const [bWatchingExpanded, setBWatchingExpanded] = useState(true);
+  const [bWatchingExpanded, setBWatchingExpanded] = useState(false);
   const [bDotsOpen, setBDotsOpen] = useState(false);
   const toggleBExpanded = (id: string) => setBExpandedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const [assistantSession, setAssistantSession] = useState(0);
@@ -3767,7 +3738,7 @@ const SiemReadinessPage: React.FC = () => {
 
             {/* Page title + status */}
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <h1 style={{ fontSize: 43, fontWeight: 700, marginBottom: 10, color: 'var(--euiTitleColor)', lineHeight: '52px' }}>SIEM readiness</h1>
+                      <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, color: 'var(--euiTitleColor)', lineHeight: '40px' }}>SIEM readiness</h1>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
                 <span style={{ fontSize: 21, color: 'var(--euiTitleColor)' }}>
@@ -3853,7 +3824,7 @@ const SiemReadinessPage: React.FC = () => {
 
               {/* Actions heading */}
               <div style={{ padding: '16px 24px 12px' }}>
-                <EuiTitle size="s"><h2>Actions</h2></EuiTitle>
+                <EuiTitle size="xs"><h2>Actions</h2></EuiTitle>
               </div>
               {(() => {
                 const allowedPillars = selectedTab === 'data-health' ? DATA_HEALTH_PILLARS : DETECTION_HEALTH_PILLARS;
@@ -3964,7 +3935,7 @@ const SiemReadinessPage: React.FC = () => {
                     aria-label={bWatchingExpanded ? 'Collapse Watching' : 'Expand Watching'}
                     size="xs" color="text"
                   />
-                  <EuiTitle size="s"><h2 style={{ margin: 0 }}>Watching</h2></EuiTitle>
+                  <EuiTitle size="xs"><h2 style={{ margin: 0 }}>Watching</h2></EuiTitle>
                 </div>
                 {bWatchingExpanded && (
                   selectedTab === 'data-health' ? (
