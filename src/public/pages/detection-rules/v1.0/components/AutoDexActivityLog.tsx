@@ -492,109 +492,80 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         style={{
           background: 'white',
           borderTop: i === 0 ? 'none' : '1px solid #E3E8F2',
-          padding: 12,
+          paddingBottom: isReasoningOpen ? 12 : 0,
         }}
       >
-        <EuiFlexGroup alignItems="center" gutterSize="none" responsive={false}>
-          <EuiFlexItem>
-            <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} wrap>
-              <EuiFlexItem grow={false}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                  {log.action}
-                </span>
-              </EuiFlexItem>
-              {pendingApproval && (
-                <EuiFlexItem grow={false}>
-                  <EuiBadge color="warning">Approvals needed</EuiBadge>
-                </EuiFlexItem>
-              )}
-              {isSuggestion && (
-                <EuiFlexItem grow={false}>
-                  <EuiBadge style={{ background: '#ffcda1', color: '#5a2d0c', borderColor: '#ffcda1' }}>Suggestion</EuiBadge>
-                </EuiFlexItem>
-              )}
-              {decision && (
-                <EuiFlexItem grow={false}>
-                  <EuiBadge color={decision === 'approved' ? 'success' : 'default'} iconType={decision === 'approved' ? 'checkInCircleFilled' : 'minusInCircle'}>
-                    {decision === 'approved' ? 'Approved' : 'Dismissed'}
-                  </EuiBadge>
-                </EuiFlexItem>
-              )}
-              <EuiFlexItem grow={false}>
-                <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiText size="s" color="subdued">{log.timestamp}</EuiText>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
-              <EuiFlexItem grow={false}>
-                <EuiButtonEmpty size="xs" iconType="chevronSingleDown" iconSide="right" color="primary"
-                  onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}>
-                  Take action
-                </EuiButtonEmpty>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiButtonIcon size="xs" iconType="boxesHorizontal" color="primary" aria-label="More options" />
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-
-        <div style={{ marginTop: 10 }}>
-          <div style={{ background: 'white', border: '1px solid #CAD3E2', borderRadius: 4, padding: '8px 12px' }}>
-            <button type="button" onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 6 }}>
-              <EuiIcon type={isReasoningOpen ? 'arrowDown' : 'arrowRight'} size="s" color="subdued" />
-              <EuiText size="s" style={{ fontWeight: 600, color: 'var(--euiTextColor)' }}>Reasoning</EuiText>
-            </button>
-            {!isReasoningOpen && (
-              <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
+        {/* Row header — matches action row layout */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+            <EuiButtonIcon
+              iconType={isReasoningOpen ? 'arrowDown' : 'arrowRight'}
+              aria-label={isReasoningOpen ? 'Collapse' : 'Expand'}
+              size="xs"
+              color="text"
+              onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
+            />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#516381', letterSpacing: '0.05em', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {log.action.toUpperCase()}
+            </span>
+            {decision && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', height: 20, padding: '0 8px', borderRadius: 20, fontSize: 12, fontWeight: 500, background: decision === 'approved' ? '#D4EFDF' : '#F6F9FC', color: decision === 'approved' ? '#09724D' : '#516381', flexShrink: 0 }}>
+                {decision === 'approved' ? 'Approved' : 'Dismissed'}
+              </span>
             )}
-            {isReasoningOpen && (
-              <div>
-                {log.fullReasoning ? (
-                  <>
-                    <div style={{ marginBottom: 14 }}>
-                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                      {log.fullReasoning.diagnosis.map((para, idx) => (
-                        <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
-                      ))}
-                    </div>
-                    <div style={{ marginBottom: 14 }}>
-                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
-                      {log.fullReasoning.decision.map((para, idx) => (
-                        <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
-                      ))}
-                    </div>
-                    <div>
-                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes made</p>
-                      <div style={{ border: '1px solid #CAD3E2', borderRadius: 4, overflow: 'hidden' }}>
-                        {log.fullReasoning.changesMade.map((change, idx) => {
-                          const isLast = idx === log.fullReasoning!.changesMade.length - 1;
-                          const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
-                          if (typeof change === 'string') {
-                            return <div key={idx} style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change}</div>;
-                          }
-                          return (
-                            <React.Fragment key={idx}>
-                              <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '6px 12px', borderBottom: '1px solid #D3DAE6' }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#BD271E' }}>-</span>{change.before}</div>
-                              <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}</div>
-                            </React.Fragment>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
-                )}
-              </div>
-            )}
+            <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.rule}</EuiText>
+            <EuiText size="s" color="subdued" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>{log.timestamp.replace(', 2026', '')}</EuiText>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <EuiButtonEmpty size="xs" iconType="popout" iconSide="left" color="primary"
+              onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}>
+              Take action
+            </EuiButtonEmpty>
+            <EuiButtonIcon size="xs" iconType="boxesVertical" color="primary" aria-label="More options" />
           </div>
         </div>
+
+        {/* Expanded reasoning */}
+        {isReasoningOpen && (
+          <div style={{ margin: '0 12px 0', background: 'white', border: '1px solid #CAD3E2', borderRadius: 4, padding: '12px 16px' }}>
+            {log.fullReasoning ? (
+              <>
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+                  {log.fullReasoning.diagnosis.map((para, idx) => (
+                    <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
+                  ))}
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
+                  {log.fullReasoning.decision.map((para, idx) => (
+                    <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
+                  ))}
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes made</p>
+                  <div style={{ border: '1px solid #CAD3E2', borderRadius: 4, overflow: 'hidden' }}>
+                    {log.fullReasoning.changesMade.map((change, idx) => {
+                      const isLast = idx === log.fullReasoning!.changesMade.length - 1;
+                      const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
+                      if (typeof change === 'string') {
+                        return <div key={idx} style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change}</div>;
+                      }
+                      return (
+                        <React.Fragment key={idx}>
+                          <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '6px 12px', borderBottom: '1px solid #D3DAE6' }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#BD271E' }}>-</span>{change.before}</div>
+                          <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}><span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}</div>
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <EuiText size="s" style={{ color: 'var(--euiTextColor)', lineHeight: '24px' }}>{log.reasoning}</EuiText>
+            )}
+          </div>
+        )}
       </div>
     );
   };
