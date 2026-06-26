@@ -136,7 +136,7 @@ const AddElasticRulesPage: React.FC = () => {
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px 40px 40px' }}>
 
                 {/* ── Hero section ── */}
-                <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
+                <div style={{ maxWidth: 1265, margin: '0 auto', textAlign: 'center' }}>
                   <EuiTitle size="l">
                     <h1 style={{ marginBottom: 8, color: '#111C2C' }}>Add Elastic Rules</h1>
                   </EuiTitle>
@@ -239,6 +239,7 @@ const AddElasticRulesPage: React.FC = () => {
                 </div>
 
                 {/* ── Elastic Rules accordion ── */}
+                <div style={{ maxWidth: 1265, margin: '0 auto' }}>
                 <div style={{
                   border: '1px solid #CAD3E2',
                   borderRadius: 10,
@@ -329,6 +330,7 @@ const AddElasticRulesPage: React.FC = () => {
                       />
                     </div>
                   )}
+                </div>
                 </div>
 
               </div>
