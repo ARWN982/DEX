@@ -70,9 +70,35 @@ const suggestionCards = [
   },
 ];
 
+// ── Simulated AI responses keyed by keyword ──────────────────────────────────
+const AI_RESPONSES: Record<string, { title: string; summary: string; rules: { name: string; desc: string; severity: string }[] }> = {
+  okta: {
+    title: 'Here are your Okta rules that we recommend.',
+    summary: 'Based on your Okta integration data, these rules cover the most common identity-based threats including credential attacks, session hijacking, and privilege escalation through your Okta environment.',
+    rules: [
+      { name: 'Okta User Account Locked Out', desc: 'Detects repeated authentication failures that result in an account lockout — a common indicator of brute-force or credential stuffing attacks.', severity: 'medium' },
+      { name: 'Okta MFA Bypass Attempt', desc: 'Identifies attempts to bypass multi-factor authentication, which may indicate a sophisticated attacker with valid credentials.', severity: 'high' },
+      { name: 'Okta Admin Role Assigned', desc: 'Fires whenever an administrative role is granted to a user. Unexpected privilege escalation is a key lateral movement signal.', severity: 'high' },
+      { name: 'Okta User Session Impersonation', desc: 'Detects impersonation events where a support or admin user takes over another user\'s session, which may indicate insider threat or compromised admin account.', severity: 'critical' },
+      { name: 'Okta Policy Rule Modified', desc: 'Tracks changes to Okta authentication policies. Weakening MFA or IP restriction policies is a common attacker persistence technique.', severity: 'medium' },
+    ],
+  },
+  default: {
+    title: 'Here are the rules we recommend for your query.',
+    summary: 'Based on your description, AutoDEX has identified the following detection rules as most relevant to your environment and threat model.',
+    rules: [
+      { name: 'Unusual Network Destination Domain Name', desc: 'Detects connections to rare or newly registered domains, often used in C2 communication.', severity: 'medium' },
+      { name: 'Potential Credential Access via LSASS Memory', desc: 'Identifies attempts to read LSASS memory, a key technique for credential harvesting.', severity: 'high' },
+      { name: 'Lateral Movement via Remote Services', desc: 'Flags remote service usage patterns consistent with lateral movement across the environment.', severity: 'high' },
+    ],
+  },
+};
+
 const AddElasticRulesPage: React.FC = () => {
   const navigate = useNavigate();
   const [chatValue, setChatValue] = useState('');
+  const [aiResponse, setAiResponse] = useState<typeof AI_RESPONSES['okta'] | null>(null);
+  const [responseExpanded, setResponseExpanded] = useState(true);
   const [rulesExpanded, setRulesExpanded] = useState(false);
   const [isInstallConfigureOpen, setIsInstallConfigureOpen] = useState(false);
   const [isInstallLogsOpen, setIsInstallLogsOpen] = useState(false);
@@ -82,6 +108,15 @@ const AddElasticRulesPage: React.FC = () => {
   const [installLevel, setInstallLevel] = useState(2);
 
   const rules = (parsedRulesData as any[]).slice(0, 40);
+
+  const handleChatSubmit = () => {
+    if (!chatValue.trim()) return;
+    const q = chatValue.toLowerCase();
+    const response = q.includes('okta') ? AI_RESPONSES.okta : AI_RESPONSES.default;
+    setAiResponse(response);
+    setResponseExpanded(true);
+    setChatValue('');
+  };
 
   const getSeverityColor = (s: string) => {
     switch (s?.toLowerCase()) {
@@ -144,7 +179,64 @@ const AddElasticRulesPage: React.FC = () => {
                     Describe what you want to detect and AutoDEX will find the right rules for your environment.
                   </EuiText>
 
-                  {/* Suggestion cards */}
+                  {/* AI Response card — shown after a query is submitted */}
+                  {aiResponse ? (
+                    <div style={{ marginBottom: 24, textAlign: 'left' }}>
+                      <div style={{
+                        border: '2px solid #7B61FF',
+                        borderRadius: 16,
+                        background: 'white',
+                        overflow: 'hidden',
+                        boxShadow: '0 0 0 4px rgba(123,97,255,0.08)',
+                      }}>
+                        {/* Response header */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1C1C1C', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+                              <EuiIcon type="sparkles" size="s" color="white" />
+                            </div>
+                            <div style={{ fontSize: 18, fontWeight: 700, color: '#111C2C', lineHeight: '26px' }}>
+                              {aiResponse.title}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setAiResponse(null)}
+                            style={{ background: 'none', border: '1px solid #CAD3E2', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: 12 }}
+                          >
+                            <EuiIcon type="cross" size="s" color="subdued" />
+                          </button>
+                        </div>
+
+                        {/* Response body */}
+                        {responseExpanded && (
+                          <div style={{ padding: '0 24px 20px', borderTop: '1px solid #F0F4F8' }}>
+                            <p style={{ margin: '16px 0 16px', fontSize: 13, color: '#516381', lineHeight: '20px' }}>{aiResponse.summary}</p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {aiResponse.rules.map((rule, idx) => (
+                                <div key={rule.name} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 14px', background: '#F6F9FC', borderRadius: 8, border: '1px solid #E3E8F2' }}>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: '#516381', paddingTop: 2, minWidth: 16 }}>{idx + 1}</span>
+                                  <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111C2C', marginBottom: 3 }}>{rule.name}</div>
+                                    <div style={{ fontSize: 12, color: '#516381', lineHeight: '18px' }}>{rule.desc}</div>
+                                  </div>
+                                  <EuiHealth color={rule.severity === 'critical' ? 'danger' : rule.severity === 'high' ? 'danger' : 'warning'} style={{ flexShrink: 0, paddingTop: 2 }}>
+                                    {rule.severity}
+                                  </EuiHealth>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                              <EuiButton fill size="s" iconType="plusInCircle">Install these rules</EuiButton>
+                              <EuiButtonEmpty size="s" iconType="expand" iconSide="right" color="primary" onClick={() => setRulesExpanded(true)}>
+                                View all rules
+                              </EuiButtonEmpty>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                  /* Suggestion cards — shown when no active query */
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 32, textAlign: 'left' }}>
                     {suggestionCards.map((card) => (
                       <EuiPanel key={card.title} hasBorder hasShadow={false} paddingSize="m" style={{ borderRadius: 10, display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
@@ -175,6 +267,7 @@ const AddElasticRulesPage: React.FC = () => {
                       </EuiPanel>
                     ))}
                   </div>
+                  )}
 
                   {/* ── Gradient-bordered chat input ── */}
                   <div style={{
@@ -190,9 +283,10 @@ const AddElasticRulesPage: React.FC = () => {
                     }}>
                       <textarea
                         className="elastic-chat-input"
-                        placeholder="What do you want to detect? e.g. 'lateral movement via RDP on Windows endpoints'"
+                        placeholder="What do you want to detect? e.g. 'What rules do I need for Okta?'"
                         value={chatValue}
                         onChange={e => setChatValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
                         rows={3}
                         style={{
                           width: '100%',
@@ -221,6 +315,7 @@ const AddElasticRulesPage: React.FC = () => {
                           ))}
                         </div>
                         <button
+                          onClick={handleChatSubmit}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             width: 36, height: 36, borderRadius: 10,
