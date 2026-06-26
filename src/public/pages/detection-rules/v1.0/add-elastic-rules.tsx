@@ -111,24 +111,27 @@ const AddElasticRulesPage: React.FC = () => {
 
   const rules = (parsedRulesData as any[]).slice(0, 40);
 
+  const [submittedQuery, setSubmittedQuery] = useState('');
+
   const handleChatSubmit = () => {
     if (!chatValue.trim()) return;
     const q = chatValue.toLowerCase();
     const response = q.includes('okta') ? AI_RESPONSES.okta : AI_RESPONSES.default;
+    setSubmittedQuery(chatValue);
     setAiResponse(null);
     setIsThinking(true);
     setThinkingStep(0);
     setChatValue('');
-    // Animate through reasoning steps
-    setTimeout(() => setThinkingStep(1), 600);
-    setTimeout(() => setThinkingStep(2), 1400);
-    setTimeout(() => setThinkingStep(3), 2200);
-    // Show response after full delay
+    // Cycle through reasoning messages over 5s
+    setTimeout(() => setThinkingStep(1), 800);
+    setTimeout(() => setThinkingStep(2), 2000);
+    setTimeout(() => setThinkingStep(3), 3400);
     setTimeout(() => {
       setIsThinking(false);
+      setSubmittedQuery('');
       setAiResponse(response);
       setResponseExpanded(true);
-    }, 3000);
+    }, 5000);
   };
 
   const getSeverityColor = (s: string) => {
@@ -200,43 +203,32 @@ const AddElasticRulesPage: React.FC = () => {
                     Describe what you want to detect and AutoDEX will find the right rules for your environment.
                   </EuiText>
 
-                  {/* Thinking / reasoning card */}
+                  {/* Thinking / reasoning — minimal inline style matching screenshots */}
                   {isThinking && (
                     <div style={{ marginBottom: 24, textAlign: 'left' }}>
-                      <div style={{ border: '2px solid #7B61FF', borderRadius: 16, background: 'white', padding: '20px 24px', boxShadow: '0 0 0 4px rgba(123,97,255,0.08)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-                          <div style={{ display: 'flex', gap: 5 }}>
-                            <span className="thinking-dot" />
-                            <span className="thinking-dot" />
-                            <span className="thinking-dot" />
-                          </div>
-                          <span style={{ fontSize: 15, fontWeight: 600, color: '#7B61FF' }}>Reasoning…</span>
+                      {/* User query bubble — right aligned */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
+                        <div style={{ background: '#EEF3FF', borderRadius: '16px 16px 4px 16px', padding: '10px 16px', fontSize: 14, color: '#1D2A3E', maxWidth: '60%' }}>
+                          {submittedQuery}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          {[
-                            { label: 'Scanning your integration and data sources', step: 1 },
-                            { label: 'Matching threat patterns to your environment', step: 2 },
-                            { label: 'Selecting and ranking relevant rules', step: 3 },
-                          ].map(({ label, step }) => {
-                            const isDone   = thinkingStep > step;
-                            const isActive = thinkingStep === step;
-                            return (
-                              <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDone ? '#E6F9F0' : isActive ? '#F0EDFF' : '#F6F9FC', border: `1px solid ${isDone ? '#00875A' : isActive ? '#7B61FF' : '#CAD3E2'}`, flexShrink: 0 }}>
-                                  {isDone
-                                    ? <EuiIcon type="check" size="s" color="#00875A" />
-                                    : isActive
-                                      ? <EuiIcon type="dot" size="s" color="#7B61FF" />
-                                      : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#CAD3E2', display: 'block' }} />
-                                  }
-                                </div>
-                                <span className={isDone ? 'thinking-step-done' : isActive ? 'thinking-step-active' : 'thinking-step-pending'} style={{ fontSize: 13 }}>
-                                  {label}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
+                      </div>
+                      {/* Reasoning lines — only show up to current step */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        {[
+                          { step: 0, text: 'Thinking...' },
+                          { step: 1, text: 'Deciding what to do next...' },
+                          { step: 2, text: `Loading the detection rule skill to understand how to find and work with detection rules....`, arrow: true },
+                          { step: 3, text: `Searching Security Labs for ${submittedQuery.toLowerCase().includes('okta') ? 'Okta-related' : 'relevant'} threat intelligence and detection guidance....`, arrow: true },
+                        ]
+                          .filter(item => thinkingStep >= item.step)
+                          .map(item => (
+                            <div key={item.step} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <EuiIcon type="logoElastic" size="m" />
+                              <span style={{ fontSize: 14, color: '#343741', lineHeight: '20px' }}>{item.text}</span>
+                              {item.arrow && <EuiIcon type="arrowRight" size="s" color="subdued" />}
+                            </div>
+                          ))
+                        }
                       </div>
                     </div>
                   )}
@@ -331,6 +323,42 @@ const AddElasticRulesPage: React.FC = () => {
                   </div>
                   )}
 
+                  {/* ── Elastic Rules accordion — between cards and chat ── */}
+                  <div style={{ border: '1px solid #CAD3E2', borderRadius: 10, overflow: 'hidden', marginBottom: 24, textAlign: 'left' }}>
+                    <div
+                      onClick={() => setRulesExpanded(e => !e)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', cursor: 'pointer', background: 'white', borderBottom: rulesExpanded ? '1px solid #CAD3E2' : 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <EuiIcon type="logoElastic" size="l" />
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111C2C' }}>Elastic Rules</div>
+                          <div style={{ fontSize: 12, color: '#516381' }}>{rules.length} prebuilt rules available</div>
+                        </div>
+                      </div>
+                      <EuiIcon type={rulesExpanded ? 'arrowUp' : 'arrowDown'} size="m" color="subdued" />
+                    </div>
+                    {rulesExpanded && (
+                      <div style={{ padding: '0 0 8px' }}>
+                        <EuiBasicTable
+                          items={(parsedRulesData as any[]).slice(0, 20)}
+                          columns={[
+                            { field: 'name', name: 'Rule name', render: (name: string) => <EuiLink href="#"><EuiText size="s" style={{ fontWeight: 600 }}>{name}</EuiText></EuiLink> },
+                            { name: '', width: '110px', render: () => <div style={{ display: 'flex', gap: 4 }}><EuiBadge color="hollow" iconType="visGauge" iconSide="left">0/2</EuiBadge><EuiBadge color="hollow" iconType="tag" iconSide="left">4</EuiBadge></div> },
+                            { field: 'riskScore', name: 'Risk score', width: '100px', render: (score: number) => <EuiText size="s">{score || 47}</EuiText> },
+                            { field: 'severity', name: 'Severity', width: '110px', render: (severity: string) => <EuiHealth color={getSeverityColor(severity)}>{severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : 'High'}</EuiHealth> },
+                            { name: '', width: '80px', render: () => <EuiButtonEmpty size="xs" color="primary" flush="right">Install</EuiButtonEmpty> },
+                            { name: '', width: '40px', render: () => <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" /> },
+                          ]}
+                          itemId="id"
+                          selection={{ selectable: () => true, onSelectionChange: () => {} }}
+                          pagination={{ pageIndex: 0, pageSize: 20, totalItemCount: rules.length, pageSizeOptions: [10, 20, 50], showPerPageOptions: true }}
+                          onChange={() => {}}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   {/* ── Gradient-bordered chat input ── */}
                   <div style={{
                     background: 'linear-gradient(135deg, #00BFB3 0%, #0B64DD 50%, #7B61FF 100%)',
@@ -395,100 +423,6 @@ const AddElasticRulesPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ── Elastic Rules accordion ── */}
-                <div style={{ maxWidth: 1265, margin: '0 auto' }}>
-                <div style={{
-                  border: '1px solid #CAD3E2',
-                  borderRadius: 10,
-                  overflow: 'hidden',
-                }}>
-                  {/* Accordion header */}
-                  <div
-                    onClick={() => setRulesExpanded(e => !e)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 20px', cursor: 'pointer',
-                      background: 'white',
-                      borderBottom: rulesExpanded ? '1px solid #CAD3E2' : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <EuiIcon type="logoElastic" size="l" />
-                      <div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: '#111C2C' }}>Elastic Rules</div>
-                        <div style={{ fontSize: 12, color: '#516381' }}>{rules.length} prebuilt rules available</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <EuiButton fill size="s" iconType="plusInCircle" onClick={(e: React.MouseEvent) => { e.stopPropagation(); }}>
-                        Install all
-                      </EuiButton>
-                      <EuiIcon
-                        type={rulesExpanded ? 'arrowUp' : 'arrowDown'}
-                        size="m" color="subdued"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Accordion body */}
-                  {rulesExpanded && (
-                    <div style={{ padding: '0 0 8px' }}>
-                      <EuiBasicTable
-                        items={(parsedRulesData as any[]).slice(0, 20)}
-                        columns={[
-                          {
-                            field: 'name',
-                            name: 'Rule name',
-                            render: (name: string) => (
-                              <EuiLink href="#"><EuiText size="s" style={{ fontWeight: 600 }}>{name}</EuiText></EuiLink>
-                            ),
-                          },
-                          {
-                            name: '',
-                            width: '110px',
-                            render: () => (
-                              <div style={{ display: 'flex', gap: 4 }}>
-                                <EuiBadge color="hollow" iconType="visGauge" iconSide="left">0/2</EuiBadge>
-                                <EuiBadge color="hollow" iconType="tag" iconSide="left">4</EuiBadge>
-                              </div>
-                            ),
-                          },
-                          {
-                            field: 'riskScore',
-                            name: 'Risk score',
-                            width: '100px',
-                            render: (score: number) => <EuiText size="s">{score || 47}</EuiText>,
-                          },
-                          {
-                            field: 'severity',
-                            name: 'Severity',
-                            width: '110px',
-                            render: (severity: string) => (
-                              <EuiHealth color={getSeverityColor(severity)}>
-                                {severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : 'High'}
-                              </EuiHealth>
-                            ),
-                          },
-                          {
-                            name: '',
-                            width: '80px',
-                            render: () => <EuiButtonEmpty size="xs" color="primary" flush="right">Install</EuiButtonEmpty>,
-                          },
-                          {
-                            name: '',
-                            width: '40px',
-                            render: () => <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" />,
-                          },
-                        ]}
-                        itemId="id"
-                        selection={{ selectable: () => true, onSelectionChange: () => {} }}
-                        pagination={{ pageIndex: 0, pageSize: 20, totalItemCount: rules.length, pageSizeOptions: [10, 20, 50], showPerPageOptions: true }}
-                        onChange={() => {}}
-                      />
-                    </div>
-                  )}
-                </div>
-                </div>
 
               </div>
             </EuiPanel>
