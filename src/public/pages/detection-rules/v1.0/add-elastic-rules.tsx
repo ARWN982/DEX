@@ -323,42 +323,6 @@ const AddElasticRulesPage: React.FC = () => {
                   </div>
                   )}
 
-                  {/* ── Elastic Rules accordion — between cards and chat ── */}
-                  <div style={{ border: '1px solid #CAD3E2', borderRadius: 10, overflow: 'hidden', marginBottom: 24, textAlign: 'left' }}>
-                    <div
-                      onClick={() => setRulesExpanded(e => !e)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', cursor: 'pointer', background: 'white', borderBottom: rulesExpanded ? '1px solid #CAD3E2' : 'none' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <EuiIcon type="logoElastic" size="l" />
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111C2C' }}>Elastic Rules</div>
-                          <div style={{ fontSize: 12, color: '#516381' }}>{rules.length} prebuilt rules available</div>
-                        </div>
-                      </div>
-                      <EuiIcon type={rulesExpanded ? 'arrowUp' : 'arrowDown'} size="m" color="subdued" />
-                    </div>
-                    {rulesExpanded && (
-                      <div style={{ padding: '0 0 8px' }}>
-                        <EuiBasicTable
-                          items={(parsedRulesData as any[]).slice(0, 20)}
-                          columns={[
-                            { field: 'name', name: 'Rule name', render: (name: string) => <EuiLink href="#"><EuiText size="s" style={{ fontWeight: 600 }}>{name}</EuiText></EuiLink> },
-                            { name: '', width: '110px', render: () => <div style={{ display: 'flex', gap: 4 }}><EuiBadge color="hollow" iconType="visGauge" iconSide="left">0/2</EuiBadge><EuiBadge color="hollow" iconType="tag" iconSide="left">4</EuiBadge></div> },
-                            { field: 'riskScore', name: 'Risk score', width: '100px', render: (score: number) => <EuiText size="s">{score || 47}</EuiText> },
-                            { field: 'severity', name: 'Severity', width: '110px', render: (severity: string) => <EuiHealth color={getSeverityColor(severity)}>{severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : 'High'}</EuiHealth> },
-                            { name: '', width: '80px', render: () => <EuiButtonEmpty size="xs" color="primary" flush="right">Install</EuiButtonEmpty> },
-                            { name: '', width: '40px', render: () => <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" /> },
-                          ]}
-                          itemId="id"
-                          selection={{ selectable: () => true, onSelectionChange: () => {} }}
-                          pagination={{ pageIndex: 0, pageSize: 20, totalItemCount: rules.length, pageSizeOptions: [10, 20, 50], showPerPageOptions: true }}
-                          onChange={() => {}}
-                        />
-                      </div>
-                    )}
-                  </div>
-
                   {/* ── Gradient-bordered chat input ── */}
                   <div style={{
                     background: 'linear-gradient(135deg, #00BFB3 0%, #0B64DD 50%, #7B61FF 100%)',
@@ -421,6 +385,43 @@ const AddElasticRulesPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* ── Elastic Rules accordion — below chat ── */}
+                  <div style={{ border: '1px solid #CAD3E2', borderRadius: 10, overflow: 'hidden', marginBottom: 24, textAlign: 'left' }}>
+                    <div
+                      onClick={() => setRulesExpanded(e => !e)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', cursor: 'pointer', background: 'white', borderBottom: rulesExpanded ? '1px solid #CAD3E2' : 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <EuiIcon type="logoElastic" size="l" />
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: '#111C2C' }}>Elastic Rules</div>
+                          <div style={{ fontSize: 12, color: '#516381' }}>{rules.length} prebuilt rules available</div>
+                        </div>
+                      </div>
+                      <EuiIcon type={rulesExpanded ? 'arrowUp' : 'arrowDown'} size="m" color="subdued" />
+                    </div>
+                    {rulesExpanded && (
+                      <div style={{ padding: '0 0 8px' }}>
+                        <EuiBasicTable
+                          items={(parsedRulesData as any[]).slice(0, 20)}
+                          columns={[
+                            { field: 'name', name: 'Rule name', render: (name: string) => <EuiLink href="#"><EuiText size="s" style={{ fontWeight: 600 }}>{name}</EuiText></EuiLink> },
+                            { name: '', width: '110px', render: () => <div style={{ display: 'flex', gap: 4 }}><EuiBadge color="hollow" iconType="visGauge" iconSide="left">0/2</EuiBadge><EuiBadge color="hollow" iconType="tag" iconSide="left">4</EuiBadge></div> },
+                            { field: 'riskScore', name: 'Risk score', width: '100px', render: (score: number) => <EuiText size="s">{score || 47}</EuiText> },
+                            { field: 'severity', name: 'Severity', width: '110px', render: (severity: string) => <EuiHealth color={getSeverityColor(severity)}>{severity ? severity.charAt(0).toUpperCase() + severity.slice(1) : 'High'}</EuiHealth> },
+                            { name: '', width: '80px', render: () => <EuiButtonEmpty size="xs" color="primary" flush="right">Install</EuiButtonEmpty> },
+                            { name: '', width: '40px', render: () => <EuiButtonIcon iconType="boxesHorizontal" aria-label="More" size="xs" color="text" /> },
+                          ]}
+                          itemId="id"
+                          selection={{ selectable: () => true, onSelectionChange: () => {} }}
+                          pagination={{ pageIndex: 0, pageSize: 20, totalItemCount: rules.length, pageSizeOptions: [10, 20, 50], showPerPageOptions: true }}
+                          onChange={() => {}}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                 </div>
 
 
