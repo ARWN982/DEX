@@ -106,6 +106,8 @@ const AddElasticRulesPage: React.FC = () => {
   const [installAutoUpdate, setInstallAutoUpdate] = useState(false);
   const [installThreshold, setInstallThreshold] = useState('medium');
   const [installLevel, setInstallLevel] = useState(2);
+  const [isThinking, setIsThinking] = useState(false);
+  const [thinkingStep, setThinkingStep] = useState(0);
 
   const rules = (parsedRulesData as any[]).slice(0, 40);
 
@@ -113,9 +115,20 @@ const AddElasticRulesPage: React.FC = () => {
     if (!chatValue.trim()) return;
     const q = chatValue.toLowerCase();
     const response = q.includes('okta') ? AI_RESPONSES.okta : AI_RESPONSES.default;
-    setAiResponse(response);
-    setResponseExpanded(true);
+    setAiResponse(null);
+    setIsThinking(true);
+    setThinkingStep(0);
     setChatValue('');
+    // Animate through reasoning steps
+    setTimeout(() => setThinkingStep(1), 600);
+    setTimeout(() => setThinkingStep(2), 1400);
+    setTimeout(() => setThinkingStep(3), 2200);
+    // Show response after full delay
+    setTimeout(() => {
+      setIsThinking(false);
+      setAiResponse(response);
+      setResponseExpanded(true);
+    }, 3000);
   };
 
   const getSeverityColor = (s: string) => {
@@ -133,6 +146,14 @@ const AddElasticRulesPage: React.FC = () => {
       <style>{`
         .elastic-chat-input:focus { outline: none; }
         .elastic-rules-accordion { transition: all 0.25s ease; }
+        @keyframes thinking-pulse { 0%,100% { opacity: 0.4; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
+        @keyframes thinking-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+        .thinking-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #7B61FF; animation: thinking-pulse 1.2s ease-in-out infinite; }
+        .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+        .thinking-step-done { color: #00875A; }
+        .thinking-step-active { color: #7B61FF; font-weight: 600; }
+        .thinking-step-pending { color: #98A2B3; }
       `}</style>
 
       <SecurityHeader onMenuClick={() => {}} />
@@ -179,6 +200,47 @@ const AddElasticRulesPage: React.FC = () => {
                     Describe what you want to detect and AutoDEX will find the right rules for your environment.
                   </EuiText>
 
+                  {/* Thinking / reasoning card */}
+                  {isThinking && (
+                    <div style={{ marginBottom: 24, textAlign: 'left' }}>
+                      <div style={{ border: '2px solid #7B61FF', borderRadius: 16, background: 'white', padding: '20px 24px', boxShadow: '0 0 0 4px rgba(123,97,255,0.08)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                          <div style={{ display: 'flex', gap: 5 }}>
+                            <span className="thinking-dot" />
+                            <span className="thinking-dot" />
+                            <span className="thinking-dot" />
+                          </div>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: '#7B61FF' }}>Reasoning…</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {[
+                            { label: 'Scanning your integration and data sources', step: 1 },
+                            { label: 'Matching threat patterns to your environment', step: 2 },
+                            { label: 'Selecting and ranking relevant rules', step: 3 },
+                          ].map(({ label, step }) => {
+                            const isDone   = thinkingStep > step;
+                            const isActive = thinkingStep === step;
+                            return (
+                              <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{ width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isDone ? '#E6F9F0' : isActive ? '#F0EDFF' : '#F6F9FC', border: `1px solid ${isDone ? '#00875A' : isActive ? '#7B61FF' : '#CAD3E2'}`, flexShrink: 0 }}>
+                                  {isDone
+                                    ? <EuiIcon type="check" size="s" color="#00875A" />
+                                    : isActive
+                                      ? <EuiIcon type="dot" size="s" color="#7B61FF" />
+                                      : <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#CAD3E2', display: 'block' }} />
+                                  }
+                                </div>
+                                <span className={isDone ? 'thinking-step-done' : isActive ? 'thinking-step-active' : 'thinking-step-pending'} style={{ fontSize: 13 }}>
+                                  {label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* AI Response card — shown after a query is submitted */}
                   {aiResponse ? (
                     <div style={{ marginBottom: 24, textAlign: 'left' }}>
@@ -192,8 +254,8 @@ const AddElasticRulesPage: React.FC = () => {
                         {/* Response header */}
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1C1C1C', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
-                              <EuiIcon type="sparkles" size="s" color="white" />
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#D4F5EC', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <EuiIcon type="sparkles" size="s" color="#00875A" />
                             </div>
                             <div style={{ fontSize: 18, fontWeight: 700, color: '#111C2C', lineHeight: '26px' }}>
                               {aiResponse.title}
