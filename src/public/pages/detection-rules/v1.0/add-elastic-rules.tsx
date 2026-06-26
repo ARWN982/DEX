@@ -268,7 +268,7 @@ const AddElasticRulesPage: React.FC = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <EuiButton fill size="s" iconType="plusInCircle" onClick={e => { e.stopPropagation(); }}>
+                      <EuiButton fill size="s" iconType="plusInCircle" onClick={(e: React.MouseEvent) => { e.stopPropagation(); }}>
                         Install all
                       </EuiButton>
                       <EuiIcon
