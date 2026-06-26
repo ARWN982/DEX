@@ -136,7 +136,7 @@ const AddElasticRulesPage: React.FC = () => {
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px 40px 40px' }}>
 
                 {/* ── Hero section ── */}
-                <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
+                <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
                   <EuiTitle size="l">
                     <h1 style={{ marginBottom: 8, color: '#111C2C' }}>Add Elastic Rules</h1>
                   </EuiTitle>
@@ -250,18 +250,12 @@ const AddElasticRulesPage: React.FC = () => {
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '14px 20px', cursor: 'pointer',
-                      background: 'linear-gradient(135deg, rgba(0,191,179,0.08) 0%, rgba(11,100,221,0.08) 50%, rgba(123,97,255,0.08) 100%)',
+                      background: 'white',
                       borderBottom: rulesExpanded ? '1px solid #CAD3E2' : 'none',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: 'linear-gradient(135deg, #00BFB3, #0B64DD)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <EuiIcon type="logoElastic" size="s" color="white" />
-                      </div>
+                      <EuiIcon type="logoElastic" size="l" />
                       <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: '#111C2C' }}>Elastic Rules</div>
                         <div style={{ fontSize: 12, color: '#516381' }}>{rules.length} prebuilt rules available</div>
