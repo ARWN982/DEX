@@ -125,12 +125,12 @@ const AutoDexPage: React.FC = () => {
                             <linearGradient id="adx-c" x1="-5.91" x2="88.379" y1="-38.938" y2="-23.331" gradientUnits="userSpaceOnUse"><stop stopColor="#75ACFF"/><stop offset=".995" stopColor="#CFB4FF"/></linearGradient>
                           </defs>
                         </svg>
-                        <h1 style={{ fontSize: 43, fontWeight: 700, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '52px' }}>AutoDEX</h1>
+                        <h1 style={{ fontSize: 37, fontWeight: 500, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '46px' }}>AutoDEX</h1>
                       </div>
                     </div>
 
                     {/* Stat card */}
-                    <EuiPanel hasShadow={false} paddingSize="none" style={{ marginBottom: 24, border: '1px solid #CAD3E2', borderRadius: 6 }}>
+                    <EuiPanel hasShadow={false} paddingSize="none" style={{ marginBottom: 24, border: '1px solid #CAD3E2', borderRadius: 6, boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
                       <div style={{ display: 'flex' }}>
                         <div style={{ flex: 1, padding: '16px 20px' }}>
                           <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Actions required</EuiText>
@@ -159,7 +159,7 @@ const AutoDexPage: React.FC = () => {
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: 'linear-gradient(180deg, #EEF1F7 0%, #F6F9FC 50%, #EEF1F7 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: 'linear-gradient(180deg, #EEF1F7 0%, #F6F9FC 50%, #EEF1F7 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>
