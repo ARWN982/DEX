@@ -79,32 +79,11 @@ const AutoDexPage: React.FC = () => {
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
-                    {/* Top-right buttons */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                      <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
-                        Configuration
-                      </EuiButtonEmpty>
-                      <EuiButtonEmpty size="s" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
-                        View all cases&nbsp;<EuiBadge color="hollow">0</EuiBadge>
-                      </EuiButtonEmpty>
-                      <EuiPopover
-                        isOpen={dotsOpen}
-                        closePopover={() => setDotsOpen(false)}
-                        panelPaddingSize="s"
-                        anchorPosition="downRight"
-                        button={<EuiButtonIcon iconType="boxesVertical" color="text" size="s" aria-label="More options" onClick={() => setDotsOpen(o => !o)} />}
-                      >
-                        <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
-                          <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => setDotsOpen(false)} />
-                          <EuiListGroupItem iconType="exportAction" label="Export" size="s" onClick={() => setDotsOpen(false)} />
-                        </EuiListGroup>
-                      </EuiPopover>
-                    </div>
-
-                    {/* Title + status */}
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="43" height="43" viewBox="0 0 89 89" fill="none" style={{ flexShrink: 0 }} className="autodex-sparkles">
+                    {/* Top bar: title left, buttons right */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+                      {/* Title left */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 89 89" fill="none" style={{ flexShrink: 0 }} className="autodex-sparkles">
                           <style>{`
                             @keyframes sparkle-shift {
                               0%   { filter: hue-rotate(0deg) brightness(1) saturate(1); }
@@ -126,6 +105,27 @@ const AutoDexPage: React.FC = () => {
                           </defs>
                         </svg>
                         <h1 style={{ fontSize: 31, fontWeight: 500, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '40px' }}>AutoDEX</h1>
+                      </div>
+                      {/* Buttons right */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
+                        Configuration
+                      </EuiButtonEmpty>
+                      <EuiButtonEmpty size="s" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
+                        View all cases&nbsp;<EuiBadge color="hollow">0</EuiBadge>
+                      </EuiButtonEmpty>
+                      <EuiPopover
+                        isOpen={dotsOpen}
+                        closePopover={() => setDotsOpen(false)}
+                        panelPaddingSize="s"
+                        anchorPosition="downRight"
+                        button={<EuiButtonIcon iconType="boxesVertical" color="text" size="s" aria-label="More options" onClick={() => setDotsOpen(o => !o)} />}
+                      >
+                        <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                          <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => setDotsOpen(false)} />
+                          <EuiListGroupItem iconType="exportAction" label="Export" size="s" onClick={() => setDotsOpen(false)} />
+                        </EuiListGroup>
+                      </EuiPopover>
                       </div>
                     </div>
 
