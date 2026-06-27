@@ -210,18 +210,16 @@ const AutoDexConfigureModal: React.FC<AutoDexConfigureModalProps> = ({ isOpen, o
           .autodex-modal .euiRangeTick { font-size: 11px; }
         `}</style>
 
-        <EuiModal onClose={onClose} style={{ width: 1080, maxWidth: '95vw' }} className="autodex-modal">
-          {/* Header */}
-          <div style={{ padding: '16px 24px', borderBottom: '1px solid #E3E8F2', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <EuiIcon type="sparkles" color="#7B61FF" />
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#111C2C' }}>AutoDEX Configuration</span>
-          </div>
+        <EuiModal onClose={onClose} style={{ width: 1080, maxWidth: '95vw', overflow: 'hidden', position: 'relative' }} className="autodex-modal">
+
+          {/* Full-height grey strip behind left nav */}
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 220, background: '#F6F9FC', borderRight: '1px solid #E3E8F2', zIndex: 0 }} />
 
           {/* Two-column layout — fills remaining space */}
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
 
-            {/* Left nav — full height */}
-            <div style={{ width: 220, borderRight: '1px solid #E3E8F2', padding: '16px 0', flexShrink: 0, background: '#F6F9FC' }}>
+            {/* Left nav */}
+            <div style={{ width: 220, padding: '16px 0', flexShrink: 0, background: 'transparent' }}>
               {NAV_ITEMS.map(item => {
                 const isActive = activeNav === item.id;
                 return (
@@ -245,18 +243,23 @@ const AutoDexConfigureModal: React.FC<AutoDexConfigureModalProps> = ({ isOpen, o
               })}
             </div>
 
-              {/* Content — no scroll, everything on screen */}
-              <div style={{ flex: 1, padding: '20px 28px', overflow: 'hidden' }}>
+              {/* Content — white background clips any overflow away from grey strip */}
+              <div style={{ flex: 1, padding: '20px 28px', overflow: 'hidden', background: 'white' }}>
               {activeNav === 'automation' && renderAutomation()}
               {activeNav === 'model'      && renderModel()}
               {activeNav === 'schedule'   && renderSchedule()}
             </div>
           </div>
 
-          {/* Footer */}
-          <div style={{ padding: '12px 24px', borderTop: '1px solid #E3E8F2', display: 'flex', justifyContent: 'flex-end', gap: 8, flexShrink: 0 }}>
-            <EuiButtonEmpty onClick={onClose}>Cancel</EuiButtonEmpty>
-            <EuiButton fill color="primary" onClick={onClose}>Save configuration</EuiButton>
+          {/* Footer — border/buttons aligned to content column */}
+          <div style={{ display: 'flex', alignItems: 'stretch', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+            {/* Transparent spacer — grey strip continues through */}
+            <div style={{ width: 220, flexShrink: 0 }} />
+            {/* Buttons in white content area */}
+            <div style={{ flex: 1, padding: '12px 24px', borderTop: '1px solid #E3E8F2', display: 'flex', justifyContent: 'flex-end', gap: 8, background: 'white' }}>
+              <EuiButtonEmpty onClick={onClose}>Cancel</EuiButtonEmpty>
+              <EuiButton fill color="primary" onClick={onClose}>Save configuration</EuiButton>
+            </div>
           </div>
         </EuiModal>
       </>

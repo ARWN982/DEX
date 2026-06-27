@@ -492,11 +492,11 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
         onClick={() => setFullReasoningLogId(isReasoningOpen ? null : log.id)}
         style={{
           background: 'white',
-          border: isReasoningOpen ? '1.5px solid #1750BA' : '1px solid #E3E8F2',
+          border: isReasoningOpen ? '1.5px solid #D3DAE6' : '1px solid #E3E8F2',
           borderRadius: 12,
           padding: '14px 16px',
           cursor: 'pointer',
-          boxShadow: isReasoningOpen ? '0 0 0 3px rgba(23,80,186,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
+          boxShadow: isReasoningOpen ? '0 1px 4px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
         }}
       >
         {/* Collapsed: title + metadata */}
