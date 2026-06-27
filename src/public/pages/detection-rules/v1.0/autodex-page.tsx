@@ -75,7 +75,7 @@ const AutoDexPage: React.FC = () => {
 
             {/* Main white panel */}
             <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }}>
-              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'white', minHeight: '100%' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'radial-gradient(ellipse at 50% 30%, #ECEEF5 0%, #FFFFFF 65%)', minHeight: '100%' }}>
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
@@ -118,9 +118,6 @@ const AutoDexPage: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                         <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
-                        <span style={{ fontSize: 17, color: 'var(--euiTitleColor)' }}>
-                          You have <strong>{pendingCount}</strong> actions required
-                        </span>
                       </div>
                     </div>
 
@@ -154,7 +151,7 @@ const AutoDexPage: React.FC = () => {
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: '#F6F9FC', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: 'linear-gradient(180deg, #F6F9FC 0%, #EEF1F7 50%, #F6F9FC 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>

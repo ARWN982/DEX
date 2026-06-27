@@ -534,12 +534,6 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
           <EuiFlexItem grow={false}>
             <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
               <EuiFlexItem grow={false}>
-                <EuiButtonEmpty size="s" iconType="popout" iconSide="left" color="primary" flush="right"
-                  onClick={() => onOpenAIAssistant(`Tell me more about the AutoDEX action: ${log.action} on rule "${log.rule}"`)}>
-                  Take action
-                </EuiButtonEmpty>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
                 <EuiButtonIcon size="xs" iconType="boxesVertical" color="primary" aria-label="More options" />
               </EuiFlexItem>
             </EuiFlexGroup>

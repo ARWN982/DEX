@@ -206,7 +206,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                             button={
                               <EuiButtonIcon
                                 size="s"
-                                iconType="boxesHorizontal"
+                                iconType="boxesVertical"
                                 color="primary"
                                 aria-label="More actions"
                                 onClick={() => setOpenPopoverId(openPopoverId === log.id ? null : log.id)}
