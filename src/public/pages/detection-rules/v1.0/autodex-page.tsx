@@ -159,7 +159,7 @@ const AutoDexPage: React.FC = () => {
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: 'linear-gradient(180deg, #EEF1F7 0%, #F6F9FC 50%, #EEF1F7 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
+                    <div style={{ background: 'linear-gradient(180deg, #F3F5F9 0%, #F8F9FC 50%, #F3F5F9 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>
