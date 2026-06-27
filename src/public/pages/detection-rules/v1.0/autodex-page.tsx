@@ -75,7 +75,7 @@ const AutoDexPage: React.FC = () => {
 
             {/* Main white panel */}
             <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }}>
-              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'radial-gradient(ellipse at 50% 70%, #ECEEF5 0%, #FFFFFF 65%)', minHeight: '100%' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'radial-gradient(ellipse at 50% 70%, #CDD3E8 0%, #FFFFFF 65%)', minHeight: '100%' }}>
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
@@ -104,7 +104,18 @@ const AutoDexPage: React.FC = () => {
                     {/* Title + status */}
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="43" height="43" viewBox="0 0 89 89" fill="none" style={{ flexShrink: 0 }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="43" height="43" viewBox="0 0 89 89" fill="none" style={{ flexShrink: 0 }} className="autodex-sparkles">
+                          <style>{`
+                            @keyframes sparkle-shift {
+                              0%   { filter: hue-rotate(0deg) brightness(1) saturate(1); }
+                              20%  { filter: hue-rotate(40deg) brightness(1.2) saturate(1.3); }
+                              40%  { filter: hue-rotate(-30deg) brightness(1.15) saturate(1.2); }
+                              60%  { filter: hue-rotate(25deg) brightness(1.25) saturate(1.4); }
+                              80%  { filter: hue-rotate(-15deg) brightness(1.1) saturate(1.15); }
+                              100% { filter: hue-rotate(0deg) brightness(1) saturate(1); }
+                            }
+                            .autodex-sparkles { animation: sparkle-shift 2s ease-in-out 5 forwards; }
+                          `}</style>
                           <path fill="url(#adx-a)" fillRule="evenodd" d="M66.75 2.781a2.781 2.781 0 1 0-5.563 0c0 2.336-.723 5.903-2.813 8.805-1.987 2.76-5.324 5.101-11.093 5.101a2.781 2.781 0 0 0 0 5.563c5.769 0 9.106 2.341 11.093 5.102 2.09 2.902 2.813 6.468 2.813 8.804a2.781 2.781 0 1 0 5.563 0c0-2.336.724-5.902 2.813-8.804 1.988-2.76 5.325-5.102 11.093-5.102a2.781 2.781 0 1 0 0-5.563c-5.768 0-9.105-2.34-11.093-5.101-2.09-2.902-2.813-6.469-2.813-8.805Zm3.248 16.688a17.242 17.242 0 0 1-4.949-4.633 18.946 18.946 0 0 1-1.08-1.683 18.97 18.97 0 0 1-1.08 1.683 17.242 17.242 0 0 1-4.95 4.633 17.24 17.24 0 0 1 4.95 4.633 19.2 19.2 0 0 1 1.08 1.682 18.97 18.97 0 0 1 1.08-1.682 17.24 17.24 0 0 1 4.949-4.633Z" clipRule="evenodd"/>
                           <path fill="url(#adx-b)" fillRule="evenodd" d="M33.375 19.469a2.781 2.781 0 1 0-5.563 0v.035a20.729 20.729 0 0 1-.047.962 31.335 31.335 0 0 1-.35 2.891c-.403 2.425-1.207 5.617-2.785 8.774-1.574 3.147-3.89 6.209-7.312 8.49-3.405 2.27-8.07 3.879-14.537 3.879a2.781 2.781 0 1 0 0 5.563c6.467 0 11.132 1.608 14.537 3.878 3.422 2.282 5.738 5.344 7.312 8.49 1.578 3.158 2.382 6.349 2.786 8.774.2 1.206.3 2.205.35 2.892a20.729 20.729 0 0 1 .046.962v.032a2.781 2.781 0 1 0 5.563.003v-.035l.005-.185c.006-.17.018-.434.042-.777.05-.687.149-1.686.35-2.892.404-2.425 1.207-5.616 2.786-8.774 1.573-3.146 3.89-6.208 7.312-8.49 3.405-2.27 8.07-3.879 14.536-3.879a2.781 2.781 0 1 0 0-5.562c-6.466 0-11.131-1.609-14.536-3.879-3.422-2.281-5.739-5.343-7.312-8.49-1.579-3.157-2.382-6.349-2.786-8.774a31.335 31.335 0 0 1-.35-2.891 20.729 20.729 0 0 1-.046-.962l-.001-.035Z" clipRule="evenodd"/>
                           <path fill="url(#adx-c)" fillRule="evenodd" d="M69.531 50.063a2.781 2.781 0 0 1 2.781 2.78c0 2.337.724 5.903 2.814 8.805 1.987 2.76 5.324 5.102 11.093 5.102a2.781 2.781 0 0 1 0 5.563c-5.769 0-9.106 2.34-11.093 5.101-2.09 2.902-2.814 6.469-2.814 8.805a2.781 2.781 0 0 1-5.562 0c0-2.336-.724-5.903-2.813-8.805-1.988-2.76-5.325-5.102-11.093-5.102a2.781 2.781 0 1 1 0-5.562c5.768 0 9.105-2.341 11.093-5.102 2.09-2.902 2.813-6.468 2.813-8.804a2.781 2.781 0 0 1 2.781-2.782Z" clipRule="evenodd"/>
@@ -115,9 +126,6 @@ const AutoDexPage: React.FC = () => {
                           </defs>
                         </svg>
                         <h1 style={{ fontSize: 43, fontWeight: 700, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '52px' }}>AutoDEX</h1>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                        <EuiAvatar name="warning" iconType="warning" color="#ffc9c2" size="s" />
                       </div>
                     </div>
 
