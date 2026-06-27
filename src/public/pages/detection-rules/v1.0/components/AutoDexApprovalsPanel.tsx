@@ -99,11 +99,11 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                   onClick={() => toggleExpanded(log.id)}
                   style={{
                     background: 'white',
-                    border: isExpanded ? '1.5px solid #1750BA' : '1px solid #E3E8F2',
+                    border: isExpanded ? '1.5px solid #343741' : '1px solid #E3E8F2',
                     borderRadius: 12,
                     padding: '14px 16px',
                     cursor: 'pointer',
-                    boxShadow: isExpanded ? '0 0 0 3px rgba(23,80,186,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
+                    boxShadow: isExpanded ? '0 0 0 3px rgba(52,55,65,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
                   }}
                   data-test-subj={`autodex-approvalItem-${log.id}`}
                 >
