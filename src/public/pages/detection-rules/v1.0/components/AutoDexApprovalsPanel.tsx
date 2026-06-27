@@ -204,7 +204,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                         </button>
                         <button
                           onClick={() => { onDecide(log.id, 'approved'); }}
-                          style={{ flex: 1, height: 28, borderRadius: 20, border: 'none', background: '#00875A', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                          style={{ height: 28, padding: '0 14px', borderRadius: 20, border: 'none', background: '#00875A', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
                         >
                           <EuiIcon type="check" size="s" color="white" /> Approve
                         </button>
