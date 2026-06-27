@@ -137,8 +137,8 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                             {log.isSuggestion ? 'Action required' : 'Approval needed'}
                           </span>
                         </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
+                        <EuiFlexItem grow={false} style={{ maxWidth: 340, minWidth: 0 }}>
+                          <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.rule}</EuiText>
                         </EuiFlexItem>
                         <EuiFlexItem grow={false}>
                           <EuiText size="s" color="subdued">{formatTimestamp(log.timestamp)}</EuiText>

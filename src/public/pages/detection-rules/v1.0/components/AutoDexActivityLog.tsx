@@ -520,11 +520,13 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
                   </span>
                 </EuiFlexItem>
               )}
-              <EuiFlexItem grow={false}>
-                <EuiText size="s" style={{ fontWeight: 600 }}>{log.rule}</EuiText>
-              </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                <EuiBadge color="success" iconType="eye">Approved</EuiBadge>
+              {!decision && (
+                <EuiFlexItem grow={false}>
+                  <EuiBadge color="success" iconType="eye">Approved</EuiBadge>
+                </EuiFlexItem>
+              )}
+              <EuiFlexItem grow={false} style={{ maxWidth: 340, minWidth: 0 }}>
+                <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.rule}</EuiText>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
                 <EuiText size="s" color="subdued">{log.timestamp.replace(', 2026', '')}</EuiText>
