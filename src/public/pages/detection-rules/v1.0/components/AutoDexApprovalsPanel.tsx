@@ -87,240 +87,107 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-            {pagedItems.map((log, index) => {
+          <div style={{ display: 'flex', flexDirection: 'column', padding: '8px 16px', gap: 8 }}>
+            {pagedItems.map((log) => {
               const isExpanded = expandedIds.has(log.id);
               const rulesAffected = getRulesAffected(log);
 
               return (
                 <div
                   key={log.id}
+                  onClick={() => toggleExpanded(log.id)}
                   style={{
                     background: 'white',
-                    borderTop: index === 0 ? 'none' : '1px solid #E3E8F2',
-                    padding: 12,
+                    border: isExpanded ? '1.5px solid #1750BA' : '1px solid #E3E8F2',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                    boxShadow: isExpanded ? '0 0 0 3px rgba(23,80,186,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
                   }}
                   data-test-subj={`autodex-approvalItem-${log.id}`}
                 >
-                  <EuiFlexGroup alignItems="center" justifyContent="spaceBetween" responsive={false} gutterSize="none">
-                    <EuiFlexItem>
-                      <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
-                        <EuiFlexItem grow={false}>
-                          <EuiButtonIcon
-                            iconType={isExpanded ? 'arrowDown' : 'arrowRight'}
-                            aria-label={isExpanded ? 'Collapse approval' : 'Expand approval'}
-                            size="s"
-                            color="text"
-                            onClick={() => toggleExpanded(log.id)}
-                          />
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false} style={{ width: 150 }}>
-                          <EuiText size="xs" style={{ fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.02em' }}>
-                            {getCategoryLabel(log.action)}
-                          </EuiText>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              height: 20,
-                              padding: '0 8px',
-                              borderRadius: 20,
-                              fontSize: 12,
-                              fontWeight: 500,
-                              lineHeight: '16px',
-                              background: log.isSuggestion ? '#FFF3D0' : '#FDDDD8',
-                              color: log.isSuggestion ? '#836500' : '#A71627',
-                            }}
-                          >
-                            {log.isSuggestion ? 'Action required' : 'Approval needed'}
-                          </span>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false} style={{ maxWidth: 340, minWidth: 0 }}>
-                          <EuiText size="s" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.rule}</EuiText>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiText size="s" color="subdued">{formatTimestamp(log.timestamp)}</EuiText>
-                        </EuiFlexItem>
-                      </EuiFlexGroup>
-                    </EuiFlexItem>
+                  {/* Collapsed: title + metadata */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--euiTitleColor)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {log.rule}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, color: '#98A2B3', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <EuiIcon type="clock" size="s" color="subdued" />{formatTimestamp(log.timestamp)}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--euiColorDarkShade)', letterSpacing: '0.04em', textTransform: 'uppercase', background: '#F6F9FC', padding: '2px 8px', borderRadius: 20, border: '1px solid #E3E8F2' }}>
+                          {getCategoryLabel(log.action)}
+                        </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', height: 18, padding: '0 8px', borderRadius: 20, fontSize: 11, fontWeight: 500, background: log.isSuggestion ? '#FFF3D0' : '#FDDDD8', color: log.isSuggestion ? '#836500' : '#A71627' }}>
+                          {log.isSuggestion ? 'Action required' : 'Approval needed'}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                      <EuiPopover
+                        isOpen={openPopoverId === log.id}
+                        closePopover={() => setOpenPopoverId(null)}
+                        panelPaddingSize="s"
+                        anchorPosition="downRight"
+                        button={<EuiButtonIcon size="xs" iconType="boxesVertical" color="text" aria-label="More actions" onClick={() => setOpenPopoverId(openPopoverId === log.id ? null : log.id)} />}
+                      >
+                        <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                          <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => { setOpenPopoverId(null); onOpenAIAssistant(getApprovalChatPrompt(log)); }} />
+                          <EuiListGroupItem iconType="folderClosed" label="Create a case" size="s" onClick={() => setOpenPopoverId(null)} />
+                        </EuiListGroup>
+                      </EuiPopover>
+                    </div>
+                  </div>
 
-                    <EuiFlexItem grow={false}>
-                      <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false} justifyContent="flexEnd">
-                        <EuiFlexItem grow={false}>
-                          <div
-                            style={{
-                              width: ACTION_PANEL_BUTTON_MIN_WIDTH,
-                              display: 'flex',
-                              justifyContent: 'flex-end',
-                            }}
-                          >
-                            <EuiPopover
-                              isOpen={approvalPopoverId === log.id}
-                              closePopover={() => setApprovalPopoverId(null)}
-                              panelPaddingSize="s"
-                              anchorPosition="downRight"
-                              button={
-                                <EuiButtonEmpty
-                                  size="s"
-                                  iconType="arrowDown"
-                                  iconSide="right"
-                                  color="primary"
-                                  flush="right"
-                                  onClick={() => setApprovalPopoverId(approvalPopoverId === log.id ? null : log.id)}
-                                >
-                                  {log.isSuggestion ? 'Actions' : 'Approval action'}
-                                </EuiButtonEmpty>
-                              }
-                            >
-                              <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
-                                <EuiListGroupItem
-                                  iconType="checkInCircleFilled"
-                                  label="Approve"
-                                  size="s"
-                                  onClick={() => {
-                                    onDecide(log.id, 'approved');
-                                    setApprovalPopoverId(null);
-                                  }}
-                                />
-                                <EuiListGroupItem
-                                  iconType="minusInCircle"
-                                  label="Dismiss"
-                                  size="s"
-                                  onClick={() => {
-                                    onDecide(log.id, 'dismissed');
-                                    setApprovalPopoverId(null);
-                                  }}
-                                />
-                              </EuiListGroup>
-                            </EuiPopover>
-                          </div>
-                        </EuiFlexItem>
-                        <EuiFlexItem grow={false}>
-                          <EuiPopover
-                            isOpen={openPopoverId === log.id}
-                            closePopover={() => setOpenPopoverId(null)}
-                            panelPaddingSize="s"
-                            anchorPosition="downRight"
-                            button={
-                              <EuiButtonIcon
-                                size="s"
-                                iconType="boxesVertical"
-                                color="primary"
-                                aria-label="More actions"
-                                onClick={() => setOpenPopoverId(openPopoverId === log.id ? null : log.id)}
-                              />
-                            }
-                          >
-                            <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
-                              <EuiListGroupItem
-                                iconType="productAgent"
-                                label="Add to chat"
-                                size="s"
-                                onClick={() => {
-                                  setOpenPopoverId(null);
-                                  onOpenAIAssistant(getApprovalChatPrompt(log));
-                                }}
-                              />
-                              <EuiListGroupItem iconType="folderClosed" label="Create a case" size="s" onClick={() => setOpenPopoverId(null)} />
-                            </EuiListGroup>
-                          </EuiPopover>
-                        </EuiFlexItem>
-                      </EuiFlexGroup>
-                    </EuiFlexItem>
-                  </EuiFlexGroup>
-
+                  {/* Expanded content */}
                   {isExpanded && (
-                    <div style={{ marginTop: 10, marginLeft: 28 }}>
-                      {log.isSuggestion ? (
-                        <>
-                          {/* DIAGNOSIS */}
-                          <div style={{ marginBottom: 16 }}>
+                    <div onClick={e => e.stopPropagation()}>
+                      <div style={{ height: 1, background: '#E3E8F2', margin: '12px 0' }} />
+                      <div style={{ marginBottom: 14 }}>
+                        {log.isSuggestion ? (
+                          <>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                            <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
-                          </div>
-
-                          {/* ACTIONS REQUIRED */}
-                          {log.manualFixSteps && (
-                            <div>
-                              <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
-                              <ol style={{ margin: 0, paddingLeft: 20 }}>
-                                {log.manualFixSteps.map((step, idx) => (
-                                  <li key={idx} style={{ fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px', marginBottom: 6 }}>{step}</li>
-                                ))}
-                              </ol>
-                            </div>
-                          )}
-                        </>
-                      ) : log.fullReasoning ? (
-                        <>
-                          {/* DIAGNOSIS */}
-                          <div style={{ marginBottom: 16 }}>
+                            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
+                            {log.manualFixSteps && (
+                              <>
+                                <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
+                                <ol style={{ margin: 0, paddingLeft: 20 }}>{log.manualFixSteps.map((step, idx) => <li key={idx} style={{ fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px', marginBottom: 6 }}>{step}</li>)}</ol>
+                              </>
+                            )}
+                          </>
+                        ) : log.fullReasoning ? (
+                          <>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                            {log.fullReasoning.diagnosis.map((para, idx) => (
-                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
-                            ))}
-                          </div>
-
-                          {/* DECISION RATIONALE */}
-                          <div style={{ marginBottom: 16 }}>
-                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
-                            {log.fullReasoning.decision.map((para, idx) => (
-                              <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
-                            ))}
-                          </div>
-
-                          {/* CHANGES SUGGESTED */}
-                          <div>
-                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Changes suggested</p>
-                            <div style={{ border: '1px solid var(--euiBorderColor)', borderRadius: 4, overflow: 'hidden' }}>
-                              {log.fullReasoning.changesMade.map((change, idx) => {
-                                const isLast = idx === log.fullReasoning!.changesMade.length - 1;
-                                const borderBottom = isLast ? 'none' : '1px solid #D3DAE6';
-                                if (typeof change === 'string') {
-                                  return (
-                                    <div key={idx} style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}>
-                                      <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change}
-                                    </div>
-                                  );
-                                }
-                                return (
-                                  <React.Fragment key={idx}>
-                                    <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '6px 12px', borderBottom: '1px solid #D3DAE6' }}>
-                                      <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#BD271E' }}>-</span>{change.before}
-                                    </div>
-                                    <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#E6F9F0', color: '#0B5E41', padding: '6px 12px', borderBottom }}>
-                                      <span style={{ userSelect: 'none', marginRight: 10, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}
-                                    </div>
-                                  </React.Fragment>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ background: 'var(--euiColorEmptyShade)', border: '1px solid var(--euiBorderColor)', borderRadius: 4, padding: '8px 12px' }}>
-                          <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)' }}>{log.reasoning}</p>
-                        </div>
-                      )}
+                            {log.fullReasoning.diagnosis.map((para, idx) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
+                            <p style={{ margin: '12px 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
+                            {log.fullReasoning.decision.map((para, idx) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
+                          </>
+                        ) : (
+                          <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <EuiPopover
+                          isOpen={approvalPopoverId === log.id}
+                          closePopover={() => setApprovalPopoverId(null)}
+                          panelPaddingSize="s"
+                          anchorPosition="downRight"
+                          button={<EuiButtonEmpty size="s" iconType="arrowDown" iconSide="right" color="primary" flush="left" onClick={() => setApprovalPopoverId(approvalPopoverId === log.id ? null : log.id)}>{log.isSuggestion ? 'Actions' : 'Approval action'}</EuiButtonEmpty>}
+                        >
+                          <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                            <EuiListGroupItem iconType="checkInCircleFilled" label="Approve" size="s" onClick={() => { onDecide(log.id, 'approved'); setApprovalPopoverId(null); }} />
+                            <EuiListGroupItem iconType="minusInCircle" label="Dismiss" size="s" onClick={() => { onDecide(log.id, 'dismissed'); setApprovalPopoverId(null); }} />
+                          </EuiListGroup>
+                        </EuiPopover>
+                        <EuiText size="xs" color="subdued">{rulesAffected} rules affected</EuiText>
+                      </div>
                     </div>
                   )}
                 </div>
               );
             })}
-          </div>
-
-          <div style={{ paddingTop: 4, paddingLeft: 24, paddingRight: 24 }}>
-            <EuiTablePagination
-              pageCount={Math.max(1, Math.ceil(pendingItems.length / pageSize))}
-              activePage={pageIndex}
-              onChangePage={setPageIndex}
-              itemsPerPage={pageSize}
-              itemsPerPageOptions={[5, 10]}
-              onChangeItemsPerPage={(size) => { setPageSize(size); setPageIndex(0); }}
-              data-test-subj="autodex-approvalsPagination"
-            />
           </div>
         </>
       )}
