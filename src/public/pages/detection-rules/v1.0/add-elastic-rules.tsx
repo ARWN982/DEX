@@ -196,9 +196,12 @@ const AddElasticRulesPage: React.FC = () => {
 
                 {/* ── Hero section ── */}
                 <div style={{ maxWidth: 1265, margin: '0 auto', textAlign: 'center' }}>
-                  <EuiTitle size="l">
-                    <h1 style={{ marginBottom: 8, color: '#111C2C' }}>Add Elastic Rules</h1>
-                  </EuiTitle>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+                    <img src="/sparkles.svg" alt="" style={{ height: 40, width: 'auto', flexShrink: 0 }} />
+                    <EuiTitle size="l">
+                      <h1 style={{ margin: 0, color: '#111C2C' }}>Add Elastic Rules</h1>
+                    </EuiTitle>
+                  </div>
                   <EuiText color="subdued" size="m" style={{ marginBottom: 32 }}>
                     Describe what you want to detect and AutoDEX will find the right rules for your environment.
                   </EuiText>
