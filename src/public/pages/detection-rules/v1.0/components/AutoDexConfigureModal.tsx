@@ -218,10 +218,10 @@ const AutoDexConfigureModal: React.FC<AutoDexConfigureModalProps> = ({ isOpen, o
           </div>
 
           {/* Two-column layout — fills remaining space */}
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', alignItems: 'stretch' }}>
 
             {/* Left nav — full height */}
-            <div style={{ width: 220, borderRight: '1px solid #E3E8F2', padding: '16px 0', flexShrink: 0, background: '#F6F9FC', alignSelf: 'stretch' }}>
+            <div style={{ width: 220, borderRight: '1px solid #E3E8F2', padding: '16px 0', flexShrink: 0, background: '#F6F9FC' }}>
               {NAV_ITEMS.map(item => {
                 const isActive = activeNav === item.id;
                 return (
@@ -231,7 +231,7 @@ const AutoDexConfigureModal: React.FC<AutoDexConfigureModalProps> = ({ isOpen, o
                     style={{
                       display: 'flex', alignItems: 'center', gap: 10,
                       padding: '11px 16px', cursor: 'pointer',
-                      borderLeft: isActive ? '3px solid #1750BA' : '3px solid transparent',
+                      borderLeft: 'none',
                       background: isActive ? '#EEF4FF' : 'transparent',
                       color: isActive ? '#1750BA' : '#343741',
                       fontWeight: isActive ? 600 : 400,
@@ -245,13 +245,8 @@ const AutoDexConfigureModal: React.FC<AutoDexConfigureModalProps> = ({ isOpen, o
               })}
             </div>
 
-            {/* Content — no scroll, everything on screen */}
-            <div style={{ flex: 1, padding: '20px 28px', overflow: 'hidden' }}>
-              <div style={{ marginBottom: 16 }}>
-                <EuiTitle size="xs">
-                  <h3 style={{ margin: 0 }}>{NAV_ITEMS.find(n => n.id === activeNav)?.label}</h3>
-                </EuiTitle>
-              </div>
+              {/* Content — no scroll, everything on screen */}
+              <div style={{ flex: 1, padding: '20px 28px', overflow: 'hidden' }}>
               {activeNav === 'automation' && renderAutomation()}
               {activeNav === 'model'      && renderModel()}
               {activeNav === 'schedule'   && renderSchedule()}
