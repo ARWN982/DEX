@@ -6,6 +6,7 @@ import {
   EuiEmptyPrompt,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiIcon,
   EuiListGroup,
   EuiListGroupItem,
   EuiPopover,
@@ -87,8 +88,8 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', padding: '8px 16px', gap: 8 }}>
-            {pagedItems.map((log) => {
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            {pagedItems.map((log, index) => {
               const isExpanded = expandedIds.has(log.id);
               const rulesAffected = getRulesAffected(log);
 
@@ -102,7 +103,6 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                     borderRadius: 12,
                     padding: '14px 16px',
                     cursor: 'pointer',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
                     boxShadow: isExpanded ? '0 0 0 3px rgba(23,80,186,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
                   }}
                   data-test-subj={`autodex-approvalItem-${log.id}`}
@@ -110,9 +110,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                   {/* Collapsed: title + metadata */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--euiTitleColor)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {log.rule}
-                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--euiTitleColor)', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.rule}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 12, color: '#98A2B3', display: 'flex', alignItems: 'center', gap: 4 }}>
                           <EuiIcon type="clock" size="s" color="subdued" />{formatTimestamp(log.timestamp)}
@@ -125,13 +123,13 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <div onClick={e => e.stopPropagation()}>
                       <EuiPopover
                         isOpen={openPopoverId === log.id}
                         closePopover={() => setOpenPopoverId(null)}
                         panelPaddingSize="s"
                         anchorPosition="downRight"
-                        button={<EuiButtonIcon size="xs" iconType="boxesVertical" color="text" aria-label="More actions" onClick={() => setOpenPopoverId(openPopoverId === log.id ? null : log.id)} />}
+                        button={<EuiButtonIcon size="xs" iconType="boxesVertical" color="text" aria-label="More" onClick={() => setOpenPopoverId(openPopoverId === log.id ? null : log.id)} />}
                       >
                         <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
                           <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => { setOpenPopoverId(null); onOpenAIAssistant(getApprovalChatPrompt(log)); }} />
@@ -141,11 +139,10 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Expanded content */}
                   {isExpanded && (
                     <div onClick={e => e.stopPropagation()}>
                       <div style={{ height: 1, background: '#E3E8F2', margin: '12px 0' }} />
-                      <div style={{ marginBottom: 14 }}>
+                      <div style={{ marginBottom: 12 }}>
                         {log.isSuggestion ? (
                           <>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
@@ -153,16 +150,16 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                             {log.manualFixSteps && (
                               <>
                                 <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
-                                <ol style={{ margin: 0, paddingLeft: 20 }}>{log.manualFixSteps.map((step, idx) => <li key={idx} style={{ fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px', marginBottom: 6 }}>{step}</li>)}</ol>
+                                <ol style={{ margin: 0, paddingLeft: 20 }}>{log.manualFixSteps.map((step: string, idx: number) => <li key={idx} style={{ fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px', marginBottom: 6 }}>{step}</li>)}</ol>
                               </>
                             )}
                           </>
                         ) : log.fullReasoning ? (
                           <>
                             <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                            {log.fullReasoning.diagnosis.map((para, idx) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
+                            {log.fullReasoning.diagnosis.map((para: string, idx: number) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
                             <p style={{ margin: '12px 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
-                            {log.fullReasoning.decision.map((para, idx) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
+                            {log.fullReasoning.decision.map((para: string, idx: number) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
                           </>
                         ) : (
                           <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
@@ -188,6 +185,18 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                 </div>
               );
             })}
+          </div>
+
+          <div style={{ paddingTop: 4, paddingLeft: 24, paddingRight: 24 }}>
+            <EuiTablePagination
+              pageCount={Math.max(1, Math.ceil(pendingItems.length / pageSize))}
+              activePage={pageIndex}
+              onChangePage={setPageIndex}
+              itemsPerPage={pageSize}
+              itemsPerPageOptions={[5, 10]}
+              onChangeItemsPerPage={(size) => { setPageSize(size); setPageIndex(0); }}
+              data-test-subj="autodex-approvalsPagination"
+            />
           </div>
         </>
       )}
