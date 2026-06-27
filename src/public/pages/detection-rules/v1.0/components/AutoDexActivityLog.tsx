@@ -650,7 +650,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
 
   return (
     <div>
-      {toolbar && <div style={{ padding: '0 24px 12px' }}>{toolbar}</div>}
+      {toolbar && <div style={{ paddingBottom: 12 }}>{toolbar}</div>}
       {displayLogs.length === 0 ? (
         <EuiText textAlign="center" color="subdued">
           <p>No activities match your filters.</p>
@@ -660,7 +660,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {pagedLogs.map((log, i) => renderLog(log, i, pagedLogs, false, activityMode))}
           </div>
-          <div style={{ marginTop: 12, padding: '0 24px' }}>
+          <div style={{ marginTop: 12 }}>
             <EuiTablePagination
               activePage={pageIndex}
               pageCount={pageCount}
