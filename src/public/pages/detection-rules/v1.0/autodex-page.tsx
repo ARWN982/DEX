@@ -75,7 +75,7 @@ const AutoDexPage: React.FC = () => {
 
             {/* Main white panel */}
             <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }}>
-              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'radial-gradient(ellipse at 50% 30%, #ECEEF5 0%, #FFFFFF 65%)', minHeight: '100%' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, background: 'radial-gradient(ellipse at 50% 70%, #ECEEF5 0%, #FFFFFF 65%)', minHeight: '100%' }}>
                 <div style={{ padding: '32px 40px 48px' }}>
                   <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
@@ -151,7 +151,7 @@ const AutoDexPage: React.FC = () => {
                     </EuiPanel>
 
                     {/* Combined Actions + Activity log grey card */}
-                    <div style={{ background: 'linear-gradient(180deg, #F6F9FC 0%, #EEF1F7 50%, #F6F9FC 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ background: 'linear-gradient(180deg, #EEF1F7 0%, #F6F9FC 50%, #EEF1F7 100%)', border: '1px solid #CAD3E2', borderRadius: 8, overflow: 'hidden' }}>
 
                       {/* Actions heading + search/filter */}
                       <div style={{ padding: '16px 24px 12px' }}>
