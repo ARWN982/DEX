@@ -145,40 +145,69 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                       <div style={{ marginBottom: 12 }}>
                         {log.isSuggestion ? (
                           <>
-                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
+                            <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '10px 12px', marginBottom: 8 }}>
+                              <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+                              <p style={{ margin: 0, fontSize: 12, color: 'var(--euiTextColor)', lineHeight: '18px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{log.reasoning}</p>
+                            </div>
                             {log.manualFixSteps && (
-                              <>
-                                <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
-                                <ol style={{ margin: 0, paddingLeft: 20 }}>{log.manualFixSteps.map((step: string, idx: number) => <li key={idx} style={{ fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px', marginBottom: 6 }}>{step}</li>)}</ol>
-                              </>
+                              <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '10px 12px' }}>
+                                <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Actions required</p>
+                                <ol style={{ margin: 0, paddingLeft: 18 }}>{log.manualFixSteps.map((step: string, idx: number) => <li key={idx} style={{ fontSize: 12, color: 'var(--euiTextColor)', lineHeight: '18px', marginBottom: 4 }}>{step}</li>)}</ol>
+                              </div>
                             )}
                           </>
                         ) : log.fullReasoning ? (
                           <>
-                            <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
-                            {log.fullReasoning.diagnosis.map((para: string, idx: number) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
-                            <p style={{ margin: '12px 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
-                            {log.fullReasoning.decision.map((para: string, idx: number) => <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>)}
+                            <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '10px 12px', marginBottom: 8 }}>
+                              <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+                              {log.fullReasoning.diagnosis.slice(0, 2).map((para: string, idx: number) => <p key={idx} style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--euiTextColor)', lineHeight: '18px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{para}</p>)}
+                            </div>
+                            <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '10px 12px', marginBottom: 8 }}>
+                              <p style={{ margin: '0 0 4px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
+                              {log.fullReasoning.decision.slice(0, 2).map((para: string, idx: number) => <p key={idx} style={{ margin: '0 0 4px', fontSize: 12, color: 'var(--euiTextColor)', lineHeight: '18px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{para}</p>)}
+                            </div>
+                            <div style={{ border: '1px solid #E3E8F2', borderRadius: 6, overflow: 'hidden' }}>
+                              {log.fullReasoning.changesMade.map((change: any, idx: number) => {
+                                const isLast = idx === log.fullReasoning!.changesMade.length - 1;
+                                const bb = isLast ? 'none' : '1px solid #D3DAE6';
+                                if (typeof change === 'string') {
+                                  return <div key={idx} style={{ fontFamily: 'monospace', fontSize: 11, background: '#E6F9F0', color: '#0B5E41', padding: '5px 10px', borderBottom: bb }}><span style={{ marginRight: 8, fontWeight: 700, color: '#017D73' }}>+</span>{change}</div>;
+                                }
+                                return (
+                                  <React.Fragment key={idx}>
+                                    <div style={{ fontFamily: 'monospace', fontSize: 11, background: '#FDF0EF', color: '#7C1B1B', padding: '5px 10px', borderBottom: '1px solid #D3DAE6' }}><span style={{ marginRight: 8, fontWeight: 700, color: '#BD271E' }}>−</span>{change.before}</div>
+                                    <div style={{ fontFamily: 'monospace', fontSize: 11, background: '#E6F9F0', color: '#0B5E41', padding: '5px 10px', borderBottom: bb }}><span style={{ marginRight: 8, fontWeight: 700, color: '#017D73' }}>+</span>{change.after}</div>
+                                  </React.Fragment>
+                                );
+                              })}
+                            </div>
                           </>
                         ) : (
-                          <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{log.reasoning}</p>
+                          <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '10px 12px' }}>
+                            <p style={{ margin: 0, fontSize: 12, color: 'var(--euiTextColor)', lineHeight: '18px' }}>{log.reasoning}</p>
+                          </div>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <EuiPopover
-                          isOpen={approvalPopoverId === log.id}
-                          closePopover={() => setApprovalPopoverId(null)}
-                          panelPaddingSize="s"
-                          anchorPosition="downRight"
-                          button={<EuiButtonEmpty size="s" iconType="arrowDown" iconSide="right" color="primary" flush="left" onClick={() => setApprovalPopoverId(approvalPopoverId === log.id ? null : log.id)}>{log.isSuggestion ? 'Actions' : 'Approval action'}</EuiButtonEmpty>}
+
+                      {/* Discard / Edit / Approve row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                        <button
+                          onClick={() => { onDecide(log.id, 'dismissed'); }}
+                          style={{ height: 28, padding: '0 12px', borderRadius: 20, border: '1px solid #CAD3E2', background: 'white', fontSize: 12, fontWeight: 500, color: '#516381', cursor: 'pointer' }}
                         >
-                          <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
-                            <EuiListGroupItem iconType="checkInCircleFilled" label="Approve" size="s" onClick={() => { onDecide(log.id, 'approved'); setApprovalPopoverId(null); }} />
-                            <EuiListGroupItem iconType="minusInCircle" label="Dismiss" size="s" onClick={() => { onDecide(log.id, 'dismissed'); setApprovalPopoverId(null); }} />
-                          </EuiListGroup>
-                        </EuiPopover>
-                        <EuiText size="xs" color="subdued">{rulesAffected} rules affected</EuiText>
+                          Discard
+                        </button>
+                        <button
+                          style={{ height: 28, padding: '0 12px', borderRadius: 20, border: '1px solid #CAD3E2', background: 'white', fontSize: 12, fontWeight: 500, color: '#516381', cursor: 'pointer' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => { onDecide(log.id, 'approved'); }}
+                          style={{ flex: 1, height: 28, borderRadius: 20, border: 'none', background: '#00875A', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          <EuiIcon type="check" size="s" color="white" /> Approve
+                        </button>
                       </div>
                     </div>
                   )}
