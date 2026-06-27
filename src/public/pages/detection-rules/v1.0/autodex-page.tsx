@@ -205,7 +205,7 @@ const AutoDexPage: React.FC = () => {
 
                       {/* Activity log rows — edge-to-edge, no wrapper padding */}
                       {activityExpanded && (
-                        <div style={{ padding: '0 8px 16px' }}>
+                        <div style={{ padding: '0 24px 16px' }}>
                           <AutoDexActivityLog
                             onOpenAIAssistant={(prompt) => console.log('AI assistant:', prompt)}
                             requiresApproval={false}

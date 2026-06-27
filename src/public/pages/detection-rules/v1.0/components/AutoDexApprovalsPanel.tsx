@@ -88,7 +88,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', padding: '8px 24px', gap: 8 }}>
             {pagedItems.map((log, index) => {
               const isExpanded = expandedIds.has(log.id);
               const rulesAffected = getRulesAffected(log);
