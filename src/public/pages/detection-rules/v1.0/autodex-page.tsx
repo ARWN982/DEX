@@ -125,7 +125,7 @@ const AutoDexPage: React.FC = () => {
                             <linearGradient id="adx-c" x1="-5.91" x2="88.379" y1="-38.938" y2="-23.331" gradientUnits="userSpaceOnUse"><stop stopColor="#75ACFF"/><stop offset=".995" stopColor="#CFB4FF"/></linearGradient>
                           </defs>
                         </svg>
-                        <h1 style={{ fontSize: 37, fontWeight: 500, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '46px' }}>AutoDEX</h1>
+                        <h1 style={{ fontSize: 31, fontWeight: 500, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '40px' }}>AutoDEX</h1>
                       </div>
                     </div>
 
