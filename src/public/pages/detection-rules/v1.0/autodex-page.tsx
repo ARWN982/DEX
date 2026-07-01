@@ -10,6 +10,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiHorizontalRule,
+  EuiIcon,
   EuiListGroup,
   EuiListGroupItem,
   EuiPanel,
@@ -34,7 +35,7 @@ const SUMMARY_DIVIDER = (
 const AutoDexPage: React.FC = () => {
   const [configureModalOpen, setConfigureModalOpen] = useState(false);
   const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
-  const [activityExpanded, setActivityExpanded] = useState(true);
+  const [activityExpanded, setActivityExpanded] = useState(false);
   const [dotsOpen, setDotsOpen] = useState(false);
   const [actionsSearch, setActionsSearch] = useState('');
 
@@ -73,59 +74,47 @@ const AutoDexPage: React.FC = () => {
               </EuiPanel>
             </div>
 
-            {/* Main white panel */}
-            <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto' }}>
-              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, minHeight: '100%' }}>
-                <div style={{ padding: '32px 40px 48px' }}>
-                  <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+            {/* Main panel */}
+            <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
+              <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
 
-                    {/* Top bar: title left, buttons right */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-                      {/* Title left */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 89 89" fill="none" style={{ flexShrink: 0 }} className="autodex-sparkles">
-                          <style>{`
-                            @keyframes sparkle-shift {
-                              0%   { filter: hue-rotate(0deg) brightness(1) saturate(1); }
-                              20%  { filter: hue-rotate(40deg) brightness(1.2) saturate(1.3); }
-                              40%  { filter: hue-rotate(-30deg) brightness(1.15) saturate(1.2); }
-                              60%  { filter: hue-rotate(25deg) brightness(1.25) saturate(1.4); }
-                              80%  { filter: hue-rotate(-15deg) brightness(1.1) saturate(1.15); }
-                              100% { filter: hue-rotate(0deg) brightness(1) saturate(1); }
-                            }
-                            .autodex-sparkles { animation: sparkle-shift 2s ease-in-out 5 forwards; }
-                          `}</style>
-                          <path fill="url(#adx-a)" fillRule="evenodd" d="M66.75 2.781a2.781 2.781 0 1 0-5.563 0c0 2.336-.723 5.903-2.813 8.805-1.987 2.76-5.324 5.101-11.093 5.101a2.781 2.781 0 0 0 0 5.563c5.769 0 9.106 2.341 11.093 5.102 2.09 2.902 2.813 6.468 2.813 8.804a2.781 2.781 0 1 0 5.563 0c0-2.336.724-5.902 2.813-8.804 1.988-2.76 5.325-5.102 11.093-5.102a2.781 2.781 0 1 0 0-5.563c-5.768 0-9.105-2.34-11.093-5.101-2.09-2.902-2.813-6.469-2.813-8.805Zm3.248 16.688a17.242 17.242 0 0 1-4.949-4.633 18.946 18.946 0 0 1-1.08-1.683 18.97 18.97 0 0 1-1.08 1.683 17.242 17.242 0 0 1-4.95 4.633 17.24 17.24 0 0 1 4.95 4.633 19.2 19.2 0 0 1 1.08 1.682 18.97 18.97 0 0 1 1.08-1.682 17.24 17.24 0 0 1 4.949-4.633Z" clipRule="evenodd"/>
-                          <path fill="url(#adx-b)" fillRule="evenodd" d="M33.375 19.469a2.781 2.781 0 1 0-5.563 0v.035a20.729 20.729 0 0 1-.047.962 31.335 31.335 0 0 1-.35 2.891c-.403 2.425-1.207 5.617-2.785 8.774-1.574 3.147-3.89 6.209-7.312 8.49-3.405 2.27-8.07 3.879-14.537 3.879a2.781 2.781 0 1 0 0 5.563c6.467 0 11.132 1.608 14.537 3.878 3.422 2.282 5.738 5.344 7.312 8.49 1.578 3.158 2.382 6.349 2.786 8.774.2 1.206.3 2.205.35 2.892a20.729 20.729 0 0 1 .046.962v.032a2.781 2.781 0 1 0 5.563.003v-.035l.005-.185c.006-.17.018-.434.042-.777.05-.687.149-1.686.35-2.892.404-2.425 1.207-5.616 2.786-8.774 1.573-3.146 3.89-6.208 7.312-8.49 3.405-2.27 8.07-3.879 14.536-3.879a2.781 2.781 0 1 0 0-5.562c-6.466 0-11.131-1.609-14.536-3.879-3.422-2.281-5.739-5.343-7.312-8.49-1.579-3.157-2.382-6.349-2.786-8.774a31.335 31.335 0 0 1-.35-2.891 20.729 20.729 0 0 1-.046-.962l-.001-.035Z" clipRule="evenodd"/>
-                          <path fill="url(#adx-c)" fillRule="evenodd" d="M69.531 50.063a2.781 2.781 0 0 1 2.781 2.78c0 2.337.724 5.903 2.814 8.805 1.987 2.76 5.324 5.102 11.093 5.102a2.781 2.781 0 0 1 0 5.563c-5.769 0-9.106 2.34-11.093 5.101-2.09 2.902-2.814 6.469-2.814 8.805a2.781 2.781 0 0 1-5.562 0c0-2.336-.724-5.903-2.813-8.805-1.988-2.76-5.325-5.102-11.093-5.102a2.781 2.781 0 1 1 0-5.562c5.768 0 9.105-2.341 11.093-5.102 2.09-2.902 2.813-6.468 2.813-8.804a2.781 2.781 0 0 1 2.781-2.782Z" clipRule="evenodd"/>
-                          <defs>
-                            <linearGradient id="adx-a" x1="-5.91" x2="88.379" y1="-38.938" y2="-23.331" gradientUnits="userSpaceOnUse"><stop stopColor="#75ACFF"/><stop offset=".995" stopColor="#CFB4FF"/></linearGradient>
-                            <linearGradient id="adx-b" x1="-5.91" x2="88.379" y1="-38.938" y2="-23.331" gradientUnits="userSpaceOnUse"><stop stopColor="#75ACFF"/><stop offset=".995" stopColor="#CFB4FF"/></linearGradient>
-                            <linearGradient id="adx-c" x1="-5.91" x2="88.379" y1="-38.938" y2="-23.331" gradientUnits="userSpaceOnUse"><stop stopColor="#75ACFF"/><stop offset=".995" stopColor="#CFB4FF"/></linearGradient>
-                          </defs>
-                        </svg>
-                        <h1 style={{ fontSize: 26, fontWeight: 500, margin: 0, color: 'var(--euiTitleColor)', lineHeight: '34px' }}>AutoDEX</h1>
-                      </div>
-                      {/* Buttons right */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
-                        Configuration
-                      </EuiButtonEmpty>
-                      <EuiButtonEmpty size="s" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
-                        View all cases&nbsp;<EuiBadge color="hollow">0</EuiBadge>
-                      </EuiButtonEmpty>
-                      <EuiPopover
-                        isOpen={dotsOpen}
-                        closePopover={() => setDotsOpen(false)}
-                        panelPaddingSize="s"
-                        anchorPosition="downRight"
-                        button={<EuiButtonIcon iconType="boxesVertical" color="text" size="s" aria-label="More options" onClick={() => setDotsOpen(o => !o)} />}
-                      >
-                        <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
-                          <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => setDotsOpen(false)} />
-                          <EuiListGroupItem iconType="exportAction" label="Export" size="s" onClick={() => setDotsOpen(false)} />
-                        </EuiListGroup>
-                      </EuiPopover>
+                {/* Top buttons — full panel width, pinned to right edge */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, padding: '12px 24px 0', flexShrink: 0 }}>
+                  <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
+                    Configuration
+                  </EuiButtonEmpty>
+                  <EuiButtonEmpty size="s" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }}>
+                    View all cases&nbsp;<EuiBadge color="hollow">0</EuiBadge>
+                  </EuiButtonEmpty>
+                  <EuiPopover
+                    isOpen={dotsOpen}
+                    closePopover={() => setDotsOpen(false)}
+                    panelPaddingSize="s"
+                    anchorPosition="downRight"
+                    button={<EuiButtonIcon iconType="boxesVertical" color="text" size="s" aria-label="More options" onClick={() => setDotsOpen(o => !o)} />}
+                  >
+                    <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                      <EuiListGroupItem iconType="productAgent" label="Add to chat" size="s" onClick={() => setDotsOpen(false)} />
+                      <EuiListGroupItem iconType="exportAction" label="Export" size="s" onClick={() => setDotsOpen(false)} />
+                    </EuiListGroup>
+                  </EuiPopover>
+                </div>
+
+                {/* ── Scrollable content ── */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px 40px 48px' }}>
+                  <div style={{ maxWidth: 960, margin: '0 auto', width: '100%' }}>
+
+                    {/* ── Hero: centred block, illustration left, text right ── */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+                        <img src="/images/autodex-illustration.png" alt="AutoDEX" style={{ width: 110, height: 110, objectFit: 'contain', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#E6F9F7', border: '1px solid #00BFB3', borderRadius: 20, padding: '2px 10px', marginBottom: 8 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: '#017D73', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Running live</span>
+                          </div>
+                          <h1 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 4px', color: '#111C2C', lineHeight: 1.1 }}>AutoDEX</h1>
+                          <p style={{ fontSize: 16, color: '#69707D', margin: 0, fontWeight: 500 }}>Agentic detection rules</p>
+                        </div>
                       </div>
                     </div>
 
@@ -157,6 +146,44 @@ const AutoDexPage: React.FC = () => {
                         </div>
                       </div>
                     </EuiPanel>
+
+                    {/* ── AI summary ── */}
+                    {(() => {
+                      const [summaryOpen, setSummaryOpen] = React.useState(true);
+                      return (
+                        <div style={{ border: '1px solid #E3E8F2', borderRadius: 8, marginBottom: 20, background: 'linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)', overflow: 'hidden' }}>
+                          {/* Header row: toggle + icon + title left | generated + refresh + ⋮ right */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', cursor: 'pointer' }} onClick={() => setSummaryOpen(o => !o)}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <EuiButtonIcon iconType={summaryOpen ? 'arrowDown' : 'arrowRight'} size="xs" color="text" aria-label="toggle" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSummaryOpen(o => !o); }} />
+                              <EuiIcon type="sparkles" color="text" size="m" />
+                              <span style={{ fontSize: 15, fontWeight: 600, color: '#111C2C' }}>AI summary</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 12, color: '#98A2B3' }}>Generated on Jun 29, 2026 at 20:58</span>
+                              <EuiButtonIcon iconType="refresh" size="xs" color="text" aria-label="Refresh" onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                              <EuiButtonIcon iconType="boxesVertical" size="xs" color="text" aria-label="More" onClick={(e: React.MouseEvent) => e.stopPropagation()} />
+                            </div>
+                          </div>
+                          {summaryOpen && (
+                            <div style={{ padding: '0 20px 16px' }}>
+                              <ul style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 10, listStyle: 'disc' }}>
+                                {[
+                                  { type: 'Action',  text: 'Windows Registry Modification is failing — index pattern mismatch from Agent 8.14. Fix queued.' },
+                                  { type: 'Insight', text: '78% of Unusual Execution alerts are false positives. Add a process parent exception for mmc.exe.' },
+                                  { type: 'Insight', text: 'Suspicious PowerShell ImageLoad failed silently 6 hrs due to a renamed Fleet index.' },
+                                ].map((item, i) => (
+                                  <li key={i} style={{ fontSize: 13, color: '#343741', lineHeight: '20px' }}>
+                                    <EuiBadge color="hollow" style={{ marginRight: 8, verticalAlign: 'middle', color: '#111C2C', fontWeight: 600 }}>{item.type}</EuiBadge>
+                                    {item.text}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Combined Actions + Activity log grey card */}
                     <div style={{ background: 'linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)', border: '1px solid #E3E8F2', borderRadius: 8, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -217,7 +244,8 @@ const AutoDexPage: React.FC = () => {
                     </div>
 
                   </div>
-                </div>
+                </div>{/* end scrollable */}
+
               </EuiPanel>
             </div>
 

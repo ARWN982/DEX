@@ -2,8 +2,8 @@
   "success": true,
   "projects": [
     {
-      "name": "discover",
-      "displayName": "Discover",
+      "name": "detection-rules",
+      "displayName": "Detection Rules",
       "hasAbout": true,
       "versions": [
         "1.0"
