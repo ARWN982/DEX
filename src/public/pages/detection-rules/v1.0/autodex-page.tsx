@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   EuiAvatar,
   EuiBadge,
@@ -33,6 +34,8 @@ const SUMMARY_DIVIDER = (
 );
 
 const AutoDexPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [isEnabled] = useState(() => localStorage.getItem('autodex-enabled') === 'true');
   const [configureModalOpen, setConfigureModalOpen] = useState(false);
   const [approvalDecisions, setApprovalDecisions] = useState<Record<string, 'approved' | 'dismissed'>>({});
   const [activityExpanded, setActivityExpanded] = useState(false);
@@ -63,7 +66,6 @@ const AutoDexPage: React.FC = () => {
         <SecurityHeader onMenuClick={() => {}} />
         <SecuritySideNav />
 
-        {/* Grey outer wrapper */}
         <div style={{ backgroundColor: '#F6F9FC', position: 'absolute', top: 48, left: 80, right: 0, bottom: 0, padding: 8, overflow: 'hidden' }}>
           <div style={{ display: 'flex', height: '100%', gap: 8 }}>
 
@@ -78,6 +80,47 @@ const AutoDexPage: React.FC = () => {
             <div style={{ flex: 1, minWidth: 0, height: '100%' }}>
               <EuiPanel paddingSize="none" hasShadow style={{ borderRadius: 8, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
 
+                {!isEnabled ? (
+                  /* ── First-time empty state ── */
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+                    <div style={{ textAlign: 'center', maxWidth: 480 }}>
+                      <img src="/images/autodex-illustration.png" alt="" style={{ width: 100, height: 100, objectFit: 'contain', display: 'block', margin: '0 auto 28px', opacity: 0.85 }} />
+                      <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111C2C', margin: '0 0 12px' }}>AutoDEX hasn't been set up yet</h1>
+                      <p style={{ fontSize: 15, color: '#69707D', lineHeight: '24px', margin: '0 0 32px' }}>
+                        AutoDEX is your AI powered detection engineer. It monitors your ruleset, fixes silent failures, reduces false positive noise, and keeps your rules up to date automatically.
+                      </p>
+                      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {[
+                          { icon: 'alert',       text: 'Fixes execution failures' },
+                          { icon: 'stats',       text: 'Tunes high false positive rules' },
+                          { icon: 'plusInCircle',text: 'Installs new Elastic rules' },
+                          { icon: 'refresh',     text: 'Keeps rules up to date' },
+                        ].map(f => (
+                          <div key={f.text} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#F6F9FC', border: '1px solid #E3E8F2', borderRadius: 20, padding: '6px 14px', fontSize: 13, color: '#343741' }}>
+                            <EuiIcon type={f.icon} size="s" color="#0B64DD" />
+                            {f.text}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 40 }}>
+                        <button
+                          onClick={() => navigate('/autodex/get-started')}
+                          style={{
+                            background: 'linear-gradient(135deg, #0B64DD, #7B61FF)',
+                            border: 'none', borderRadius: 10, cursor: 'pointer',
+                            color: 'white', fontSize: 16, fontWeight: 700,
+                            padding: '14px 40px', display: 'inline-flex', alignItems: 'center', gap: 8,
+                          }}
+                        >
+                          <EuiIcon type="sparkles" size="m" color="ghost" />
+                          Get started with AutoDEX
+                        </button>
+                        <p style={{ fontSize: 12, color: '#98A2B3', marginTop: 12 }}>Takes about 2 minutes to configure</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
                 {/* Top buttons — full panel width, pinned to right edge */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, padding: '12px 24px 0', flexShrink: 0 }}>
                   <EuiButtonEmpty size="s" iconType="gear" iconSide="left" color="text" style={{ color: 'var(--euiTextColor)', fontWeight: 500 }} onClick={() => setConfigureModalOpen(true)}>
@@ -246,6 +289,8 @@ const AutoDexPage: React.FC = () => {
                   </div>
                 </div>{/* end scrollable */}
 
+                  </>
+                )}{/* end isEnabled conditional */}
               </EuiPanel>
             </div>
 

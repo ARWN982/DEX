@@ -36,13 +36,23 @@ const RulesSecondaryNav: React.FC = () => {
           {/* AutoDEX — above Detection rules */}
           <EuiListGroupItem
             label={
-              <span style={{ fontSize: 13, color: isActive('/autodex') ? '#1750BA' : '#1d2a3e' }}>
+              <span style={{ fontSize: 13, color: isActive('/autodex') && !isActive('/autodex/get-started') ? '#1750BA' : '#1d2a3e' }}>
                 AutoDEX
               </span>
             }
             onClick={() => navigate('/autodex')}
-            isActive={isActive('/autodex')}
+            isActive={isActive('/autodex') && !isActive('/autodex/get-started')}
             style={{ height: 32, padding: '6px 4px', borderRadius: 4 }}
+          />
+          <EuiListGroupItem
+            label={
+              <span style={{ fontSize: 13, color: isActive('/autodex/get-started') ? '#1750BA' : '#69707D', paddingLeft: 12 }}>
+                ↳ Get started
+              </span>
+            }
+            onClick={() => navigate('/autodex/get-started')}
+            isActive={isActive('/autodex/get-started')}
+            style={{ height: 28, padding: '4px 4px', borderRadius: 4 }}
           />
 
           {/* Detection rules (SIEM) */}

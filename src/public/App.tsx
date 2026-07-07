@@ -20,6 +20,7 @@ import RuleCreationPage from "./pages/detection-rules/v1.0/rule-creation";
 import AddElasticRulesPage from "./pages/detection-rules/v1.0/add-elastic-rules";
 import InboxPage from "./pages/detection-rules/v1.0/inbox";
 import AutoDexPage from "./pages/detection-rules/v1.0/autodex-page";
+import AutoDexGettingStartedPage from "./pages/detection-rules/v1.0/autodex-getting-started";
 import SiemReadinessPage from "./pages/siem-readiness/SiemReadinessPage";
 import AgentsPage from "./pages/agents/AgentsPage";
 import { CoverageOverviewPage } from "../mitre-attack-coverage/coverage_overview/index";
@@ -115,6 +116,7 @@ const App: React.FC = () => {
 
             {/* AutoDEX */}
             <Route path="/autodex" element={<AutoDexPage />} />
+            <Route path="/autodex/get-started" element={<AutoDexGettingStartedPage />} />
 
             {/* MITRE ATT&CK Coverage */}
             <Route path="/mitre-coverage" element={<CoverageOverviewPage />} />
