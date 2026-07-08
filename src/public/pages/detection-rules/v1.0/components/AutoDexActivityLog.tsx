@@ -10,6 +10,8 @@ import {
   EuiFlexItem,
   EuiHorizontalRule,
   EuiIcon,
+  EuiListGroup,
+  EuiListGroupItem,
   EuiPanel,
   EuiPopover,
   EuiSelectable,
@@ -233,6 +235,7 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
   ]);
 
   const [fullReasoningLogId, setFullReasoningLogId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const PAGE_SIZE_OPTIONS = [5, 10, 25];
   const [pageSize, setPageSize] = useState(5);
@@ -512,7 +515,52 @@ const AutoDexActivityLog: React.FC<AutoDexActivityLogProps> = ({
             </div>
           </div>
           <div onClick={e => e.stopPropagation()}>
-            <EuiButtonIcon size="xs" iconType="boxesVertical" color="text" aria-label="More options" />
+            <EuiPopover
+              isOpen={openMenuId === log.id}
+              closePopover={() => setOpenMenuId(null)}
+              panelPaddingSize="s"
+              anchorPosition="downRight"
+              button={
+                <EuiButtonIcon
+                  size="xs"
+                  iconType="boxesVertical"
+                  color="text"
+                  aria-label="More options"
+                  onClick={() => setOpenMenuId(openMenuId === log.id ? null : log.id)}
+                />
+              }
+            >
+              <EuiListGroup flush gutterSize="none" style={{ minWidth: 160 }}>
+                <EuiListGroupItem
+                  iconType="discuss"
+                  label="Chat"
+                  size="s"
+                  onClick={() => {
+                    setOpenMenuId(null);
+                    onOpenAIAssistant(`Tell me about the AutoDEX action on rule "${log.rule}": ${log.reasoning}`);
+                  }}
+                />
+                <EuiListGroupItem
+                  iconType="folderClosed"
+                  label="Create a case"
+                  size="s"
+                  onClick={() => setOpenMenuId(null)}
+                />
+                <EuiListGroupItem
+                  iconType="pencil"
+                  label="Edit"
+                  size="s"
+                  onClick={() => setOpenMenuId(null)}
+                />
+                <EuiListGroupItem
+                  iconType="editorUndo"
+                  label="Undo"
+                  size="s"
+                  style={{ color: '#BD271E' }}
+                  onClick={() => setOpenMenuId(null)}
+                />
+              </EuiListGroup>
+            </EuiPopover>
           </div>
         </div>
         {isReasoningOpen && (

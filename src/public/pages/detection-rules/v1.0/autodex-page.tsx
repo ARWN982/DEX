@@ -173,7 +173,7 @@ const AutoDexPage: React.FC = () => {
                         <div style={{ flex: 1, padding: '16px 20px' }}>
                           <EuiText size="xs" color="subdued" style={{ fontWeight: 600, marginBottom: 4 }}>Minutes saved</EuiText>
                           <p style={{ fontSize: 28, fontWeight: 700, color: '#017D73', margin: '0 0 2px', lineHeight: 1.1 }}>47 min</p>
-                          <EuiText size="xs" color="subdued">2% from last week</EuiText>
+                          <EuiText size="xs" color="subdued">↑ 2% from last week</EuiText>
                         </div>
                         {SUMMARY_DIVIDER}
                         <div style={{ flex: 1, padding: '16px 20px' }}>

@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   EuiBadge,
+  EuiButton,
   EuiButtonEmpty,
   EuiButtonIcon,
   EuiEmptyPrompt,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiFlyout,
+  EuiFlyoutBody,
+  EuiFlyoutFooter,
+  EuiFlyoutHeader,
+  EuiHorizontalRule,
   EuiIcon,
   EuiListGroup,
   EuiListGroupItem,
@@ -13,8 +19,9 @@ import {
   EuiSpacer,
   EuiTablePagination,
   EuiText,
+  EuiTitle,
 } from '@elastic/eui';
-import type { AutoDexMockLog } from './autoDexMockData';
+import type { AutoDexMockLog, AutoDexDiffChange } from './autoDexMockData';
 
 const ACTION_PANEL_BUTTON_MIN_WIDTH = 176;
 
@@ -54,6 +61,26 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = useState(5);
 
+  // Edit flyout state
+  const [editingLog, setEditingLog] = useState<AutoDexMockLog | null>(null);
+  const [editedDiff, setEditedDiff]   = useState<Record<number, string>>({});
+  const [agentRequest, setAgentRequest] = useState('');
+
+  const openEditFlyout = (log: AutoDexMockLog) => {
+    // Pre-populate editable diff values from fullReasoning changes
+    const initial: Record<number, string> = {};
+    if (log.fullReasoning) {
+      log.fullReasoning.changesMade.forEach((change, idx) => {
+        initial[idx] = typeof change === 'string' ? change : (change as AutoDexDiffChange).after;
+      });
+    }
+    setEditedDiff(initial);
+    setAgentRequest('');
+    setEditingLog(log);
+  };
+
+  const closeEditFlyout = () => { setEditingLog(null); setEditedDiff({}); setAgentRequest(''); };
+
   const pendingItems = useMemo(
     () => items.filter((log) => {
       if (approvalDecisions[log.id]) return false;
@@ -75,6 +102,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
   });
 
   return (
+    <>
     <div data-test-subj="autodex-approvalsRequiredPanel">
       {pendingItems.length === 0 ? (
         <div style={{ padding: 24, width: '100%' }}>
@@ -198,6 +226,7 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
                           Discard
                         </button>
                         <button
+                          onClick={() => openEditFlyout(log)}
                           style={{ height: 28, padding: '0 12px', borderRadius: 20, border: '1px solid #CAD3E2', background: 'white', fontSize: 12, fontWeight: 500, color: '#516381', cursor: 'pointer' }}
                         >
                           Edit
@@ -230,6 +259,159 @@ const AutoDexApprovalsPanel: React.FC<AutoDexApprovalsPanelProps> = ({
         </>
       )}
     </div>
+    {/* ── Edit flyout ── */}
+    {editingLog && (
+      <EuiFlyout
+        ownFocus
+        onClose={closeEditFlyout}
+        size="m"
+        aria-labelledby="autodex-edit-flyout-title"
+      >
+        <EuiFlyoutHeader hasBorder>
+          <EuiTitle size="s">
+            <h2 id="autodex-edit-flyout-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <EuiIcon type="pencil" color="#0B64DD" />
+              Edit proposed change
+            </h2>
+          </EuiTitle>
+          <EuiText size="xs" color="subdued" style={{ marginTop: 4 }}>
+            {editingLog.rule}
+            <span style={{ marginLeft: 10, display: 'inline-flex', alignItems: 'center', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', background: '#F6F9FC', padding: '1px 8px', borderRadius: 20, border: '1px solid #E3E8F2', color: '#69707D' }}>
+              {editingLog.action}
+            </span>
+          </EuiText>
+        </EuiFlyoutHeader>
+
+        <EuiFlyoutBody>
+          {/* Diagnosis */}
+          {(editingLog.fullReasoning?.diagnosis || editingLog.reasoning) && (
+            <>
+              <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Diagnosis</p>
+              <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '12px 14px', marginBottom: 20 }}>
+                {editingLog.fullReasoning
+                  ? editingLog.fullReasoning.diagnosis.map((para, idx) => (
+                      <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
+                    ))
+                  : <p style={{ margin: 0, fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{editingLog.reasoning}</p>
+                }
+              </div>
+            </>
+          )}
+
+          {/* Decision rationale */}
+          {editingLog.fullReasoning?.decision && (
+            <>
+              <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Decision rationale</p>
+              <div style={{ background: '#F8F9FA', borderRadius: 6, padding: '12px 14px', marginBottom: 20 }}>
+                {editingLog.fullReasoning.decision.map((para, idx) => (
+                  <p key={idx} style={{ margin: '0 0 6px', fontSize: 13, color: 'var(--euiTextColor)', lineHeight: '20px' }}>{para}</p>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Editable diff */}
+          {editingLog.fullReasoning?.changesMade && (
+            <>
+              <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Changes</p>
+              <p style={{ margin: '0 0 12px', fontSize: 12, color: '#69707D' }}>Edit the proposed values below. The original (removed) lines are shown for reference.</p>
+              <div style={{ border: '1px solid #CAD3E2', borderRadius: 6, overflow: 'hidden', marginBottom: 24 }}>
+                {editingLog.fullReasoning.changesMade.map((change, idx) => {
+                  const isLast = idx === editingLog.fullReasoning!.changesMade.length - 1;
+                  const bb = isLast ? 'none' : '1px solid #D3DAE6';
+                  if (typeof change === 'string') {
+                    return (
+                      <div key={idx} style={{ borderBottom: bb }}>
+                        <p style={{ margin: 0, padding: '4px 10px 2px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#017D73', background: '#E6F9F0' }}>+ After</p>
+                        <textarea
+                          value={editedDiff[idx] ?? change}
+                          onChange={e => setEditedDiff(prev => ({ ...prev, [idx]: e.target.value }))}
+                          rows={2}
+                          style={{ width: '100%', fontFamily: 'monospace', fontSize: 12, background: '#F0FDF8', color: '#0B5E41', padding: '8px 10px', border: 'none', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    );
+                  }
+                  const diffChange = change as AutoDexDiffChange;
+                  return (
+                    <React.Fragment key={idx}>
+                      {/* Before — read only */}
+                      <div style={{ borderBottom: '1px solid #D3DAE6' }}>
+                        <p style={{ margin: 0, padding: '4px 10px 2px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#BD271E', background: '#FDF0EF' }}>− Before (read only)</p>
+                        <div style={{ fontFamily: 'monospace', fontSize: 12, background: '#FDF0EF', color: '#7C1B1B', padding: '8px 10px', userSelect: 'none' }}>{diffChange.before}</div>
+                      </div>
+                      {/* After — editable */}
+                      <div style={{ borderBottom: bb }}>
+                        <p style={{ margin: 0, padding: '4px 10px 2px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#017D73', background: '#E6F9F0' }}>+ After (editable)</p>
+                        <textarea
+                          value={editedDiff[idx] ?? diffChange.after}
+                          onChange={e => setEditedDiff(prev => ({ ...prev, [idx]: e.target.value }))}
+                          rows={3}
+                          style={{ width: '100%', fontFamily: 'monospace', fontSize: 12, background: '#F0FDF8', color: '#0B5E41', padding: '8px 10px', border: 'none', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <EuiHorizontalRule margin="none" style={{ marginBottom: 20 }} />
+
+          {/* Agent request */}
+          <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#69707D' }}>Request changes from agent</p>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: '#69707D' }}>Describe what you want AutoDEX to adjust and it will regenerate the proposed change.</p>
+          <textarea
+            placeholder="e.g. Also update the severity to High, and scope the exception to the prod-* host group only."
+            value={agentRequest}
+            onChange={e => setAgentRequest(e.target.value)}
+            rows={4}
+            style={{ width: '100%', fontSize: 13, fontFamily: 'inherit', color: '#111C2C', background: 'white', border: '1px solid #CAD3E2', borderRadius: 6, padding: '10px 12px', resize: 'vertical', outline: 'none', lineHeight: '20px', boxSizing: 'border-box' }}
+          />
+        </EuiFlyoutBody>
+
+        <EuiFlyoutFooter>
+          <EuiFlexGroup justifyContent="spaceBetween" responsive={false}>
+            <EuiFlexItem grow={false}>
+              <EuiButtonEmpty onClick={closeEditFlyout} color="text">Cancel</EuiButtonEmpty>
+            </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiFlexGroup gutterSize="s" responsive={false}>
+                {agentRequest.trim() && (
+                  <EuiFlexItem grow={false}>
+                    <EuiButton
+                      iconType="sparkles"
+                      color="primary"
+                      onClick={() => {
+                        onOpenAIAssistant(`Re-evaluate the AutoDEX change for "${editingLog.rule}". User request: ${agentRequest}`);
+                        closeEditFlyout();
+                      }}
+                    >
+                      Send to agent
+                    </EuiButton>
+                  </EuiFlexItem>
+                )}
+                <EuiFlexItem grow={false}>
+                  <EuiButton
+                    fill
+                    iconType="check"
+                    color="success"
+                    onClick={() => {
+                      onDecide(editingLog.id, 'approved');
+                      closeEditFlyout();
+                    }}
+                  >
+                    Apply and approve
+                  </EuiButton>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+        </EuiFlyoutFooter>
+      </EuiFlyout>
+    )}
+  </>
   );
 };
 
